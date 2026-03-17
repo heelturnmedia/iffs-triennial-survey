@@ -11,7 +11,6 @@
 UPDATE public.survey_definitions
 SET
   name        = 'IFFS 2026 Triennial Survey',
-  description = '20-section survey on ART policies and practices across 147 countries. 525 questions.',
   definition  = $1::jsonb,
   is_active   = true
   -- updated_at is handled automatically by the survey_definitions_updated_at trigger
