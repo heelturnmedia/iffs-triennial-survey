@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+build
+.env
+.env.*
+.git
+.gitignore
+.claude
+.agents
+skills-lock.json
+coverage
+*.log
+*.local
