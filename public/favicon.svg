@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#1d7733"/>
+  <!-- Letter I — left bar -->
+  <rect x="14" y="16" width="8" height="32" rx="2" fill="white"/>
+  <!-- Letter F — vertical bar -->
+  <rect x="28" y="16" width="8" height="32" rx="2" fill="white"/>
+  <!-- Letter F — top horizontal -->
+  <rect x="28" y="16" width="22" height="8" rx="2" fill="white"/>
+  <!-- Letter F — mid horizontal -->
+  <rect x="28" y="28" width="16" height="7" rx="2" fill="white"/>
+</svg>

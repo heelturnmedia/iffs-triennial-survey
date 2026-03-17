@@ -1,0 +1,187 @@
+/* ── Google Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* ── SurveyJS overrides ───────────────────────────────────────────────────── */
+@import './styles/surveyjs-overrides.css';
+
+/* ── Tailwind layers ──────────────────────────────────────────────────────── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens ────────────────────────────────────────────────────────── */
+:root {
+  /* Brand greens */
+  --g1: #1d7733;
+  --g2: #0e5921;
+  --g3: #e8f5ec;
+  --g4: #d1ebd8;
+  --g5: #2a9444;
+
+  /* Neutral / foreground */
+  --bk: #000000;
+  --f1: #0d1117;
+  --f2: #3d4a52;
+  --f3: #7a8a96;
+  --f4: #b0bec5;
+
+  /* Surface / background */
+  --s1: #f7f9f7;
+  --s2: #f0f4f1;
+
+  /* Borders */
+  --bd:  #e2ebe4;
+  --bd2: #c8d9cc;
+
+  /* Typography */
+  --font-display: 'Raleway', sans-serif;
+  --font-body:    'Source Sans 3', system-ui, sans-serif;
+
+  /* Easing curves */
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Elevation shadows */
+  --shadow-sm: 0 1px 3px rgba(13, 17, 23, 0.06),
+               0 1px 2px rgba(13, 17, 23, 0.04);
+  --shadow-md: 0 4px 12px rgba(13, 17, 23, 0.08),
+               0 2px 6px  rgba(13, 17, 23, 0.05);
+  --shadow-lg: 0 8px 24px rgba(13, 17, 23, 0.10),
+               0 4px 12px rgba(13, 17, 23, 0.06);
+
+  /* Green-tinted shadows */
+  --shadow-green-sm: 0 2px 8px  rgba(29, 119, 51, 0.15);
+  --shadow-green-md: 0 4px 16px rgba(29, 119, 51, 0.20);
+  --shadow-green-lg: 0 8px 32px rgba(29, 119, 51, 0.25);
+}
+
+/* ── Base body styles ─────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font-body);
+  background-color: var(--s1);
+  color: var(--f1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  position: relative;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Subtle grain texture overlay — matches original design */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+/* ── Keyframe animations ──────────────────────────────────────────────────── */
+
+/* Fade + slide up — general utility */
+@keyframes fadeSlideUp {
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0);    }
+}
+
+/* Soft pulse — used on CTA buttons and status indicators */
+@keyframes pulse {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.7; transform: scale(1.05); }
+}
+
+/* Expand ring — used on map markers and avatar rings */
+@keyframes expandRing {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2);   opacity: 0;   }
+}
+
+/* Float card — subtle 3-D float on hero cards */
+@keyframes floatCard {
+  0%,  100% { transform: translateY(0px)  rotate(0deg);    }
+  33%        { transform: translateY(-8px) rotate(0.5deg);  }
+  66%        { transform: translateY(-4px) rotate(-0.3deg); }
+}
+
+/* Modal slide-in */
+@keyframes modalSlideIn {
+  0%   { opacity: 0; transform: translateY(-24px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0)      scale(1);   }
+}
+
+/* Auth page — panel fade up */
+@keyframes authFadeUp {
+  0%   { opacity: 0; transform: translateY(32px); }
+  100% { opacity: 1; transform: translateY(0);    }
+}
+
+/* Auth page — background fade in */
+@keyframes authFadeIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Decorative grid line draw (SVG stroke animation) */
+@keyframes gridDraw {
+  0%   { opacity: 0; stroke-dashoffset: 1000; }
+  100% { opacity: 1; stroke-dashoffset: 0;    }
+}
+
+/* Floating dot — loading states, decorative accents */
+@keyframes floatDot {
+  0%,  100% { transform: translateY(0);    }
+  50%        { transform: translateY(-6px); }
+}
+
+/* Sidebar / list item slide in */
+@keyframes slideIn {
+  0%   { opacity: 0; transform: translateX(-16px); }
+  100% { opacity: 1; transform: translateX(0);     }
+}
+
+/* Survey header entrance */
+@keyframes sHeaderIn {
+  0%   { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── Utility animation classes ────────────────────────────────────────────── */
+.animate-fade-slide-up  { animation: fadeSlideUp  0.5s var(--ease-out)    forwards; }
+.animate-modal-slide-in { animation: modalSlideIn 0.3s var(--ease-out)    forwards; }
+.animate-auth-fade-up   { animation: authFadeUp   0.7s var(--ease-out)    forwards; }
+.animate-auth-fade-in   { animation: authFadeIn   0.5s ease               forwards; }
+.animate-float-card     { animation: floatCard    6s   ease-in-out        infinite; }
+.animate-float-dot      { animation: floatDot     2s   ease-in-out        infinite; }
+.animate-expand-ring    { animation: expandRing   1.5s ease-out           infinite; }
+.animate-slide-in       { animation: slideIn      0.4s var(--ease-out)    forwards; }
+.animate-s-header-in    { animation: sHeaderIn    0.4s var(--ease-out)    forwards; }
+
+/* ── Stagger helpers ──────────────────────────────────────────────────────── */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.30s; }
+
+/* ── Scrollbar styling ────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bd2) transparent;
+}
+*::-webkit-scrollbar       { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--f4); }
+
+/* ── Focus visible ────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--g1);
+  outline-offset: 2px;
+}

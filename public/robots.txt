@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /auth
+
+# Keep dashboard and API routes private
+Disallow: /dashboard
+Disallow: /api/
+
+Sitemap: https://survey.iffs.org/sitemap.xml
