@@ -6,6 +6,7 @@
 //   - "Begin Survey →" green button → openModal(), setWelcomeOverlayOpen(false)
 //   - "Go to Dashboard" ghost button → setWelcomeOverlayOpen(false)
 
+import { CornerDownLeft, ArrowRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { useSurveyStore } from '@/stores/surveyStore'
@@ -152,16 +153,10 @@ export function WelcomeOverlay() {
               }}
             >
               <span
-                style={{
-                  color: 'var(--g1)',
-                  fontSize: 16,
-                  lineHeight: 1,
-                  marginTop: 2,
-                  flexShrink: 0,
-                }}
+                style={{ color: 'var(--g1)', marginTop: 1, flexShrink: 0 }}
                 aria-hidden="true"
               >
-                ↩
+                <CornerDownLeft size={15} strokeWidth={2} />
               </span>
               <p
                 style={{
@@ -208,7 +203,7 @@ export function WelcomeOverlay() {
               }}
             >
               {hasDraft ? 'Resume Survey' : 'Begin Survey'}
-              <span aria-hidden="true">→</span>
+              <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
             </button>
 
             {/* Ghost */}

@@ -11,6 +11,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    // Force a single React instance — prevents "Invalid hook call" when
+    // packages like survey-creator-core are excluded from optimizeDeps.
+    dedupe: ['react', 'react-dom'],
   },
   worker: {
     format: 'es',

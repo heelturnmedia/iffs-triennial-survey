@@ -1,3 +1,12 @@
+import {
+  LayoutDashboard,
+  ClipboardList,
+  BarChart3,
+  Users,
+  Settings2,
+  Unplug,
+  LogOut,
+} from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { useSurveyStore } from '@/stores/surveyStore'
@@ -9,7 +18,7 @@ import { ROLES } from '@/constants'
 interface NavItem {
   id: ActivePanel | 'survey'
   label: string
-  icon: string
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
   panel?: ActivePanel
   opensSurvey?: boolean
   adminOnly?: boolean
@@ -17,19 +26,19 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'overview',     label: 'Overview',     icon: '⊞',  panel: 'overview' },
-  { id: 'survey',       label: 'My Survey',    icon: '✎',  opensSurvey: true },
-  { id: 'reports',      label: 'Reports',      icon: '⊡',  panel: 'reports',      supervisorPlus: true },
-  { id: 'users',        label: 'Users',        icon: '◎',  panel: 'users',        adminOnly: true },
-  { id: 'survey-mgmt',  label: 'Survey Mgmt',  icon: '⊘',  panel: 'survey-mgmt',  adminOnly: true },
-  { id: 'wa-settings',  label: 'WA Settings',  icon: '⚙',  panel: 'wa-settings',  adminOnly: true },
+  { id: 'overview',    label: 'Overview',    Icon: LayoutDashboard, panel: 'overview' },
+  { id: 'survey',      label: 'My Survey',   Icon: ClipboardList,   opensSurvey: true },
+  { id: 'reports',     label: 'Reports',     Icon: BarChart3,       panel: 'reports',     supervisorPlus: true },
+  { id: 'users',       label: 'Users',       Icon: Users,           panel: 'users',       adminOnly: true },
+  { id: 'survey-mgmt', label: 'Survey Mgmt', Icon: Settings2,       panel: 'survey-mgmt', adminOnly: true },
+  { id: 'wa-settings', label: 'WA Settings', Icon: Unplug,          panel: 'wa-settings', adminOnly: true },
 ]
 
-const ROLE_BADGE_COLORS: Record<string, string> = {
-  admin:         'bg-purple-100 text-purple-800 border-purple-200',
-  supervisor:    'bg-blue-100 text-blue-800 border-blue-200',
-  'iffs-member': 'bg-[#e8f5ec] text-[#0e5921] border-[#afc7b4]',
-  user:          'bg-gray-100 text-gray-700 border-gray-200',
+const ROLE_BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  admin:         { bg: '#faf5ff', text: '#7c3aed', border: '#ddd6fe' },
+  supervisor:    { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' },
+  'iffs-member': { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
+  user:          { bg: '#f8fafc', text: '#64748b', border: '#e2e8f0' },
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -47,6 +56,7 @@ export function Sidebar() {
     ? `${profile.first_name} ${profile.last_name}`.trim()
     : ''
   const roleLabel = ROLES[role]?.label ?? role
+  const badge = ROLE_BADGE_COLORS[role] ?? ROLE_BADGE_COLORS['user']
 
   const isVisible = (item: NavItem): boolean => {
     if (item.adminOnly) return isAdmin()
@@ -71,7 +81,7 @@ export function Sidebar() {
     <aside
       className="flex-shrink-0 flex flex-col"
       style={{
-        width: '240px',
+        width: '232px',
         height: '100%',
         background: '#ffffff',
         borderRight: '1px solid var(--bd)',
@@ -79,85 +89,166 @@ export function Sidebar() {
       }}
     >
       {/* ── User profile block ──────────────────────────────────────────── */}
-      <div
-        className="px-5 py-5"
-        style={{ borderBottom: '1px solid var(--bd)' }}
-      >
+      <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid var(--bd)' }}>
         {/* Avatar */}
         <div
-          className="w-11 h-11 rounded-full flex items-center justify-center mb-3 flex-shrink-0"
+          className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 flex-shrink-0"
           style={{
-            background: 'var(--g1)',
-            boxShadow: '0 2px 8px rgba(29,119,51,0.20)',
+            background: 'linear-gradient(135deg, var(--g1) 0%, var(--g5) 100%)',
+            boxShadow: '0 2px 10px rgba(29,119,51,0.28)',
           }}
           aria-hidden="true"
         >
-          <span className="font-display text-[13px] font-bold text-white tracking-wide">
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 13,
+              fontWeight: 700,
+              color: '#fff',
+              letterSpacing: '0.04em',
+            }}
+          >
             {initials}
           </span>
         </div>
 
         {/* Name */}
-        <p className="font-display text-[14px] font-bold text-[#0d1117] leading-snug truncate">
+        <p
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 13.5,
+            fontWeight: 700,
+            color: 'var(--f1)',
+            lineHeight: 1.3,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {displayName}
         </p>
         {profile?.email && (
-          <p className="font-body text-[11px] text-[#7a8a96] mt-0.5 truncate">
+          <p
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 11,
+              color: 'var(--f3)',
+              marginTop: 2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {profile.email}
           </p>
         )}
 
         {/* Role badge */}
         <span
-          className={[
-            'inline-flex mt-2.5 font-body text-[10px] font-semibold px-2 py-0.5 rounded-full border tracking-[0.04em]',
-            ROLE_BADGE_COLORS[role] ?? ROLE_BADGE_COLORS['user'],
-          ].join(' ')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            marginTop: 8,
+            fontFamily: 'var(--font-body)',
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: '0.05em',
+            paddingLeft: 8,
+            paddingRight: 8,
+            paddingTop: 3,
+            paddingBottom: 3,
+            borderRadius: 99,
+            border: `1px solid ${badge.border}`,
+            background: badge.bg,
+            color: badge.text,
+          }}
         >
           {roleLabel}
         </span>
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────────── */}
-      <nav className="flex-1 px-3 py-4" aria-label="Dashboard navigation">
+      <nav className="flex-1 px-3 pt-3 pb-2" aria-label="Dashboard navigation">
         <ul className="space-y-0.5" role="list">
           {NAV_ITEMS.filter(isVisible).map((item) => {
             const active = isActive(item)
+            const { Icon } = item
             return (
               <li key={item.id} role="listitem">
                 <button
                   type="button"
                   onClick={() => handleItemClick(item)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150 relative"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150"
                   style={{
                     background: active ? 'rgba(29,119,51,0.07)' : 'transparent',
                     color: active ? 'var(--g1)' : 'var(--f2)',
-                    borderLeft: active ? '3px solid var(--g1)' : '3px solid transparent',
                     fontFamily: 'var(--font-body)',
-                    fontSize: '13px',
-                    fontWeight: active ? 600 : 500,
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 400,
+                    cursor: 'pointer',
+                    border: 'none',
+                    outline: 'none',
+                    position: 'relative',
                   }}
                   onMouseEnter={(e) => {
                     if (!active) {
-                      ;(e.currentTarget as HTMLButtonElement).style.background =
-                        'rgba(29,119,51,0.04)'
+                      (e.currentTarget as HTMLButtonElement).style.background = 'rgba(29,119,51,0.04)'
+                      ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--f1)'
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!active) {
-                      ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                      (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                      ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--f2)'
                     }
                   }}
                   aria-current={active ? 'page' : undefined}
                 >
+                  {/* Left active bar */}
+                  {active && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 3,
+                        height: 20,
+                        borderRadius: '0 3px 3px 0',
+                        background: 'var(--g1)',
+                      }}
+                    />
+                  )}
+
+                  {/* Icon container */}
                   <span
-                    className="text-[16px] leading-none flex-shrink-0 w-5 text-center"
-                    aria-hidden="true"
-                    style={{ color: active ? 'var(--g1)' : 'var(--f3)' }}
+                    className="flex items-center justify-center flex-shrink-0 transition-all duration-150"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: 8,
+                      background: active ? 'rgba(29,119,51,0.12)' : 'transparent',
+                      color: active ? 'var(--g1)' : 'var(--f3)',
+                    }}
                   >
-                    {item.icon}
+                    <Icon size={15} strokeWidth={active ? 2.2 : 1.8} />
                   </span>
-                  <span>{item.label}</span>
+
+                  <span style={{ flex: 1 }}>{item.label}</span>
+
+                  {/* Active indicator dot */}
+                  {active && (
+                    <span
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: 'var(--g1)',
+                        flexShrink: 0,
+                        opacity: 0.7,
+                      }}
+                    />
+                  )}
                 </button>
               </li>
             )
@@ -166,16 +257,19 @@ export function Sidebar() {
       </nav>
 
       {/* ── Sign out ────────────────────────────────────────────────────── */}
-      <div className="px-3 pb-5" style={{ borderTop: '1px solid var(--bd)', paddingTop: '12px' }}>
+      <div className="px-3 pb-4" style={{ borderTop: '1px solid var(--bd)', paddingTop: 10 }}>
         <button
           type="button"
           onClick={() => void signOut()}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150"
           style={{
             fontFamily: 'var(--font-body)',
-            fontSize: '13px',
-            fontWeight: 500,
+            fontSize: 13,
+            fontWeight: 400,
             color: 'var(--f3)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(220,38,38,0.05)'
@@ -186,8 +280,11 @@ export function Sidebar() {
             ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--f3)'
           }}
         >
-          <span className="text-[16px] leading-none flex-shrink-0 w-5 text-center" aria-hidden="true">
-            ⇦
+          <span
+            className="flex items-center justify-center flex-shrink-0"
+            style={{ width: 30, height: 30, borderRadius: 8 }}
+          >
+            <LogOut size={15} strokeWidth={1.8} />
           </span>
           <span>Sign Out</span>
         </button>

@@ -1,3 +1,11 @@
+import {
+  Users,
+  CheckCircle2,
+  Clock3,
+  CircleDashed,
+  ArrowRight,
+  ChevronRight,
+} from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { useSurveyStore } from '@/stores/surveyStore'
@@ -62,18 +70,10 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
       >
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'var(--g3)' }}
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path
-                d="M4 10.5l4.5 4.5 7.5-9"
-                stroke="#1d7733"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <CheckCircle2 size={20} color="var(--g1)" strokeWidth={2} />
           </div>
           <div>
             <p className="font-body text-[11px] font-semibold tracking-[0.08em] uppercase text-[#1d7733] mb-0.5">
@@ -90,27 +90,13 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
           recorded and will contribute to the global ART landscape report.
         </p>
 
-        <button
-          type="button"
-          disabled
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase cursor-not-allowed opacity-60 w-fit"
-          style={{
-            background: 'var(--g3)',
-            color: 'var(--g1)',
-            border: '1.5px solid var(--bd2)',
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path
-              d="M2.5 7.5l3 3 6-7"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Submitted
-        </button>
+        <div className="flex items-center gap-2 w-fit px-4 py-2 rounded-full opacity-60"
+          style={{ background: 'var(--g3)', border: '1.5px solid var(--bd2)' }}>
+          <CheckCircle2 size={13} color="var(--g1)" strokeWidth={2.2} />
+          <span className="font-display text-[11px] font-bold tracking-[0.1em] uppercase" style={{ color: 'var(--g1)' }}>
+            Submitted
+          </span>
+        </div>
       </div>
     )
   }
@@ -138,20 +124,22 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
         <button
           type="button"
           onClick={onOpen}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase text-white transition-all w-fit hover:scale-[1.02] active:scale-[0.98]"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase text-white transition-all w-fit"
           style={{
             background: 'var(--g1)',
             boxShadow: '0 4px 12px rgba(29,119,51,0.25)',
           }}
           onMouseEnter={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g2)'
+            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
           }}
           onMouseLeave={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g1)'
+            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
           }}
         >
           Begin Survey
-          <span aria-hidden="true">→</span>
+          <ArrowRight size={13} strokeWidth={2.2} aria-hidden="true" />
         </button>
       </div>
     )
@@ -214,20 +202,22 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
       <button
         type="button"
         onClick={onOpen}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase text-white transition-all w-fit hover:scale-[1.02] active:scale-[0.98]"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase text-white transition-all w-fit"
         style={{
           background: 'var(--g1)',
           boxShadow: '0 4px 12px rgba(29,119,51,0.25)',
         }}
         onMouseEnter={(e) => {
           ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g2)'
+          ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
         }}
         onMouseLeave={(e) => {
           ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g1)'
+          ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
         }}
       >
         Continue Survey
-        <span aria-hidden="true">→</span>
+        <ArrowRight size={13} strokeWidth={2.2} aria-hidden="true" />
       </button>
     </div>
   )
@@ -261,19 +251,15 @@ function ProgressTracker({ pageNo, status }: { pageNo: number; status: string | 
             aria-label="Survey completion"
           >
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full transition-all duration-700"
               style={{
-                width: `${pct}%`,
-                background: isSubmitted
-                  ? 'var(--g1)'
-                  : pct > 0
-                  ? 'var(--g1)'
-                  : 'transparent',
+                width: `${isSubmitted ? 100 : pct}%`,
+                background: 'linear-gradient(90deg, var(--g1) 0%, var(--g5) 100%)',
               }}
             />
           </div>
           <span className="font-display text-[12px] font-bold text-[#1d7733] flex-shrink-0 tabular-nums">
-            {pct}%
+            {isSubmitted ? 100 : pct}%
           </span>
         </div>
         <p className="font-body text-[11px] text-[#7a8a96]">
@@ -282,62 +268,51 @@ function ProgressTracker({ pageNo, status }: { pageNo: number; status: string | 
       </div>
 
       {/* Section list */}
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {SECTION_NAMES.slice(0, 10).map((name, i) => {
           const sectionNo = i + 1
           const isDone = isSubmitted || sectionNo <= pageNo
           const isCurrent = !isSubmitted && sectionNo === pageNo + 1
           return (
-            <div
-              key={i}
-              className="flex items-center gap-2.5"
-            >
+            <div key={i} className="flex items-center gap-2.5">
               <span
                 className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
                 style={{
                   background: isDone ? 'var(--g3)' : isCurrent ? 'rgba(29,119,51,0.08)' : 'var(--bd)',
-                  border: isCurrent ? '1.5px solid var(--g1)' : isDone ? 'none' : 'none',
+                  border: isCurrent ? '1.5px solid var(--g1)' : 'none',
                 }}
                 aria-hidden="true"
               >
                 {isDone ? (
-                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-                    <path d="M1.5 4.5l2 2 4-4" stroke="#1d7733" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <CheckCircle2 size={9} color="var(--g1)" strokeWidth={2.5} />
                 ) : isCurrent ? (
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--g1)' }} />
                 ) : null}
               </span>
               <span
-                className="font-body text-[12px] truncate"
+                className="font-body text-[12px] flex-1 truncate"
                 style={{
-                  color: isDone
-                    ? 'var(--f1)'
-                    : isCurrent
-                    ? 'var(--g1)'
-                    : 'var(--f3)',
+                  color: isDone ? 'var(--f1)' : isCurrent ? 'var(--g1)' : 'var(--f3)',
                   fontWeight: isCurrent ? 600 : isDone ? 500 : 400,
                 }}
               >
                 {sectionNo}. {name}
               </span>
               {isCurrent && (
-                <span
-                  className="ml-auto font-body text-[10px] font-semibold text-[#1d7733] flex-shrink-0"
+                <ChevronRight
+                  size={12}
+                  color="var(--g1)"
+                  strokeWidth={2.5}
+                  className="flex-shrink-0"
                   aria-hidden="true"
-                >
-                  →
-                </span>
+                />
               )}
             </div>
           )
         })}
 
         {/* Remaining count */}
-        <p
-          className="font-body text-[11px] pt-1 pl-6.5"
-          style={{ color: 'var(--f4)' }}
-        >
+        <p className="font-body text-[11px] pt-1 pl-[26px]" style={{ color: 'var(--f4)' }}>
           + 10 more sections
         </p>
       </div>
@@ -356,31 +331,70 @@ interface AdminStats {
 
 function StatsRow({ stats }: { stats: AdminStats }) {
   const cards = [
-    { label: 'Total Users',  value: stats.total,      color: '#3d4a52' },
-    { label: 'Submitted',    value: stats.submitted,   color: '#1d7733' },
-    { label: 'In Progress',  value: stats.inProgress,  color: '#f59e0b' },
-    { label: 'Not Started',  value: stats.notStarted,  color: '#b0bec5' },
+    {
+      label: 'Total Users',
+      value: stats.total,
+      Icon: Users,
+      iconColor: '#3d4a52',
+      iconBg: '#f1f5f9',
+      valueColor: '#3d4a52',
+    },
+    {
+      label: 'Submitted',
+      value: stats.submitted,
+      Icon: CheckCircle2,
+      iconColor: '#1d7733',
+      iconBg: '#e8f5ec',
+      valueColor: '#1d7733',
+    },
+    {
+      label: 'In Progress',
+      value: stats.inProgress,
+      Icon: Clock3,
+      iconColor: '#d97706',
+      iconBg: '#fffbeb',
+      valueColor: '#d97706',
+    },
+    {
+      label: 'Not Started',
+      value: stats.notStarted,
+      Icon: CircleDashed,
+      iconColor: '#94a3b8',
+      iconBg: '#f8fafc',
+      valueColor: '#94a3b8',
+    },
   ]
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-      {cards.map((card) => (
-        <div
-          key={card.label}
-          className="bg-white rounded-xl p-4 flex flex-col gap-1"
-          style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}
-        >
-          <span
-            className="font-display text-[26px] font-bold tabular-nums leading-none"
-            style={{ color: card.color }}
+      {cards.map((card) => {
+        const { Icon } = card
+        return (
+          <div
+            key={card.label}
+            className="bg-white rounded-xl p-4 flex flex-col gap-3"
+            style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}
           >
-            {card.value}
-          </span>
-          <span className="font-body text-[11px] text-[#7a8a96] font-medium">
-            {card.label}
-          </span>
-        </div>
-      ))}
+            <div className="flex items-center justify-between">
+              <span
+                className="font-display text-[28px] font-bold tabular-nums leading-none"
+                style={{ color: card.valueColor }}
+              >
+                {card.value}
+              </span>
+              <span
+                className="flex items-center justify-center rounded-lg flex-shrink-0"
+                style={{ width: 32, height: 32, background: card.iconBg }}
+              >
+                <Icon size={15} color={card.iconColor} strokeWidth={2} />
+              </span>
+            </div>
+            <span className="font-body text-[11px] font-medium" style={{ color: 'var(--f3)' }}>
+              {card.label}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -404,8 +418,6 @@ export function OverviewPanel() {
   const status = submission?.status ?? null
   const savedAt = submission?.saved_at ?? null
 
-  // Admin/supervisor stats (derived from own submission as placeholder —
-  // full stats come from ReportsPanel which fetches all submissions)
   const showStats = canViewReports()
   const adminStats: AdminStats = {
     total: 1,
@@ -438,17 +450,12 @@ export function OverviewPanel() {
           savedAt={savedAt}
           onOpen={openModal}
         />
-        <ProgressTracker
-          pageNo={pageNo}
-          status={status}
-        />
+        <ProgressTracker pageNo={pageNo} status={status} />
       </div>
 
       {/* Admin note */}
       {isAdmin() && (
-        <p
-          className="mt-5 font-body text-[12px] text-[#7a8a96] bg-[#f7f9f7] border border-[#e2ebe4] rounded-lg px-4 py-2.5"
-        >
+        <p className="mt-5 font-body text-[12px] text-[#7a8a96] bg-[#f7f9f7] border border-[#e2ebe4] rounded-lg px-4 py-2.5">
           As an administrator, visit the{' '}
           <button
             type="button"

@@ -3,6 +3,7 @@
 // Right (unauthenticated): Home / About / Contact links + "Take Survey →" pill
 // Right (authenticated): role badge + user name + "Sign Out" button
 
+import { ArrowRight } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -161,7 +162,7 @@ export function Nav() {
             }}
           >
             Take Survey
-            <span aria-hidden="true">→</span>
+            <ArrowRight size={13} strokeWidth={2.2} aria-hidden="true" />
           </Link>
         </div>
       )}
