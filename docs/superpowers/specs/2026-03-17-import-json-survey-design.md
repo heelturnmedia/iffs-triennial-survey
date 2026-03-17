@@ -25,7 +25,7 @@ Replace the placeholder survey definition with the official JSON — stored in S
 **Source:** `D:\IFFS\2026\February\json survey\iffs-triennial-survey-2026-FINAL.json`
 **Destination:** `src/data/survey-definition.json`
 
-This makes the canonical JSON part of the repository and enables a local fallback import via Vite's native JSON support.
+This makes the canonical JSON part of the repository and enables a local fallback import via Vite's native JSON support. No `tsconfig` changes are needed — `moduleResolution: bundler` already handles JSON imports without `resolveJsonModule`.
 
 ---
 
@@ -37,10 +37,13 @@ Replace the 1,573-line hand-crafted TypeScript definition with a minimal file th
 import surveyDefJson from './survey-definition.json'
 import type { SurveyPageMeta } from '@/types'
 
+type SurveyPage = { title?: string; name: string; description?: string }
+type SurveyJson = { pages: SurveyPage[] }
+
 export const SURVEY_DEFINITION = surveyDefJson
 
-export const SURVEY_PAGES_META: SurveyPageMeta[] = (surveyDefJson as any).pages.map(
-  (p: { title?: string; name: string; description?: string }) => ({
+export const SURVEY_PAGES_META: SurveyPageMeta[] = (surveyDefJson as unknown as SurveyJson).pages.map(
+  (p) => ({
     name: p.title ?? p.name,
     description: p.description ?? '',
   })
@@ -48,6 +51,8 @@ export const SURVEY_PAGES_META: SurveyPageMeta[] = (surveyDefJson as any).pages.
 ```
 
 **Why:** Eliminates a second copy of the survey that can drift from the canonical JSON. `SURVEY_PAGES_META` is consumed by `SurveyTimeline` and `SurveySectionHeader` for sidebar section labels — deriving it from the same source guarantees they always match.
+
+**Confirmed safe:** All 20 JSON pages have a `title` field. Pages 13 (ART - Genetic Testing) and 17 (ART - Child Welfare) have no `description`; the `?? ''` fallback handles these. TypeScript's inferred JSON literal type does not expose `.pages` directly, so the `as unknown as SurveyJson` narrowing is the correct pattern (avoids the over-broad `as any`).
 
 ---
 
@@ -80,9 +85,13 @@ Use the same Node.js `pg` runner pattern established for migrations 004 and 005:
 
 ---
 
-### 5. Verify SurveyModal fallback path
+### 5. SurveyModal fallback path — already implemented
 
-Read `SurveyModal.tsx` to confirm the fallback: if `activeDefinition` is null after the Supabase fetch, the modal should fall back to the local `SURVEY_DEFINITION`. Add this guard if it is missing.
+`SurveyModal.tsx` line 45 already contains:
+```ts
+const def = activeDefinition?.definition ?? SURVEY_DEFINITION
+```
+No change needed. The only action is ensuring `SURVEY_DEFINITION` (imported from the updated `survey-definition.ts`) resolves to the canonical JSON once the file is rewritten.
 
 ---
 
@@ -91,14 +100,16 @@ Read `SurveyModal.tsx` to confirm the fallback: if `activeDefinition` is null af
 ```
 App boot
   └─ surveyService.getActiveDefinition()
-       ├─ success → surveyStore.activeDefinition = DB row
-       └─ failure → SurveyModal falls back to local SURVEY_DEFINITION import
+       ├─ success → surveyStore.activeDefinition = DB row (full JSON in .definition)
+       └─ null/error → activeDefinition stays null
 
-SurveyModal mounts
-  └─ new Model(activeDefinition?.definition ?? SURVEY_DEFINITION)
+SurveyModal mounts (SurveyModal.tsx:45 — existing code, unchanged)
+  └─ const def = activeDefinition?.definition ?? SURVEY_DEFINITION
+       ├─ DB available  → uses Supabase-stored JSON
+       └─ DB unavailable → falls back to bundled src/data/survey-definition.json
 
 SurveyTimeline / SurveySectionHeader
-  └─ SURVEY_PAGES_META (derived from same JSON, always in sync)
+  └─ SURVEY_PAGES_META derived at build time from same JSON → always in sync
 ```
 
 ---
