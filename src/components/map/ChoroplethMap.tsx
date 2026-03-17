@@ -6,7 +6,11 @@ import { countryNameToIso2 } from '@/utils/countryRegions'
 import { formatSavedAt } from '@/utils/formatDate'
 import type { SubmissionRow } from '@/types'
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
+declare const window: Window & { __env?: Record<string, string> }
+const MAPBOX_TOKEN = (
+  (typeof window !== 'undefined' && window.__env?.VITE_MAPBOX_TOKEN) ||
+  import.meta.env.VITE_MAPBOX_TOKEN
+) as string | undefined
 
 // Color scale matching original design tokens
 const STATUS_COLORS = {

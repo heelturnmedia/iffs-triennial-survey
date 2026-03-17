@@ -48,6 +48,8 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Runtime env vars injected by docker-entrypoint.sh (production only) -->
+    <script src="/env-config.js" onerror="window.__env={}"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
