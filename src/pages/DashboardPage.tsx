@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!loading && !session) navigate('/auth', { replace: true })
+    if (!loading && !session) navigate('/login', { replace: true })
   }, [session, loading, navigate])
 
   if (loading) return <PageLoader />

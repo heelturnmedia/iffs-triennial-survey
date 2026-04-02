@@ -18,11 +18,6 @@ interface FeatureCard {
   description: string
 }
 
-interface DataRow {
-  label: string
-  value: string
-  width: number
-}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HERO_STATS: StatItem[] = [
@@ -53,20 +48,6 @@ const FEATURE_CARDS: FeatureCard[] = [
   },
 ]
 
-const ABOUT_DATA_ROWS: DataRow[] = [
-  { label: 'ART Infrastructure',    value: '147 countries', width: 88 },
-  { label: 'Regulatory Frameworks', value: '96 responses',  width: 72 },
-  { label: 'Clinical Practice',     value: '134 entries',   width: 82 },
-  { label: 'Financing Models',      value: '112 datasets',  width: 68 },
-  { label: 'Success Rates',         value: '89 reports',    width: 60 },
-]
-
-const ABOUT_BULLETS: string[] = [
-  'Tracks policy evolution and ART regulation across 147 countries',
-  'Benchmarks clinical protocols against international best practice',
-  'Informs WHO, UN, and ICMART global health reporting',
-  'Provides longitudinal data across 30+ years of surveys',
-]
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HomePage() {
@@ -74,7 +55,7 @@ export default function HomePage() {
   const { user }   = useAuthStore()
   const isLoggedIn = Boolean(user)
 
-  const handlePrimaryCTA = () => navigate(isLoggedIn ? '/dashboard' : '/auth')
+  const handlePrimaryCTA = () => navigate(isLoggedIn ? '/dashboard' : '/login')
 
   return (
     <div className="min-h-screen bg-s1 font-body" style={{ paddingTop: '68px' }}>
@@ -199,31 +180,6 @@ export default function HomePage() {
                 <span aria-hidden="true">→</span>
               </button>
 
-              {/* Ghost CTA */}
-              <button
-                type="button"
-                onClick={() =>
-                  document.getElementById('about-section')?.scrollIntoView({ behavior: 'smooth' })
-                }
-                className="inline-flex items-center font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full border-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none"
-                style={{
-                  borderColor:     'rgba(29,119,51,0.35)',
-                  color:           '#1d7733',
-                  backgroundColor: 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLButtonElement
-                  el.style.backgroundColor = 'rgba(232,245,236,0.6)'
-                  el.style.borderColor     = '#1d7733'
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLButtonElement
-                  el.style.backgroundColor = 'transparent'
-                  el.style.borderColor     = 'rgba(29,119,51,0.35)'
-                }}
-              >
-                Learn More
-              </button>
             </div>
           </div>
         </div>
@@ -408,189 +364,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── ABOUT ─────────────────────────────────────────────────────────── */}
-      <section
-        id="about-section"
-        className="py-24 px-6"
-        style={{ backgroundColor: '#f0f4f1' }}
-        aria-label="About the survey"
-      >
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-
-          {/* Left — visual panel */}
-          <div
-            className="relative rounded-3xl p-8 overflow-hidden flex flex-col justify-between"
-            style={{ backgroundColor: '#1d7733', minHeight: '480px' }}
-          >
-            {/* Background glow */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              aria-hidden="true"
-              style={{
-                background: [
-                  'radial-gradient(ellipse 80% 60% at 90% 10%, rgba(42,148,68,0.3) 0%, transparent 55%)',
-                  'radial-gradient(ellipse 60% 50% at 5% 90%, rgba(14,89,33,0.4) 0%, transparent 55%)',
-                ].join(', '),
-              }}
-            />
-
-            <div className="relative z-10">
-              <div
-                className="font-display text-[11px] font-bold tracking-[0.22em] uppercase mb-6"
-                style={{ color: 'rgba(209,235,216,0.7)' }}
-              >
-                Survey Data Points · 2026
-              </div>
-
-              <div className="space-y-5">
-                {ABOUT_DATA_ROWS.map((row) => (
-                  <div key={row.label}>
-                    <div className="flex justify-between items-baseline mb-2">
-                      <span
-                        className="font-body text-sm font-medium"
-                        style={{ color: 'rgba(232,245,236,0.85)' }}
-                      >
-                        {row.label}
-                      </span>
-                      <span
-                        className="font-display text-xs font-bold"
-                        style={{ color: 'rgba(209,235,216,0.7)' }}
-                      >
-                        {row.value}
-                      </span>
-                    </div>
-                    <div
-                      className="h-1.5 rounded-full overflow-hidden"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
-                    >
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width:           `${row.width}%`,
-                          backgroundColor: 'rgba(209,235,216,0.55)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bottom stat */}
-            <div
-              className="relative z-10 mt-8 pt-6 flex items-end gap-4"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}
-            >
-              <div>
-                <div
-                  className="font-display font-light leading-none mb-1"
-                  style={{ fontSize: '56px', color: '#ffffff' }}
-                >
-                  30
-                  <span style={{ fontSize: '28px', color: 'rgba(209,235,216,0.7)' }}>+</span>
-                </div>
-                <div
-                  className="font-display text-[10px] font-bold tracking-[0.2em] uppercase"
-                  style={{ color: 'rgba(209,235,216,0.65)' }}
-                >
-                  Years of Data
-                </div>
-              </div>
-              <div
-                className="ml-auto font-body text-xs leading-relaxed text-right"
-                style={{ color: 'rgba(232,245,236,0.55)', maxWidth: '160px' }}
-              >
-                Continuous global fertility data collection since 1992
-              </div>
-            </div>
-          </div>
-
-          {/* Right — copy */}
-          <div>
-            <span
-              className="inline-block font-display text-[11px] font-bold tracking-[0.22em] uppercase mb-5 px-4 py-2 rounded-full"
-              style={{ color: '#1d7733', backgroundColor: '#e8f5ec' }}
-            >
-              About the Survey
-            </span>
-
-            <h2
-              className="font-display font-light leading-tight mb-6"
-              style={{ fontSize: 'clamp(28px, 3.5vw, 42px)', color: '#0d1117' }}
-            >
-              Three Decades of{' '}
-              <span style={{ color: '#1d7733' }}>Global Fertility Data</span>
-            </h2>
-
-            <p
-              className="font-body text-base leading-relaxed mb-6"
-              style={{ color: '#3d4a52' }}
-            >
-              Since 1992, the International Federation of Fertility Societies has
-              conducted its landmark Triennial Survey — the most comprehensive global
-              census of assisted reproductive technology. The 2026 edition continues
-              this tradition, gathering standardised data from national fertility
-              societies in every region of the world.
-            </p>
-
-            <p
-              className="font-body text-base leading-relaxed mb-8"
-              style={{ color: '#3d4a52' }}
-            >
-              Results are published as an open-access Surveillance report, cited by
-              governments, international health bodies, and clinical guideline
-              committees worldwide.
-            </p>
-
-            <ul className="space-y-4 mb-10">
-              {ABOUT_BULLETS.map((bullet, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span
-                    className="mt-1 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: '#e8f5ec' }}
-                    aria-hidden="true"
-                  >
-                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                      <path
-                        d="M1 4L3.5 6.5L9 1"
-                        stroke="#1d7733"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  <span
-                    className="font-body text-sm leading-relaxed"
-                    style={{ color: '#3d4a52' }}
-                  >
-                    {bullet}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              type="button"
-              onClick={handlePrimaryCTA}
-              className="inline-flex items-center gap-2 font-display text-[12px] font-bold tracking-[0.14em] uppercase px-8 py-4 rounded-full text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none"
-              style={{
-                backgroundColor: '#1d7733',
-                boxShadow:       '0 8px 32px rgba(29,119,51,0.28)',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0e5921'
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1d7733'
-              }}
-            >
-              {isLoggedIn ? 'Go to Dashboard' : 'Participate Now'}
-              <span aria-hidden="true">→</span>
-            </button>
-          </div>
-        </div>
-      </section>
 
       <Footer />
 

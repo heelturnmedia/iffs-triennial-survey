@@ -10,6 +10,8 @@ import { ConfirmModal } from '@/components/common/ConfirmModal'
 const HomePage = lazy(() => import('@/pages/HomePage'))
 const AuthPage = lazy(() => import('@/pages/AuthPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
+const PrivacyPolicyPage = lazy(() => import('@/pages/PrivacyPolicyPage'))
+const TermsOfUsePage = lazy(() => import('@/pages/TermsOfUsePage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 // ─── Page-level loading fallback ────────────────────────────────────────────
@@ -33,7 +35,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (!session) {
     // Preserve the intended destination so we can redirect after sign-in
-    return <Navigate to="/auth" state={{ from: location }} replace />
+    return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   return <>{children}</>
@@ -68,7 +70,7 @@ function AppRoutes() {
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
           <Route
-            path="/auth"
+            path="/login"
             element={
               <>
                 <AuthRedirect />
@@ -86,6 +88,10 @@ function AppRoutes() {
               </AuthGuard>
             }
           />
+
+          {/* Legal pages */}
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfUsePage />} />
 
           {/* Catch-all → 404 */}
           <Route path="*" element={<NotFoundPage />} />
