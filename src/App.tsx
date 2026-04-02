@@ -33,7 +33,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (!session) {
     // Preserve the intended destination so we can redirect after sign-in
-    return <Navigate to="/auth" state={{ from: location }} replace />
+    return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   return <>{children}</>
@@ -68,7 +68,7 @@ function AppRoutes() {
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
           <Route
-            path="/auth"
+            path="/login"
             element={
               <>
                 <AuthRedirect />

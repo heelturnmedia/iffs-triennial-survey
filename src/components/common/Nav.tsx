@@ -27,7 +27,6 @@ const ROLE_BADGE_CLASSES: Record<UserRole, string> = {
 // ── Nav link targets (unauthenticated) ────────────────────────────────────
 const NAV_LINKS = [
   { label: 'Home',    href: '/' },
-  { label: 'About',   href: '/#about' },
   { label: 'Contact', href: '/#contact' },
 ]
 
@@ -139,7 +138,7 @@ export function Nav() {
 
           {/* CTA pill — nav-pill style */}
           <Link
-            to="/auth"
+            to="/login"
             className="no-underline flex items-center gap-1.5 rounded-full uppercase transition-all"
             style={{
               fontFamily: 'var(--font-display)',
