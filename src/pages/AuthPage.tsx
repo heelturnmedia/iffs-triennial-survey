@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate }          from 'react-router-dom'
-import { signIn, signUp }       from '@/services/authService'
+import { signIn, signUp, signInWithProvider } from '@/services/authService'
 import { useAuthStore }         from '@/stores/authStore'
 import { useUIStore }           from '@/stores/uiStore'
 import { useWildApricot }       from '@/hooks/useWildApricot'
@@ -41,9 +41,9 @@ const DEMO_ACCOUNTS: DemoAccount[] = import.meta.env.DEV ? [
   { label: 'Member',     email: 'member@iffs.org',      password: 'member123', role: 'iffs-member' },
 ] : []
 
-const SOCIAL_PROVIDERS: { id: string; label: string; icon: React.ReactNode }[] = [
+const SOCIAL_PROVIDERS: { id: 'google' | 'facebook' | 'linkedin_oidc'; label: string; icon: React.ReactNode }[] = [
   {
-    id:    'Google',
+    id:    'google',
     label: 'Google',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -55,40 +55,16 @@ const SOCIAL_PROVIDERS: { id: string; label: string; icon: React.ReactNode }[] =
     ),
   },
   {
-    id:    'Microsoft',
-    label: 'Microsoft',
+    id:    'facebook',
+    label: 'Facebook',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="#F25022" d="M1 1h10v10H1z"/>
-        <path fill="#00A4EF" d="M13 1h10v10H13z"/>
-        <path fill="#7FBA00" d="M1 13h10v10H1z"/>
-        <path fill="#FFB900" d="M13 13h10v10H13z"/>
+        <path fill="#1877F2" d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.269h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
       </svg>
     ),
   },
   {
-    id:    'ORCID',
-    label: 'ORCID',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="#A6CE39" d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0z"/>
-        <path fill="white" d="M8.5 6.5a1 1 0 110 2 1 1 0 010-2zm-.5 3.5h2v8H8V10zm3.5 0h3.5a3.5 3.5 0 010 7H11V10zm2 1.5v4h1.5a2 2 0 000-4H13z"/>
-      </svg>
-    ),
-  },
-  {
-    id:    'OpenAthens',
-    label: 'OpenAthens',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect width="24" height="24" rx="4" fill="#0066CC"/>
-        <path d="M6 12a6 6 0 1012 0A6 6 0 006 12zm6-4a4 4 0 110 8 4 4 0 010-8z" fill="white"/>
-        <circle cx="12" cy="12" r="2" fill="white"/>
-      </svg>
-    ),
-  },
-  {
-    id:    'LinkedIn',
+    id:    'linkedin_oidc',
     label: 'LinkedIn',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -134,12 +110,20 @@ interface SocialButtonProps {
 }
 
 function SocialButton({ provider, onToast }: SocialButtonProps) {
+  const handleClick = async () => {
+    try {
+      await signInWithProvider(provider.id)
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : `${provider.label} sign-in failed`)
+    }
+  }
+
   return (
     <button
       type="button"
       title={`Sign in with ${provider.label}`}
       aria-label={`Sign in with ${provider.label}`}
-      onClick={() => onToast(`${provider.label} login requires backend OAuth configuration`)}
+      onClick={handleClick}
       className="flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-150 hover:scale-[1.06] active:scale-[0.96] focus-visible:outline-none"
       style={{
         borderColor:     '#e2ebe4',

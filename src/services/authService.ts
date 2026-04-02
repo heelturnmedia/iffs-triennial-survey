@@ -16,6 +16,19 @@ export interface SignUpParams {
   lastName: string
 }
 
+// ─── OAuth (Social) Sign In ───────────────────────────────────────────────────
+
+export async function signInWithProvider(provider: 'google' | 'facebook' | 'linkedin_oidc') {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${window.location.origin}/dashboard`,
+    },
+  })
+  if (error) throw error
+  return data
+}
+
 // ─── Sign In ─────────────────────────────────────────────────────────────────
 
 export async function signIn({ email, password }: SignInParams) {

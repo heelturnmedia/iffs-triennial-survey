@@ -1,22 +1,19 @@
 // Black background footer
 // Left:   "IFFS SURVEY" (SURVEY in green)
-// Center: Privacy Policy | Terms of Use | Contact (all show toast "Coming soon")
+// Center: Privacy Policy | Terms of Use | Contact
 // Right:  "© 2026 IFFS. All rights reserved."
 
+import { Link } from 'react-router-dom'
 import { useUIStore } from '@/stores/uiStore'
 
-const FOOTER_LINKS = [
-  { label: 'Privacy Policy' },
-  { label: 'Terms of Use' },
+const FOOTER_LINKS: { label: string; to?: string }[] = [
+  { label: 'Privacy Policy', to: '/privacy' },
+  { label: 'Terms of Use',   to: '/terms' },
   { label: 'Contact' },
 ]
 
 export function Footer() {
   const { toast } = useUIStore()
-
-  const handleLinkClick = (label: string) => {
-    toast(`${label} — Coming soon.`, 'info')
-  }
 
   return (
     <footer
@@ -71,30 +68,51 @@ export function Footer() {
 
         {/* ── Links ─────────────────────────────────────────────── */}
         <nav className="flex items-center gap-6" aria-label="Footer navigation">
-          {FOOTER_LINKS.map(({ label }, i) => (
+          {FOOTER_LINKS.map(({ label, to }, i) => (
             <span key={label} className="flex items-center gap-6">
-              <button
-                type="button"
-                onClick={() => handleLinkClick(label)}
-                className="transition-colors"
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: 12,
-                  color: 'rgba(255,255,255,0.45)',
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                }}
-                onMouseOver={e => {
-                  (e.currentTarget as HTMLButtonElement).style.color = '#fff'
-                }}
-                onMouseOut={e => {
-                  (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.45)'
-                }}
-              >
-                {label}
-              </button>
+              {to ? (
+                <Link
+                  to={to}
+                  className="transition-colors"
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 12,
+                    color: 'rgba(255,255,255,0.45)',
+                    textDecoration: 'none',
+                  }}
+                  onMouseOver={e => {
+                    (e.currentTarget as HTMLAnchorElement).style.color = '#fff'
+                  }}
+                  onMouseOut={e => {
+                    (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.45)'
+                  }}
+                >
+                  {label}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => toast(`${label} — Coming soon.`, 'info')}
+                  className="transition-colors"
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 12,
+                    color: 'rgba(255,255,255,0.45)',
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                  }}
+                  onMouseOver={e => {
+                    (e.currentTarget as HTMLButtonElement).style.color = '#fff'
+                  }}
+                  onMouseOut={e => {
+                    (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.45)'
+                  }}
+                >
+                  {label}
+                </button>
+              )}
               {i < FOOTER_LINKS.length - 1 && (
                 <span
                   aria-hidden="true"
