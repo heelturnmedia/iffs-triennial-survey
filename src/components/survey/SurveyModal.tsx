@@ -193,6 +193,7 @@ export function SurveyModal() {
     >
       <style>{`
         #s-host .sv-header__cell img,
+        #s-host .sd-logo__image,
         #s-host .sv-logo__image {
           max-width: 120px !important;
           max-height: 60px !important;
