@@ -8,7 +8,10 @@ import { countryNameToIso2 } from '@/utils/countryRegions'
 import { formatDateTime } from '@/utils/formatDate'
 import { supabase } from '@/lib/supabase'
 import { SECTION_NAMES, STATUS_LABELS } from '@/constants'
+import { SectionResponsesView } from './SectionResponsesView'
 import type { SubmissionRow, SurveyStatus } from '@/types'
+
+type ReportsTab = 'overview' | 'responses'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -336,6 +339,7 @@ export function ReportsPanel() {
   const { isAdmin } = useAuthStore()
   const { toast, openConfirmModal } = useUIStore()
 
+  const [tab, setTab] = useState<ReportsTab>('overview')
   const [rows, setRows] = useState<SubmissionRow[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<ReportFilters>({
@@ -367,7 +371,7 @@ export function ReportsPanel() {
       .channel('reports-submissions')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'submissions' },
+        { event: '*', schema: 'public', table: 'survey_submissions' },
         () => void fetchAll()
       )
       .subscribe()
@@ -417,10 +421,15 @@ export function ReportsPanel() {
     })
   }
 
+  const TABS: Array<{ id: ReportsTab; label: string }> = [
+    { id: 'overview',  label: 'Overview' },
+    { id: 'responses', label: 'Section Responses' },
+  ]
+
   return (
     <div className="p-6 md:p-8 max-w-[1200px]">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
         <div>
           <h1 className="font-display text-[22px] font-bold text-[#0d1117]">Reports</h1>
           <p className="font-body text-[13px] text-[#7a8a96] mt-0.5">
@@ -428,56 +437,91 @@ export function ReportsPanel() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => exportCsv(filteredRows)}
-          disabled={filteredRows.length === 0}
-          className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Export CSV"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Export CSV
-        </button>
+        {tab === 'overview' && (
+          <button
+            type="button"
+            onClick={() => exportCsv(filteredRows)}
+            disabled={filteredRows.length === 0}
+            className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Export CSV"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Export CSV
+          </button>
+        )}
       </div>
 
-      {/* ── Stats ──────────────────────────────────────────────────────────── */}
-      <div className="mb-5">
-        <StatsCards rows={rows} />
+      {/* ── Tabs ───────────────────────────────────────────────────────────── */}
+      <div
+        className="flex gap-1 mb-6 p-1 rounded-xl"
+        style={{ background: '#f0f4f1', border: '1px solid var(--bd)', width: 'fit-content' }}
+        role="tablist"
+      >
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className="font-body text-[12px] font-semibold px-4 py-1.5 rounded-lg transition-all"
+            style={
+              tab === t.id
+                ? { background: '#fff', color: '#0e5921', boxShadow: 'var(--shadow-sm)', border: '1px solid #c8d9cc' }
+                : { background: 'transparent', color: '#7a8a96', border: '1px solid transparent' }
+            }
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className="mb-5">
-        <FilterBar
-          filters={filters}
-          onChange={(partial) => setFilters((prev) => ({ ...prev, ...partial }))}
-        />
-      </div>
+      {tab === 'overview' && (
+        <>
+          {/* ── Stats ────────────────────────────────────────────────────────── */}
+          <div className="mb-5">
+            <StatsCards rows={rows} />
+          </div>
 
-      {/* ── Choropleth map ─────────────────────────────────────────────────── */}
-      <div className="mb-6">
-        <ChoroplethMap submissions={filteredRows} height="380px" />
-      </div>
+          {/* ── Filter bar ───────────────────────────────────────────────────── */}
+          <div className="mb-5">
+            <FilterBar
+              filters={filters}
+              onChange={(partial) => setFilters((prev) => ({ ...prev, ...partial }))}
+            />
+          </div>
 
-      {/* ── Table ──────────────────────────────────────────────────────────── */}
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
-        </div>
-      ) : (
-        <SubmissionsTable
-          rows={filteredRows}
-          onReset={handleReset}
-          isAdmin={isAdmin()}
-        />
+          {/* ── Choropleth map ───────────────────────────────────────────────── */}
+          <div className="mb-6">
+            <ChoroplethMap submissions={filteredRows} height="380px" />
+          </div>
+
+          {/* ── Table ────────────────────────────────────────────────────────── */}
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
+            </div>
+          ) : (
+            <SubmissionsTable
+              rows={filteredRows}
+              onReset={handleReset}
+              isAdmin={isAdmin()}
+            />
+          )}
+
+          {/* Row count */}
+          {!loading && (
+            <p className="font-body text-[11px] text-[#b0bec5] mt-3 text-right">
+              Showing {filteredRows.length} of {rows.length} submissions
+            </p>
+          )}
+        </>
       )}
 
-      {/* Row count */}
-      {!loading && (
-        <p className="font-body text-[11px] text-[#b0bec5] mt-3 text-right">
-          Showing {filteredRows.length} of {rows.length} submissions
-        </p>
+      {tab === 'responses' && (
+        <SectionResponsesView submissions={rows} />
       )}
     </div>
   )
