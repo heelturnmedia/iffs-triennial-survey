@@ -81,13 +81,15 @@ export function SurveyModal() {
             data,
             saved_at: now,
           })
-          if (submission?.id) {
-            await upsertSubmission(user.id, {
-              page_no: sender.currentPageNo,
-              data,
-              saved_at: now,
-              status: 'draft',
-            })
+          const saved = await upsertSubmission(user.id, {
+            page_no: sender.currentPageNo,
+            data,
+            saved_at: now,
+            status: 'draft',
+          })
+          // If no submission row existed yet, store the newly created one
+          if (!useSurveyStore.getState().submission?.id) {
+            useSurveyStore.getState().setSubmission(saved)
           }
           setAutoSaveStatus('saved')
           setLastSavedAt(now)
@@ -114,13 +116,14 @@ export function SurveyModal() {
             data,
             saved_at: now,
           })
-          if (submission?.id) {
-            await upsertSubmission(user.id, {
-              page_no: pageNo,
-              data,
-              saved_at: now,
-              status: 'draft',
-            })
+          const saved = await upsertSubmission(user.id, {
+            page_no: pageNo,
+            data,
+            saved_at: now,
+            status: 'draft',
+          })
+          if (!useSurveyStore.getState().submission?.id) {
+            useSurveyStore.getState().setSubmission(saved)
           }
           setAutoSaveStatus('saved')
           setLastSavedAt(now)
@@ -136,7 +139,8 @@ export function SurveyModal() {
         variant: 'warning',
         onConfirm: async () => {
           try {
-            if (submission?.id) await submitSurvey(submission.id)
+            const currentSubmission = useSurveyStore.getState().submission
+            if (currentSubmission?.id) await submitSurvey(currentSubmission.id)
             toast('Survey submitted successfully! Thank you.', 'ok')
             closeModal()
           } catch {
@@ -157,7 +161,7 @@ export function SurveyModal() {
 
   // ── Save progress and close ─────────────────────────────────────────────
   const handleClose = async () => {
-    if (surveyModel && user && submission?.id) {
+    if (surveyModel && user) {
       try {
         const now  = new Date().toISOString()
         const data = { ...surveyModel.data }
@@ -168,12 +172,15 @@ export function SurveyModal() {
           data,
           saved_at: now,
         })
-        await upsertSubmission(user.id, {
+        const saved = await upsertSubmission(user.id, {
           page_no: surveyModel.currentPageNo,
           data,
           saved_at: now,
           status: 'draft',
         })
+        if (!useSurveyStore.getState().submission?.id) {
+          useSurveyStore.getState().setSubmission(saved)
+        }
       } catch { /* fail silently */ }
     }
     closeModal()
