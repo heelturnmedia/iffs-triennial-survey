@@ -3,8 +3,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { getSubmissions, resetSubmission } from '@/services/surveyService'
 import { ChoroplethMap } from '@/components/map/ChoroplethMap'
-import { getRegion } from '@/utils/countryRegions'
-import { countryNameToIso2 } from '@/utils/countryRegions'
+import { getRegion, resolveCountryToIso2, resolveCountryName } from '@/utils/countryRegions'
 import { formatDateTime } from '@/utils/formatDate'
 import { supabase } from '@/lib/supabase'
 import { SECTION_NAMES, STATUS_LABELS } from '@/constants'
@@ -49,7 +48,7 @@ function exportCsv(rows: SubmissionRow[]) {
     return [
       `"${name}"`,
       `"${r.email ?? ''}"`,
-      `"${r.country ?? r.profile?.country ?? ''}"`,
+      `"${resolveCountryName(r.country ?? r.profile?.country ?? r.data?.['Country'])}"`,
       `"${r.institution ?? r.profile?.institution ?? ''}"`,
       r.status,
       pct,
@@ -213,7 +212,7 @@ function SubmissionsTable({
           <tbody>
             {rows.map((row, i) => {
               const name = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() || 'Unknown'
-              const country = row.country ?? row.profile?.country ?? (row.data?.['Country'] as string | undefined) ?? '—'
+              const country = resolveCountryName(row.country ?? row.profile?.country ?? row.data?.['Country']) || '—'
               const isSubmitted = row.status === 'submitted' || row.status === 'reviewed'
               const pct = isSubmitted ? 100 : calcProgress(row.page_no)
               const initials = name
@@ -386,8 +385,8 @@ export function ReportsPanel() {
     if (filters.status !== 'All' && row.status !== filters.status) return false
 
     if (filters.region !== 'All') {
-      const country = row.country ?? row.profile?.country ?? (row.data?.['Country'] as string | undefined) ?? ''
-      const iso2 = countryNameToIso2(country)
+      const countryVal = row.country ?? row.profile?.country ?? row.data?.['Country']
+      const iso2 = resolveCountryToIso2(countryVal)
       const region = iso2 ? getRegion(iso2) : 'Unknown'
       if (region !== filters.region) return false
     }
