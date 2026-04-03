@@ -27,7 +27,7 @@ const ROLE_BADGE_CLASSES: Record<UserRole, string> = {
 // ── Nav link targets (unauthenticated) ────────────────────────────────────
 const NAV_LINKS = [
   { label: 'Home',    href: '/' },
-  { label: 'Contact', href: '/#contact' },
+  { label: 'Contact', href: '/contact' },
 ]
 
 export function Nav() {

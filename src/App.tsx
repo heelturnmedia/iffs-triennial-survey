@@ -12,6 +12,7 @@ const AuthPage = lazy(() => import('@/pages/AuthPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const PrivacyPolicyPage = lazy(() => import('@/pages/PrivacyPolicyPage'))
 const TermsOfUsePage = lazy(() => import('@/pages/TermsOfUsePage'))
+const ContactPage = lazy(() => import('@/pages/ContactPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 // ─── Page-level loading fallback ────────────────────────────────────────────
@@ -92,6 +93,7 @@ function AppRoutes() {
           {/* Legal pages */}
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfUsePage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
           {/* Catch-all → 404 */}
           <Route path="*" element={<NotFoundPage />} />
