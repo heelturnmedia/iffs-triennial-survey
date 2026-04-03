@@ -114,3 +114,43 @@ export function countryNameToIso2(name: string): string {
   }
   return ''
 }
+
+/**
+ * Resolve any country value (string name, ISO2 code, or SurveyJS choicesByUrl
+ * object) to an ISO 3166-1 alpha-2 code.
+ *
+ * SurveyJS stores the entire choice object from choicesByUrl when no valueName
+ * is configured. The CountriesExample API returns objects with a `cca2` field
+ * which is the ISO2 code directly.
+ */
+export function resolveCountryToIso2(value: unknown): string {
+  if (!value) return ''
+
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    // Prefer cca2 (ISO2 directly from the SurveyJS CountriesExample API)
+    if (obj['cca2'] && typeof obj['cca2'] === 'string') return obj['cca2'].toUpperCase()
+    // Fall back to name lookup
+    const name = String(obj['name'] ?? '')
+    return countryNameToIso2(name)
+  }
+
+  const str = String(value).trim()
+  if (!str) return ''
+  // Already a 2-letter ISO2 code
+  if (str.length === 2) return str.toUpperCase()
+  return countryNameToIso2(str)
+}
+
+/**
+ * Extract a human-readable country name from any country value (string or
+ * SurveyJS choicesByUrl object).
+ */
+export function resolveCountryName(value: unknown): string {
+  if (!value) return ''
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    return String(obj['name'] ?? obj['cca2'] ?? '')
+  }
+  return String(value)
+}

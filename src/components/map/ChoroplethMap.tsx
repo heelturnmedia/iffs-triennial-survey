@@ -2,7 +2,7 @@ import { useRef, useState, useCallback } from 'react'
 import ReactMap, { Source, Layer, Popup, NavigationControl } from 'react-map-gl'
 import type { MapLayerMouseEvent, MapRef } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { countryNameToIso2 } from '@/utils/countryRegions'
+import { resolveCountryToIso2, resolveCountryName } from '@/utils/countryRegions'
 import { formatSavedAt } from '@/utils/formatDate'
 import type { SubmissionRow } from '@/types'
 
@@ -33,14 +33,23 @@ function lerpColor(a: string, b: string, t: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bv.toString(16).padStart(2, '0')}`
 }
 
-/** Resolve the display country for a row (profile field → survey answer). */
-function rowCountry(row: SubmissionRow): string {
-  return (
-    row.country ??
-    row.profile?.country ??
-    (row.data?.['Country'] as string | undefined) ??
-    ''
-  )
+/** Resolve a row's country to an ISO2 code, handling all storage formats. */
+function rowIso2(row: SubmissionRow): string {
+  // Profile country (plain string name or ISO2)
+  const profileCountry = row.country ?? row.profile?.country
+  if (profileCountry) {
+    const iso2 = resolveCountryToIso2(profileCountry)
+    if (iso2) return iso2
+  }
+  // Survey answer — may be a plain string, ISO2, or a SurveyJS choice object
+  return resolveCountryToIso2(row.data?.['Country'])
+}
+
+/** Display-friendly country name for a row. */
+function rowCountryName(row: SubmissionRow): string {
+  const profileCountry = row.country ?? row.profile?.country
+  if (profileCountry) return profileCountry
+  return resolveCountryName(row.data?.['Country'])
 }
 
 interface PopupInfo {
@@ -106,13 +115,10 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   // ── Group submissions by ISO2 ─────────────────────────────────────────
   const iso2Groups = new Map<string, SubmissionRow[]>()
   submissions.forEach(row => {
-    const country = rowCountry(row)
-    if (!country) return
-    const iso2 = countryNameToIso2(country)
+    const iso2 = rowIso2(row)
     if (!iso2) return
-    const key = iso2.toUpperCase()
-    if (!iso2Groups.has(key)) iso2Groups.set(key, [])
-    iso2Groups.get(key)!.push(row)
+    if (!iso2Groups.has(iso2)) iso2Groups.set(iso2, [])
+    iso2Groups.get(iso2)!.push(row)
   })
 
   // ── Compute submitted count per country for gradient ─────────────────
