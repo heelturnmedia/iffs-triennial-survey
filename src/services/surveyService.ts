@@ -52,35 +52,13 @@ export async function submitSurvey(submissionId: string): Promise<SurveySubmissi
   return data as SurveySubmission
 }
 
-export async function resetSubmission(submissionId: string): Promise<void> {
-  const { error } = await supabase
-    .from('survey_submissions')
-    .update({
-      status: 'draft',
-      page_no: 0,
-      data: {},
-      submitted_at: null,
-      reviewed_at: null,
-      saved_at: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', submissionId)
+export async function resetSubmission(userId: string): Promise<void> {
+  const { error } = await supabase.rpc('reset_user_submission', { target_user_id: userId })
   if (error) throw error
 }
 
 export async function resetAllSubmissions(): Promise<void> {
-  const { error } = await supabase
-    .from('survey_submissions')
-    .update({
-      status: 'draft',
-      page_no: 0,
-      data: {},
-      submitted_at: null,
-      reviewed_at: null,
-      saved_at: null,
-      updated_at: new Date().toISOString(),
-    })
-    .neq('status', 'reviewed') // Preserve reviewed ones
+  const { error } = await supabase.rpc('reset_all_submissions')
   if (error) throw error
 }
 
