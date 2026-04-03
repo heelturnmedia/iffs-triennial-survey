@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import ReactMap, { Source, Layer, Popup, NavigationControl } from 'react-map-gl'
 import type { MapLayerMouseEvent, MapRef } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -27,24 +27,23 @@ function lerpColor(a: string, b: string, t: number): string {
   ]
   const [ar, ag, ab] = parse(a)
   const [br, bg, bb] = parse(b)
-  const r = Math.round(ar + (br - ar) * t)
-  const g = Math.round(ag + (bg - ag) * t)
+  const r  = Math.round(ar + (br - ar) * t)
+  const g  = Math.round(ag + (bg - ag) * t)
   const bv = Math.round(ab + (bb - ab) * t)
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bv.toString(16).padStart(2, '0')}`
 }
 
 /** Resolve a row's country to an ISO2 code, handling all storage formats. */
 function rowIso2(row: SubmissionRow): string {
-  // Profile country (plain string name or ISO2)
+  // 1. Profile country field (plain string name or ISO2)
   const profileCountry = row.country ?? row.profile?.country
   if (profileCountry) {
     const iso2 = resolveCountryToIso2(profileCountry)
     if (iso2) return iso2
   }
-  // Survey answer — may be a plain string, ISO2, or a SurveyJS choice object
+  // 2. Survey answer — may be a plain string, ISO2, or SurveyJS choice object
   return resolveCountryToIso2(row.data?.['Country'])
 }
-
 
 interface PopupInfo {
   longitude:   number
@@ -61,11 +60,76 @@ export interface ChoroplethMapProps {
 
 export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps) {
   const mapRef = useRef<MapRef>(null)
-  const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null)
+  const [popupInfo, setPopupInfo]   = useState<PopupInfo | null>(null)
   const [tokenInput, setTokenInput] = useState('')
-  const [localToken, setLocalToken] = useState<string>(() => {
-    return MAPBOX_TOKEN || localStorage.getItem('iffs_mapbox_token') || ''
-  })
+  const [localToken, setLocalToken] = useState<string>(() =>
+    MAPBOX_TOKEN || localStorage.getItem('iffs_mapbox_token') || ''
+  )
+  const [mapLoaded, setMapLoaded] = useState(false)
+
+  // ── Derived data ──────────────────────────────────────────────────────
+  const { iso2Groups, submittedCounts, maxCount } = useMemo(() => {
+    const groups = new Map<string, SubmissionRow[]>()
+    for (const row of submissions) {
+      const iso2 = rowIso2(row)
+      if (!iso2) continue
+      if (!groups.has(iso2)) groups.set(iso2, [])
+      groups.get(iso2)!.push(row)
+    }
+
+    const counts = new Map<string, number>()
+    groups.forEach((rows, iso2) => {
+      counts.set(iso2, rows.filter(r => r.status === 'submitted' || r.status === 'reviewed').length)
+    })
+
+    const max = groups.size > 0
+      ? Math.max(1, ...Array.from(counts.values()))
+      : 1
+
+    return { iso2Groups: groups, submittedCounts: counts, maxCount: max }
+  }, [submissions])
+
+  // ── Build fill-color match expression ─────────────────────────────────
+  // Mapbox 'match' requires at least 4 elements: [op, input, val, out, fallback]
+  // Always push both UPPER and lower case iso2 codes to handle any tileset casing.
+  const fillColorExpr = useMemo(() => {
+    const expr: unknown[] = ['match', ['get', 'iso_3166_1_alpha_2']]
+
+    iso2Groups.forEach((_rows, iso2) => {
+      const n = submittedCounts.get(iso2) ?? 0
+      const color = n > 0
+        ? lerpColor(GRAD_LIGHT, GRAD_DARK, maxCount === 1 ? 0.5 : (n - 1) / (maxCount - 1))
+        : COLOR_DRAFT
+      expr.push(iso2, color)                   // 'IN'
+      expr.push(iso2.toLowerCase(), color)      // 'in'  — guard against lowercase tileset
+    })
+
+    // Guarantee ≥4 elements so Mapbox doesn't reject the expression
+    if (iso2Groups.size === 0) expr.push('__none__', COLOR_NONE)
+
+    expr.push(COLOR_NONE) // fallback: transparent → show base map colour
+    return expr
+  }, [iso2Groups, submittedCounts, maxCount])
+
+  // ── Imperatively push paint update whenever expression or load changes ─
+  // This bypasses any react-map-gl Layer diff quirks and guarantees the map
+  // shows the latest data after it finishes loading.
+  useEffect(() => {
+    if (!mapLoaded) return
+    const map = mapRef.current?.getMap()
+    if (!map) return
+    // Wait until the layer exists (source may still be loading)
+    const apply = () => {
+      if (map.getLayer('country-fills')) {
+        map.setPaintProperty('country-fills', 'fill-color', fillColorExpr)
+      }
+    }
+    if (map.isStyleLoaded()) {
+      apply()
+    } else {
+      map.once('idle', apply)
+    }
+  }, [fillColorExpr, mapLoaded])
 
   // ── Token gate ────────────────────────────────────────────────────────
   if (!localToken) {
@@ -106,43 +170,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
     )
   }
 
-  // ── Group submissions by ISO2 ─────────────────────────────────────────
-  const iso2Groups = new Map<string, SubmissionRow[]>()
-  submissions.forEach(row => {
-    const iso2 = rowIso2(row)
-    if (!iso2) return
-    if (!iso2Groups.has(iso2)) iso2Groups.set(iso2, [])
-    iso2Groups.get(iso2)!.push(row)
-  })
-
-  // ── Compute submitted count per country for gradient ─────────────────
-  const submittedCounts = new Map<string, number>()
-  iso2Groups.forEach((rows, iso2) => {
-    const count = rows.filter(r => r.status === 'submitted' || r.status === 'reviewed').length
-    submittedCounts.set(iso2, count)
-  })
-  const maxCount = Math.max(1, ...Array.from(submittedCounts.values()))
-
-  // ── Build Mapbox match expression ─────────────────────────────────────
-  // ['match', ['get', 'iso_3166_1_alpha_2'], 'US', '#color', ..., fallback]
-  const matchExpr: unknown[] = ['match', ['get', 'iso_3166_1_alpha_2']]
-  iso2Groups.forEach((_rows, iso2) => {
-    const submittedCount = submittedCounts.get(iso2) ?? 0
-    let color: string
-    if (submittedCount > 0) {
-      // t=0 (1 submission) → GRAD_LIGHT, t=1 (max) → GRAD_DARK
-      const t = maxCount === 1 ? 0.5 : (submittedCount - 1) / (maxCount - 1)
-      color = lerpColor(GRAD_LIGHT, GRAD_DARK, t)
-    } else {
-      // Has only draft submissions
-      color = COLOR_DRAFT
-    }
-    matchExpr.push(iso2, color)
-    // Mapbox property is uppercase
-    if (iso2 !== iso2.toUpperCase()) matchExpr.push(iso2.toUpperCase(), color)
-  })
-  matchExpr.push(COLOR_NONE) // default fallback
-
+  // ── Layer definitions ─────────────────────────────────────────────────
   const fillLayer = {
     id: 'country-fills',
     type: 'fill' as const,
@@ -150,7 +178,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
     'source-layer': 'country_boundaries',
     paint: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'fill-color': matchExpr as any,
+      'fill-color': fillColorExpr as any,
       'fill-opacity': 0.82,
     },
   }
@@ -170,12 +198,13 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   const handleMouseEnter = useCallback((e: MapLayerMouseEvent) => {
     if (!e.features?.length) return
     const feat        = e.features[0]
-    const iso2        = feat.properties?.iso_3166_1_alpha_2 as string | undefined
-    if (!iso2) return
+    const iso2Raw     = feat.properties?.iso_3166_1_alpha_2 as string | undefined
+    if (!iso2Raw) return
+    const iso2        = iso2Raw.toUpperCase()
     const countryName = feat.properties?.name_en as string || iso2
-    const rows        = iso2Groups.get(iso2.toUpperCase()) ?? []
+    const rows        = iso2Groups.get(iso2) ?? []
     setPopupInfo({ longitude: e.lngLat.lng, latitude: e.lngLat.lat, iso2, countryName, rows })
-  }, [submissions]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [iso2Groups])
 
   const handleMouseLeave = useCallback(() => setPopupInfo(null), [])
 
@@ -199,6 +228,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
         interactiveLayerIds={['country-fills']}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onLoad={() => setMapLoaded(true)}
         cursor={popupInfo ? 'pointer' : 'default'}
       >
         <NavigationControl position="top-right" showCompass={false} />
@@ -233,9 +263,9 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
 // ── Country popup ─────────────────────────────────────────────────────────────
 
 function CountryPopup({ countryName, rows }: { countryName: string; rows: SubmissionRow[] }) {
-  const submitted = rows.filter(r => r.status === 'submitted' || r.status === 'reviewed')
+  const submitted  = rows.filter(r => r.status === 'submitted' || r.status === 'reviewed')
   const inProgress = rows.filter(r => r.status === 'draft' && (r.page_no ?? 0) > 0)
-  const total = rows.length
+  const total      = rows.length
 
   return (
     <div style={{ fontFamily: 'var(--font-body)', minWidth: 180, maxWidth: 240 }}>
