@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
-import ReactMap, { Popup, NavigationControl } from 'react-map-gl'
-import type { MapLayerMouseEvent, MapRef } from 'react-map-gl'
+import { useState, useCallback, useMemo } from 'react'
+import ReactMap, { Source, Layer, Popup, NavigationControl } from 'react-map-gl'
+import type { MapLayerMouseEvent, LayerProps } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { resolveCountryToIso2 } from '@/utils/countryRegions'
 import { formatSavedAt } from '@/utils/formatDate'
@@ -47,22 +47,21 @@ export interface ChoroplethMapProps {
 }
 
 export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps) {
-  const mapRef = useRef<MapRef>(null)
   const [popupInfo, setPopupInfo]   = useState<PopupInfo | null>(null)
   const [tokenInput, setTokenInput] = useState('')
   const [localToken, setLocalToken] = useState<string>(() =>
     MAPBOX_TOKEN || localStorage.getItem('iffs_mapbox_token') || ''
   )
-  const [mapReady, setMapReady] = useState(false)
 
   // ── Derive per-country data ───────────────────────────────────────────
-  const { iso2Groups, fillColorExpr, maxCount } = useMemo(() => {
+  const { iso2Groups, fillLayer, maxCount } = useMemo(() => {
     const groups = new Map<string, SubmissionRow[]>()
     for (const row of submissions) {
       const iso2 = rowIso2(row)
       if (!iso2) continue
-      if (!groups.has(iso2)) groups.set(iso2, [])
-      groups.get(iso2)!.push(row)
+      const key = iso2.toUpperCase()
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(row)
     }
 
     const counts = new Map<string, number>()
@@ -72,69 +71,32 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
     const max = groups.size > 0 ? Math.max(1, ...Array.from(counts.values())) : 1
 
     // Build Mapbox match expression
-    // ['match', input, v1, out1, v2, out2, ..., fallback]  — needs ≥4 elements
-    const expr: unknown[] = ['match', ['get', 'iso_3166_1_alpha_2']]
-    groups.forEach((_rows, iso2) => {
-      const n = counts.get(iso2) ?? 0
+    // ['match', input, v1, out1, v2, out2, ..., fallback]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expr: any[] = ['match', ['get', 'iso_3166_1_alpha_2']]
+    groups.forEach((_rows, iso2Upper) => {
+      const n = counts.get(iso2Upper) ?? 0
       const color = n > 0
         ? lerpColor(GRAD_LIGHT, GRAD_DARK, max === 1 ? 0.5 : (n - 1) / (max - 1))
         : COLOR_DRAFT
-      expr.push(iso2,               color)  // uppercase  e.g. 'IN'
-      expr.push(iso2.toLowerCase(), color)  // lowercase  e.g. 'in'
+      expr.push(iso2Upper, color)            // e.g. 'IN'
+      expr.push(iso2Upper.toLowerCase(), color)  // e.g. 'in'
     })
-    if (groups.size === 0) expr.push('__none__', COLOR_NONE) // keep ≥4 elements
-    expr.push(COLOR_NONE)
+    if (groups.size === 0) expr.push('__none__', COLOR_NONE)
+    expr.push(COLOR_NONE) // fallback
 
-    return { iso2Groups: groups, fillColorExpr: expr, maxCount: max }
-  }, [submissions])
-
-  // ── Single effect: add/update layers whenever map is ready or data changes ──
-  useEffect(() => {
-    if (!mapReady) return
-    const map = mapRef.current?.getMap()
-    if (!map) return
-
-    try {
-      // Add vector source (idempotent)
-      if (!map.getSource(SOURCE_ID)) {
-        map.addSource(SOURCE_ID, { type: 'vector', url: SOURCE_URL })
-      }
-
-      // Add or update fill layer
-      if (!map.getLayer(LAYER_FILL)) {
-        map.addLayer({
-          id: LAYER_FILL,
-          type: 'fill',
-          source: SOURCE_ID,
-          'source-layer': SOURCE_LAYER,
-          paint: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            'fill-color': fillColorExpr as any,
-            'fill-opacity': 0.82,
-          },
-        })
-      } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        map.setPaintProperty(LAYER_FILL, 'fill-color', fillColorExpr as any)
-      }
-
-      // Add outline layer (idempotent)
-      if (!map.getLayer(LAYER_LINE)) {
-        map.addLayer({
-          id: LAYER_LINE,
-          type: 'line',
-          source: SOURCE_ID,
-          'source-layer': SOURCE_LAYER,
-          paint: {
-            'line-color': 'rgba(255,255,255,0.35)',
-            'line-width': 0.5,
-          },
-        })
-      }
-    } catch (err) {
-      console.warn('[ChoroplethMap] layer setup error:', err)
+    const layer: LayerProps = {
+      id: LAYER_FILL,
+      type: 'fill',
+      'source-layer': SOURCE_LAYER,
+      paint: {
+        'fill-color': expr,
+        'fill-opacity': 0.82,
+      },
     }
-  }, [fillColorExpr, mapReady])
+
+    return { iso2Groups: groups, fillLayer: layer, maxCount: max }
+  }, [submissions])
 
   // ── Hover ─────────────────────────────────────────────────────────────
   const handleMouseEnter = useCallback((e: MapLayerMouseEvent) => {
@@ -144,13 +106,11 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
     if (!iso2Raw) return
     const iso2        = iso2Raw.toUpperCase()
     const countryName = feat.properties?.name_en as string || iso2
-    const rows        = iso2Groups.get(iso2) ?? iso2Groups.get(iso2.toLowerCase()) ?? []
+    const rows        = iso2Groups.get(iso2) ?? []
     setPopupInfo({ longitude: e.lngLat.lng, latitude: e.lngLat.lat, iso2, countryName, rows })
   }, [iso2Groups])
 
   const handleMouseLeave = useCallback(() => setPopupInfo(null), [])
-
-  const handleLoad = useCallback(() => setMapReady(true), [])
 
   // ── Token gate ────────────────────────────────────────────────────────
   if (!localToken) {
@@ -190,17 +150,28 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   return (
     <div style={{ height, borderRadius: 16, overflow: 'hidden', position: 'relative', border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}>
       <ReactMap
-        ref={mapRef}
         mapboxAccessToken={localToken}
         initialViewState={{ longitude: 20, latitude: 15, zoom: 1.6 }}
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/light-v11"
         interactiveLayerIds={[LAYER_FILL]}
-        onLoad={handleLoad}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         cursor={popupInfo ? 'pointer' : 'default'}
       >
+        <Source id={SOURCE_ID} type="vector" url={SOURCE_URL}>
+          <Layer {...fillLayer} />
+          <Layer
+            id={LAYER_LINE}
+            type="line"
+            source-layer={SOURCE_LAYER}
+            paint={{
+              'line-color': 'rgba(255,255,255,0.35)',
+              'line-width': 0.5,
+            }}
+          />
+        </Source>
+
         <NavigationControl position="top-right" showCompass={false} />
 
         {popupInfo && (
