@@ -49,19 +49,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialize: () => {
     // Fetch current session immediately to avoid flash of unauthenticated state
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const profile = session
-        ? await fetchProfile(session.user.id)
-        : null
-      set({ session, user: session?.user ?? null, profile, loading: false })
+      // Set session/user immediately so AuthGuard can unblock the UI
+      set({ session, user: session?.user ?? null, loading: false })
+      // Then load profile in the background
+      if (session) {
+        const profile = await fetchProfile(session.user.id)
+        set({ profile })
+      }
     })
 
     // Subscribe to subsequent auth events (sign-in, sign-out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        const profile = session
-          ? await fetchProfile(session.user.id)
-          : null
-        set({ session, user: session?.user ?? null, profile, loading: false })
+        // Set session/user FIRST so AuthGuard and AuthRedirect react immediately.
+        // Awaiting fetchProfile before setting session causes a race: navigate('/dashboard')
+        // fires while session is still null → AuthGuard bounces user back to /login.
+        set({ session, user: session?.user ?? null, loading: false, profile: null })
+        // Fetch profile in the background
+        if (session) {
+          const profile = await fetchProfile(session.user.id)
+          set({ profile })
+        }
       }
     )
 
