@@ -15,8 +15,8 @@ const MAPBOX_TOKEN = (
 // Submission-count gradient: light → dark green
 const GRAD_LIGHT  = '#1d7733'
 const GRAD_DARK   = '#0e5921'
-const COLOR_DRAFT = '#f59e0b'
-const COLOR_NONE  = '#e2ebe4'
+const COLOR_DRAFT = 'rgba(245,158,11,0.75)'
+const COLOR_NONE  = 'rgba(0,0,0,0)'        // transparent — show base map
 
 /** Linearly interpolate between two hex colors. t ∈ [0, 1]. */
 function lerpColor(a: string, b: string, t: number): string {
@@ -365,7 +365,7 @@ function Legend({ maxCount }: { maxCount: number }) {
       <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {[
           { color: COLOR_DRAFT, label: 'In Progress' },
-          { color: COLOR_NONE,  label: 'No Response' },
+          { color: '#d4d8d0',   label: 'No Response' },
         ].map(({ color, label }) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: color, flexShrink: 0 }} />
