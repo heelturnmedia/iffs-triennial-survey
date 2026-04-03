@@ -408,9 +408,9 @@ export function ReportsPanel() {
       message: `Reset the survey for ${name}? This will clear all their responses and cannot be undone.`,
       variant: 'danger',
       onConfirm: async () => {
-        if (!row.id) return
+        if (!row.user_id) return
         try {
-          await resetSubmission(row.id)
+          await resetSubmission(row.user_id)
           toast(`Survey reset for ${name}.`, 'ok')
           await fetchAll()
         } catch {
