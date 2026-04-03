@@ -359,10 +359,8 @@ export function UsersPanel() {
       message: `Reset the survey for ${name}? All their responses will be permanently cleared.`,
       variant: 'danger',
       onConfirm: async () => {
-        const subId = row.submission?.id
-        if (!subId) return
         try {
-          await resetSubmission(subId)
+          await resetSubmission(row.profile.id)
           toast(`Survey reset for ${name}.`, 'ok')
           await fetchAll()
         } catch {
@@ -614,7 +612,7 @@ export function UsersPanel() {
                               View Answers
                             </button>
                           )}
-                          {submission?.id && (
+                          {submission && (
                             <button
                               type="button"
                               onClick={() => handleResetUser(row)}
