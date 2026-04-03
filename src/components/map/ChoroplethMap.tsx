@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import ReactMap, { Source, Layer, Popup, NavigationControl } from 'react-map-gl'
-import type { MapLayerMouseEvent, LayerProps } from 'react-map-gl'
+import type { MapLayerMouseEvent } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { resolveCountryToIso2 } from '@/utils/countryRegions'
 import { formatSavedAt } from '@/utils/formatDate'
@@ -54,7 +54,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   )
 
   // ── Derive per-country data ───────────────────────────────────────────
-  const { iso2Groups, fillLayer, maxCount } = useMemo(() => {
+  const { iso2Groups, fillColorExpr, maxCount } = useMemo(() => {
     const groups = new Map<string, SubmissionRow[]>()
     for (const row of submissions) {
       const iso2 = rowIso2(row)
@@ -72,8 +72,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
 
     // Build Mapbox match expression
     // ['match', input, v1, out1, v2, out2, ..., fallback]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const expr: any[] = ['match', ['get', 'iso_3166_1_alpha_2']]
+    const expr: unknown[] = ['match', ['get', 'iso_3166_1_alpha_2']]
     groups.forEach((_rows, iso2Upper) => {
       const n = counts.get(iso2Upper) ?? 0
       const color = n > 0
@@ -85,17 +84,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
     if (groups.size === 0) expr.push('__none__', COLOR_NONE)
     expr.push(COLOR_NONE) // fallback
 
-    const layer: LayerProps = {
-      id: LAYER_FILL,
-      type: 'fill',
-      'source-layer': SOURCE_LAYER,
-      paint: {
-        'fill-color': expr,
-        'fill-opacity': 0.82,
-      },
-    }
-
-    return { iso2Groups: groups, fillLayer: layer, maxCount: max }
+    return { iso2Groups: groups, fillColorExpr: expr, maxCount: max }
   }, [submissions])
 
   // ── Hover ─────────────────────────────────────────────────────────────
@@ -160,7 +149,13 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
         cursor={popupInfo ? 'pointer' : 'default'}
       >
         <Source id={SOURCE_ID} type="vector" url={SOURCE_URL}>
-          <Layer {...fillLayer} />
+          <Layer
+            id={LAYER_FILL}
+            type="fill"
+            source-layer={SOURCE_LAYER}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            paint={{ 'fill-color': fillColorExpr as any, 'fill-opacity': 0.82 }}
+          />
           <Layer
             id={LAYER_LINE}
             type="line"
