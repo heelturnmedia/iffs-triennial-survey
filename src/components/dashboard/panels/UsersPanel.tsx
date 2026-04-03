@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { listProfiles, updateUserRole } from '@/services/authService'
-import { getSubmissions, resetSubmission, resetAllSubmissions } from '@/services/surveyService'
+import { getSubmissions, resetSubmission } from '@/services/surveyService'
 import { supabase } from '@/lib/supabase'
 import { formatSavedAt } from '@/utils/formatDate'
 import { ROLES, STATUS_LABELS, SECTION_NAMES } from '@/constants'
@@ -370,24 +370,6 @@ export function UsersPanel() {
     })
   }
 
-  // ── Reset all ─────────────────────────────────────────────────────────────
-  const handleResetAll = () => {
-    openConfirmModal({
-      title: 'Reset All Surveys',
-      message:
-        'This will reset ALL survey submissions (except reviewed ones). This action cannot be undone.',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          await resetAllSubmissions()
-          toast('All surveys reset.', 'ok')
-          await fetchAll()
-        } catch {
-          toast('Failed to reset all surveys.', 'err')
-        }
-      },
-    })
-  }
 
   // ── Search filter ─────────────────────────────────────────────────────────
   const filteredRows = userRows.filter((row) => {
