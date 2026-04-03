@@ -201,6 +201,18 @@ export function SurveyModal() {
           height: auto !important;
           object-fit: contain !important;
         }
+        #s-host .sv-header .sd-title,
+        #s-host .sv-header .sv-title,
+        #s-host .sd-root-modern .sd-title:not(.sd-item__title):not(.sd-panel__title):not(.sd-page__title) {
+          font-size: 18px !important;
+          line-height: 1.3 !important;
+        }
+        #s-host .sv-header .sd-description,
+        #s-host .sv-header .sv-description,
+        #s-host .sd-root-modern__wrapper > form > div > .sd-description {
+          font-size: 13px !important;
+          line-height: 1.5 !important;
+        }
       `}</style>
       {/* Blurred overlay */}
       <div className="absolute inset-0 bg-black/[0.72] backdrop-blur-[10px]" />
