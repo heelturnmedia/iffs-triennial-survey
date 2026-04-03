@@ -91,7 +91,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   // ── Single effect: add/update layers whenever map is ready or data changes ──
   useEffect(() => {
     if (!mapReady) return
-    const map = mapRef.current
+    const map = mapRef.current?.getMap()
     if (!map) return
 
     try {
