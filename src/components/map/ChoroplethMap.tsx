@@ -121,7 +121,8 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
     // Wait until the layer exists (source may still be loading)
     const apply = () => {
       if (map.getLayer('country-fills')) {
-        map.setPaintProperty('country-fills', 'fill-color', fillColorExpr)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        map.setPaintProperty('country-fills', 'fill-color', fillColorExpr as any)
       }
     }
     if (map.isStyleLoaded()) {
