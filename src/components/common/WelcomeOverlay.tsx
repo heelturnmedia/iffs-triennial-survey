@@ -84,7 +84,7 @@ export function WelcomeOverlay() {
             <img
               src="/iffs-logo.png"
               alt="IFFS"
-              className="w-10 h-10 object-contain flex-shrink-0"
+              className="w-7 h-7 object-contain flex-shrink-0"
             />
             <div>
               <div

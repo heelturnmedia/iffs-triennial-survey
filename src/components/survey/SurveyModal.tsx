@@ -81,13 +81,15 @@ export function SurveyModal() {
             data,
             saved_at: now,
           })
-          if (submission?.id) {
-            await upsertSubmission(user.id, {
-              page_no: sender.currentPageNo,
-              data,
-              saved_at: now,
-              status: 'draft',
-            })
+          const saved = await upsertSubmission(user.id, {
+            page_no: sender.currentPageNo,
+            data,
+            saved_at: now,
+            status: 'draft',
+          })
+          // If no submission row existed yet, store the newly created one
+          if (!useSurveyStore.getState().submission?.id) {
+            useSurveyStore.getState().setSubmission(saved)
           }
           setAutoSaveStatus('saved')
           setLastSavedAt(now)
@@ -114,13 +116,14 @@ export function SurveyModal() {
             data,
             saved_at: now,
           })
-          if (submission?.id) {
-            await upsertSubmission(user.id, {
-              page_no: pageNo,
-              data,
-              saved_at: now,
-              status: 'draft',
-            })
+          const saved = await upsertSubmission(user.id, {
+            page_no: pageNo,
+            data,
+            saved_at: now,
+            status: 'draft',
+          })
+          if (!useSurveyStore.getState().submission?.id) {
+            useSurveyStore.getState().setSubmission(saved)
           }
           setAutoSaveStatus('saved')
           setLastSavedAt(now)
@@ -136,7 +139,8 @@ export function SurveyModal() {
         variant: 'warning',
         onConfirm: async () => {
           try {
-            if (submission?.id) await submitSurvey(submission.id)
+            const currentSubmission = useSurveyStore.getState().submission
+            if (currentSubmission?.id) await submitSurvey(currentSubmission.id)
             toast('Survey submitted successfully! Thank you.', 'ok')
             closeModal()
           } catch {
@@ -157,7 +161,7 @@ export function SurveyModal() {
 
   // ── Save progress and close ─────────────────────────────────────────────
   const handleClose = async () => {
-    if (surveyModel && user && submission?.id) {
+    if (surveyModel && user) {
       try {
         const now  = new Date().toISOString()
         const data = { ...surveyModel.data }
@@ -168,12 +172,15 @@ export function SurveyModal() {
           data,
           saved_at: now,
         })
-        await upsertSubmission(user.id, {
+        const saved = await upsertSubmission(user.id, {
           page_no: surveyModel.currentPageNo,
           data,
           saved_at: now,
           status: 'draft',
         })
+        if (!useSurveyStore.getState().submission?.id) {
+          useSurveyStore.getState().setSubmission(saved)
+        }
       } catch { /* fail silently */ }
     }
     closeModal()
@@ -191,6 +198,29 @@ export function SurveyModal() {
       className="fixed inset-0 z-[9000] flex items-stretch justify-center"
       style={{ animation: 'modalSlideIn 0.38s cubic-bezier(0.16,1,0.3,1)' }}
     >
+      <style>{`
+        #s-host .sv-header__cell img,
+        #s-host .sd-logo__image,
+        #s-host .sv-logo__image {
+          max-width: 120px !important;
+          max-height: 60px !important;
+          width: auto !important;
+          height: auto !important;
+          object-fit: contain !important;
+        }
+        #s-host .sv-header .sd-title,
+        #s-host .sv-header .sv-title,
+        #s-host .sd-root-modern .sd-title:not(.sd-item__title):not(.sd-panel__title):not(.sd-page__title) {
+          font-size: 18px !important;
+          line-height: 1.3 !important;
+        }
+        #s-host .sv-header .sd-description,
+        #s-host .sv-header .sv-description,
+        #s-host .sd-root-modern__wrapper > form > div > .sd-description {
+          font-size: 13px !important;
+          line-height: 1.5 !important;
+        }
+      `}</style>
       {/* Blurred overlay */}
       <div className="absolute inset-0 bg-black/[0.72] backdrop-blur-[10px]" />
 
