@@ -409,13 +409,6 @@ export function UsersPanel() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleResetAll}
-          className="inline-flex items-center gap-2 font-display text-[10px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-red-200 text-red-600 hover:bg-red-50 transition-all"
-        >
-          Reset All Surveys
-        </button>
       </div>
 
       {/* ── Search ─────────────────────────────────────────────────────────── */}
