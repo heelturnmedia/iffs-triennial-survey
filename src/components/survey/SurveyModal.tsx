@@ -191,6 +191,16 @@ export function SurveyModal() {
       className="fixed inset-0 z-[9000] flex items-stretch justify-center"
       style={{ animation: 'modalSlideIn 0.38s cubic-bezier(0.16,1,0.3,1)' }}
     >
+      <style>{`
+        #s-host .sv-header__cell img,
+        #s-host .sv-logo__image {
+          max-width: 120px !important;
+          max-height: 60px !important;
+          width: auto !important;
+          height: auto !important;
+          object-fit: contain !important;
+        }
+      `}</style>
       {/* Blurred overlay */}
       <div className="absolute inset-0 bg-black/[0.72] backdrop-blur-[10px]" />
 
