@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { getSubmissions, resetSubmission } from '@/services/surveyService'
-import { ChoroplethMap } from '@/components/map/ChoroplethMap'
+
+const ChoroplethMap = lazy(() =>
+  import('@/components/map/ChoroplethMap').then(m => ({ default: m.ChoroplethMap }))
+)
 import { getRegion, resolveCountryToIso2, resolveCountryName } from '@/utils/countryRegions'
 import { formatDateTime } from '@/utils/formatDate'
 import { supabase } from '@/lib/supabase'
@@ -494,7 +497,9 @@ export function ReportsPanel() {
 
           {/* ── Choropleth map ───────────────────────────────────────────────── */}
           <div className="mb-6">
-            <ChoroplethMap submissions={filteredRows} height="380px" />
+            <Suspense fallback={<div style={{ height: 380, background: 'var(--s2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--f3)', fontSize: 13 }}>Loading map…</div>}>
+              <ChoroplethMap submissions={filteredRows} height="380px" />
+            </Suspense>
           </div>
 
           {/* ── Table ────────────────────────────────────────────────────────── */}
