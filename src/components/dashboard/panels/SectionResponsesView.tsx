@@ -2,6 +2,7 @@
 // SectionResponsesView — per-section aggregated survey responses for admins
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react'
+import { Download } from 'lucide-react'
 import { SECTION_NAMES, SECTION_DESCRIPTIONS } from '@/constants'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
 import { useSurveyStore } from '@/stores/surveyStore'
@@ -10,8 +11,136 @@ import {
   aggregateSection,
   sortedChoiceCounts,
   type AggregatedQuestion,
+  type ExtractedQuestion,
 } from '@/utils/surveyAnalytics'
 import type { SubmissionRow } from '@/types'
+
+// ─── CSV export ───────────────────────────────────────────────────────────────
+
+function formatAnswerForCsv(q: ExtractedQuestion, value: unknown): string {
+  if (value === undefined || value === null || value === '') return ''
+
+  switch (q.type) {
+    case 'boolean':
+      return value === true || value === 'true' ? 'Yes' : 'No'
+
+    case 'checkbox':
+    case 'tagbox': {
+      if (!Array.isArray(value)) return String(value)
+      const labelMap: Record<string, string> = {}
+      for (const c of q.choices ?? []) labelMap[c.value] = c.text
+      return (value as unknown[]).map((v) => labelMap[String(v)] || String(v)).join('; ')
+    }
+
+    case 'radiogroup':
+    case 'dropdown': {
+      const labelMap: Record<string, string> = {}
+      for (const c of q.choices ?? []) labelMap[c.value] = c.text
+      const str = String(value)
+      // Handle SurveyJS choice objects (e.g. country)
+      if (typeof value === 'object') {
+        const obj = value as Record<string, unknown>
+        return String(obj['name'] ?? obj['cca2'] ?? str)
+      }
+      return labelMap[str] || str
+    }
+
+    case 'matrix':
+    case 'matrixdropdown': {
+      if (typeof value !== 'object' || !value) return ''
+      const rowLabelMap: Record<string, string> = {}
+      const colLabelMap: Record<string, string> = {}
+      for (const r of q.rows ?? []) rowLabelMap[r.value] = r.text
+      for (const c of q.columns ?? []) colLabelMap[c.value] = c.text
+      return Object.entries(value as Record<string, unknown>)
+        .map(([rk, cv]) => `${rowLabelMap[rk] || rk}: ${colLabelMap[String(cv)] || String(cv)}`)
+        .join('; ')
+    }
+
+    case 'multipletext': {
+      if (typeof value !== 'object' || !value) return ''
+      const itemLabelMap: Record<string, string> = {}
+      for (const it of q.items ?? []) itemLabelMap[it.name] = it.title
+      return Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]) => `${itemLabelMap[k] || k}: ${String(v)}`)
+        .join('; ')
+    }
+
+    default: {
+      if (typeof value === 'object') {
+        const obj = value as Record<string, unknown>
+        return String(obj['name'] ?? obj['cca2'] ?? JSON.stringify(value))
+      }
+      return String(value)
+    }
+  }
+}
+
+function escapeCsv(val: string): string {
+  if (val.includes('"') || val.includes(',') || val.includes('\n')) {
+    return `"${val.replace(/"/g, '""')}"`
+  }
+  return val
+}
+
+function exportAllSectionsAsCsv(
+  submissions: SubmissionRow[],
+  pages: unknown[],
+  sectionNames: string[]
+): void {
+  const submitted = submissions.filter(
+    (s) => s.status === 'submitted' || s.status === 'reviewed'
+  )
+  if (submitted.length === 0) return
+
+  // Build flat question list across all sections
+  const allQuestions: Array<{ section: string; question: ExtractedQuestion }> = []
+  for (let i = 0; i < pages.length; i++) {
+    const questions = extractQuestionsFromPage(pages[i])
+    const sectionLabel = `${i + 1}. ${sectionNames[i] ?? `Section ${i + 1}`}`
+    for (const q of questions) {
+      allQuestions.push({ section: sectionLabel, question: q })
+    }
+  }
+
+  // Header rows — row 1: section names, row 2: question titles
+  const metaCols = ['Email', 'First Name', 'Last Name', 'Country', 'Institution', 'Submitted At']
+  const sectionRow = [
+    ...metaCols.map(() => ''),
+    ...allQuestions.map(({ section }) => escapeCsv(section)),
+  ]
+  const questionRow = [
+    ...metaCols.map((c) => escapeCsv(c)),
+    ...allQuestions.map(({ question: q }) => escapeCsv(q.title || q.name)),
+  ]
+
+  // Data rows
+  const dataRows = submitted.map((sub) => {
+    const data = sub.data ?? {}
+    const meta = [
+      sub.email ?? sub.profile?.email ?? '',
+      sub.first_name ?? sub.profile?.first_name ?? '',
+      sub.last_name ?? sub.profile?.last_name ?? '',
+      sub.country ?? sub.profile?.country ?? '',
+      sub.institution ?? sub.profile?.institution ?? '',
+      sub.submitted_at ? new Date(sub.submitted_at).toISOString().slice(0, 10) : '',
+    ]
+    const answers = allQuestions.map(({ question: q }) =>
+      escapeCsv(formatAnswerForCsv(q, data[q.name]))
+    )
+    return [...meta.map(escapeCsv), ...answers].join(',')
+  })
+
+  const csv = [sectionRow.join(','), questionRow.join(','), ...dataRows].join('\r\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `iffs-survey-responses-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 // ─── Choice bar ──────────────────────────────────────────────────────────────
 
@@ -326,7 +455,7 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
             ))}
           </select>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
           <div
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
             style={{ background: '#e8f5ec', border: '1px solid #c8d9cc' }}
@@ -345,6 +474,33 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
               </span>
             </div>
           )}
+          <button
+            type="button"
+            disabled={totalSubmitted === 0}
+            onClick={() => exportAllSectionsAsCsv(submissions, pages, SECTION_NAMES)}
+            className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              borderColor: '#afc7b4',
+              color: '#1d7733',
+              background: '#fff',
+            }}
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.background = '#e8f5ec'
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#fff'
+            }}
+            title={
+              totalSubmitted === 0
+                ? 'No submitted surveys to export'
+                : `Export all ${totalSubmitted} submitted survey responses as CSV`
+            }
+          >
+            <Download size={11} strokeWidth={2.2} aria-hidden="true" />
+            Export CSV
+          </button>
         </div>
       </div>
 
