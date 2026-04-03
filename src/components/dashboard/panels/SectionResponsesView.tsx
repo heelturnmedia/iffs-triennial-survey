@@ -282,6 +282,11 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
     (s) => s.status === 'submitted' || s.status === 'reviewed'
   ).length
 
+  // Surveys with any saved data (includes in-progress)
+  const totalWithData = submissions.filter(
+    (s) => Object.keys(s.data ?? {}).length > 0
+  ).length
+
   const aggregated = useMemo(() => {
     const page = pages[selectedSection]
     if (!page) return []
@@ -321,13 +326,25 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
             ))}
           </select>
         </div>
-        <div
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-          style={{ background: '#e8f5ec', border: '1px solid #c8d9cc' }}
-        >
-          <span className="font-body text-[11px] text-[#1d7733] font-semibold">
-            {totalSubmitted} submitted survey{totalSubmitted !== 1 ? 's' : ''}
-          </span>
+        <div className="flex items-center gap-2">
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+            style={{ background: '#e8f5ec', border: '1px solid #c8d9cc' }}
+          >
+            <span className="font-body text-[11px] text-[#1d7733] font-semibold">
+              {totalSubmitted} submitted
+            </span>
+          </div>
+          {totalWithData > totalSubmitted && (
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              style={{ background: '#fff8e8', border: '1px solid #f0d080' }}
+            >
+              <span className="font-body text-[11px] text-[#b07800] font-semibold">
+                +{totalWithData - totalSubmitted} in progress
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

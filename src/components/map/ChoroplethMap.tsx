@@ -103,7 +103,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   // ['match', ['get', 'iso_3166_1_alpha_2'], 'US', '#color', ..., fallback]
   const matchExpr: unknown[] = ['match', ['get', 'iso_3166_1_alpha_2']]
   submissions.forEach(row => {
-    const country = row.country ?? row.profile?.country
+    const country = row.country ?? row.profile?.country ?? (row.data?.['Country'] as string | undefined)
     if (!country) return
     const iso2 = countryNameToIso2(country)
     if (iso2) {
@@ -115,7 +115,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   // Build iso2 → submission lookup for popup
   const iso2Map = new Map<string, SubmissionRow>()
   submissions.forEach(row => {
-    const country = row.country ?? row.profile?.country
+    const country = row.country ?? row.profile?.country ?? (row.data?.['Country'] as string | undefined)
     if (!country) return
     const iso2 = countryNameToIso2(country)
     if (iso2) iso2Map.set(iso2.toUpperCase(), row)
