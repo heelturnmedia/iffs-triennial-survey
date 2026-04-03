@@ -90,6 +90,21 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
           recorded and will contribute to the global ART landscape report.
         </p>
 
+        <div
+          className="flex items-start gap-3 rounded-xl px-4 py-3"
+          style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}
+        >
+          <svg className="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M2.5 5.5A1.5 1.5 0 014 4h12a1.5 1.5 0 011.5 1.5v.379l-7.5 5-7.5-5V5.5z" fill="#1d7733" opacity="0.3"/>
+            <path d="M2.5 7.621V14.5A1.5 1.5 0 004 16h12a1.5 1.5 0 001.5-1.5V7.621l-7.5 5-7.5-5z" fill="#1d7733" opacity="0.3"/>
+            <rect x="2.5" y="4" width="15" height="12" rx="1.5" stroke="#1d7733" strokeWidth="1.4"/>
+            <path d="M2.5 6.5l7.5 5 7.5-5" stroke="#1d7733" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+          <p className="font-body text-[13px] text-[#0e5921] leading-snug">
+            You will receive a confirmation email from us shortly. Please check your inbox.
+          </p>
+        </div>
+
         <div className="flex items-center gap-2 w-fit px-4 py-2 rounded-full opacity-60"
           style={{ background: 'var(--g3)', border: '1.5px solid var(--bd2)' }}>
           <CheckCircle2 size={13} color="var(--g1)" strokeWidth={2.2} />

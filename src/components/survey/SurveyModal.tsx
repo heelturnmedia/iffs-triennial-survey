@@ -140,8 +140,11 @@ export function SurveyModal() {
         onConfirm: async () => {
           try {
             const currentSubmission = useSurveyStore.getState().submission
-            if (currentSubmission?.id) await submitSurvey(currentSubmission.id)
-            toast('Survey submitted successfully! Thank you.', 'ok')
+            if (currentSubmission?.id) {
+              const updated = await submitSurvey(currentSubmission.id)
+              // Update the store so Overview immediately reflects submitted status
+              useSurveyStore.getState().setSubmission(updated)
+            }
             closeModal()
           } catch {
             toast('Submission failed. Please try again.', 'err')
