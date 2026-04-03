@@ -31,8 +31,11 @@ export function useAuth() {
 
     async function loadSurveyData() {
       try {
-        // Load submission from Supabase
-        const submission = await getSubmission(userId!)
+        // Load submission and active definition in parallel (one roundtrip instead of two)
+        const [submission, def] = await Promise.all([
+          getSubmission(userId!),
+          getActiveDefinition(),
+        ])
         if (cancelled) return
 
         if (submission) {
@@ -55,9 +58,7 @@ export function useAuth() {
           }
         }
 
-        // Load active survey definition
-        const def = await getActiveDefinition()
-        if (!cancelled && def) {
+        if (def) {
           surveyStore.setActiveDefinition(def)
         }
       } catch (err) {
