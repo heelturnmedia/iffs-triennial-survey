@@ -213,7 +213,7 @@ function SubmissionsTable({
           <tbody>
             {rows.map((row, i) => {
               const name = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() || 'Unknown'
-              const country = row.country ?? row.profile?.country ?? '—'
+              const country = row.country ?? row.profile?.country ?? (row.data?.['Country'] as string | undefined) ?? '—'
               const isSubmitted = row.status === 'submitted' || row.status === 'reviewed'
               const pct = isSubmitted ? 100 : calcProgress(row.page_no)
               const initials = name
@@ -386,7 +386,7 @@ export function ReportsPanel() {
     if (filters.status !== 'All' && row.status !== filters.status) return false
 
     if (filters.region !== 'All') {
-      const country = row.country ?? row.profile?.country ?? ''
+      const country = row.country ?? row.profile?.country ?? (row.data?.['Country'] as string | undefined) ?? ''
       const iso2 = countryNameToIso2(country)
       const region = iso2 ? getRegion(iso2) : 'Unknown'
       if (region !== filters.region) return false

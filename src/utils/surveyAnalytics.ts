@@ -105,8 +105,13 @@ export function aggregateSection(
   questions: ExtractedQuestion[],
   submissions: Array<{ data?: Record<string, unknown>; status?: string }>
 ): AggregatedQuestion[] {
+  // Include all surveys that have any saved data, not just submitted ones,
+  // so admins can see responses as they come in.
   const submittedData = submissions
-    .filter((s) => s.status === 'submitted' || s.status === 'reviewed')
+    .filter((s) => {
+      const d = s.data ?? {}
+      return (s.status === 'submitted' || s.status === 'reviewed') || Object.keys(d).length > 0
+    })
     .map((s) => s.data ?? {})
 
   return questions.map((q) => {
