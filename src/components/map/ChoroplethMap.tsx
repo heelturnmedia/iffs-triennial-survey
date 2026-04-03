@@ -126,7 +126,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   // ── Build Mapbox match expression ─────────────────────────────────────
   // ['match', ['get', 'iso_3166_1_alpha_2'], 'US', '#color', ..., fallback]
   const matchExpr: unknown[] = ['match', ['get', 'iso_3166_1_alpha_2']]
-  iso2Groups.forEach((rows, iso2) => {
+  iso2Groups.forEach((_rows, iso2) => {
     const submittedCount = submittedCounts.get(iso2) ?? 0
     let color: string
     if (submittedCount > 0) {
