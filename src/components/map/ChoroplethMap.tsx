@@ -2,7 +2,7 @@ import { useRef, useState, useCallback } from 'react'
 import ReactMap, { Source, Layer, Popup, NavigationControl } from 'react-map-gl'
 import type { MapLayerMouseEvent, MapRef } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { resolveCountryToIso2, resolveCountryName } from '@/utils/countryRegions'
+import { resolveCountryToIso2 } from '@/utils/countryRegions'
 import { formatSavedAt } from '@/utils/formatDate'
 import type { SubmissionRow } from '@/types'
 
@@ -45,12 +45,6 @@ function rowIso2(row: SubmissionRow): string {
   return resolveCountryToIso2(row.data?.['Country'])
 }
 
-/** Display-friendly country name for a row. */
-function rowCountryName(row: SubmissionRow): string {
-  const profileCountry = row.country ?? row.profile?.country
-  if (profileCountry) return profileCountry
-  return resolveCountryName(row.data?.['Country'])
-}
 
 interface PopupInfo {
   longitude:   number
