@@ -9,7 +9,7 @@ import { useUIStore } from '@/stores/uiStore'
 const FOOTER_LINKS: { label: string; to?: string }[] = [
   { label: 'Privacy Policy', to: '/privacy' },
   { label: 'Terms of Use',   to: '/terms' },
-  { label: 'Contact' },
+  { label: 'Contact',        to: '/contact' },
 ]
 
 export function Footer() {
