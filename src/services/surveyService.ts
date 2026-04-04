@@ -28,28 +28,53 @@ export async function upsertSubmission(
     ...updates,
     updated_at: new Date().toISOString(),
   }
-  const { data, error } = await supabase
-    .from('survey_submissions')
-    .upsert(payload, { onConflict: 'user_id' })
-    .select()
-    .single()
-  if (error) throw error
-  return data as SurveySubmission
+  // 15-second hard timeout — same reasoning as submitSurvey: the Supabase
+  // client's JWT refresh can stall indefinitely if the refresh token has
+  // expired, leaving the fetch call waiting forever with no timeout.
+  const controller = new AbortController()
+  const watchdog   = setTimeout(() => controller.abort(), 15_000)
+
+  try {
+    const { data, error } = await supabase
+      .from('survey_submissions')
+      .upsert(payload, { onConflict: 'user_id' })
+      .select()
+      .single()
+      .abortSignal(controller.signal)
+    if (error) throw error
+    return data as SurveySubmission
+  } finally {
+    clearTimeout(watchdog)
+  }
 }
 
 export async function submitSurvey(submissionId: string): Promise<SurveySubmission> {
-  const { data, error } = await supabase
-    .from('survey_submissions')
-    .update({
-      status: 'submitted',
-      submitted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', submissionId)
-    .select()
-    .single()
-  if (error) throw error
-  return data as SurveySubmission
+  // AbortController gives the fetch a hard 20-second deadline.
+  // Without this, the browser's native fetch has NO timeout — if the Supabase
+  // client's internal JWT refresh stalls (e.g. expired refresh token), or if
+  // there is any network-layer hang, the call waits forever and the spinner
+  // never stops. 20 s is generous for a simple UPDATE; typical is <500 ms.
+  const controller = new AbortController()
+  const watchdog   = setTimeout(() => controller.abort(), 20_000)
+
+  try {
+    const { data, error } = await supabase
+      .from('survey_submissions')
+      .update({
+        status:       'submitted',
+        submitted_at: new Date().toISOString(),
+        updated_at:   new Date().toISOString(),
+      })
+      .eq('id', submissionId)
+      .select()
+      .single()
+      .abortSignal(controller.signal)
+
+    if (error) throw error
+    return data as SurveySubmission
+  } finally {
+    clearTimeout(watchdog)
+  }
 }
 
 export async function resetSubmission(userId: string): Promise<void> {
