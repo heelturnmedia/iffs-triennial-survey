@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useUIStore } from '@/stores/uiStore'
 
 export function ConfirmModal() {
   const { isConfirmModalOpen, confirmModal, closeConfirmModal } = useUIStore()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!isConfirmModalOpen || !confirmModal) return null
 
@@ -9,7 +11,12 @@ export function ConfirmModal() {
   const isWarning = confirmModal.variant === 'warning'
 
   const handleConfirm = async () => {
-    await confirmModal.onConfirm()
+    setIsSubmitting(true)
+    try {
+      await confirmModal.onConfirm()
+    } finally {
+      setIsSubmitting(false)
+    }
     closeConfirmModal()
   }
 
@@ -50,15 +57,17 @@ export function ConfirmModal() {
           <button
             type="button"
             onClick={closeConfirmModal}
-            className="font-display text-[11px] font-bold tracking-[0.12em] uppercase px-5 py-2.5 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all"
+            disabled={isSubmitting}
+            className="font-display text-[11px] font-bold tracking-[0.12em] uppercase px-5 py-2.5 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleConfirm}
+            disabled={isSubmitting}
             className={[
-              'font-display text-[11px] font-bold tracking-[0.14em] uppercase px-5 py-2.5 rounded-full border-none text-white transition-all',
+              'font-display text-[11px] font-bold tracking-[0.14em] uppercase px-5 py-2.5 rounded-full border-none text-white transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed',
               isDanger
                 ? 'bg-red-600 hover:bg-red-700 shadow-[0_4px_12px_rgba(220,38,38,0.3)]'
                 : isWarning
@@ -66,7 +75,10 @@ export function ConfirmModal() {
                 : 'bg-[#1d7733] hover:bg-[#0e5921] shadow-[0_4px_12px_rgba(29,119,51,0.25)]',
             ].join(' ')}
           >
-            Confirm
+            {isSubmitting && (
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            )}
+            {isSubmitting ? 'Submitting…' : 'Confirm'}
           </button>
         </div>
       </div>

@@ -147,17 +147,43 @@ export function SurveyModal() {
       }
     })
 
-    // ── On complete — confirm then submit ──────────────────────────────────
-    model.onComplete.add(() => {
+    // ── On completing — intercept BEFORE SurveyJS renders the thank-you page ──
+    // FIX: onComplete fires after SurveyJS has already transitioned to the
+    // completion state, so pressing Cancel on our confirm dialog revealed the
+    // built-in thank-you screen underneath. onCompleting fires before that
+    // transition; setting options.allowComplete = false keeps the user on the
+    // last question page while our confirm dialog is open.
+    // FIX 2: Added safety upsert so submission.id is always set before calling
+    // submitSurvey — prevents the silent no-op when autosave hadn't resolved.
+    model.onCompleting.add((sender, options) => {
+      // Block SurveyJS from rendering the completion/thank-you page immediately.
+      options.allowComplete = false
+
       openConfirmModal({
         title:   'Submit Survey',
         message: 'Are you sure you want to submit your survey? This action cannot be undone. You will not be able to make further changes after submission.',
         variant: 'warning',
         onConfirm: async () => {
           try {
-            const currentSubmission = useSurveyStore.getState().submission
-            if (currentSubmission?.id) {
-              const updated = await submitSurvey(currentSubmission.id)
+            // Safety net: if autosave hasn't yet resolved an ID (e.g. the user
+            // moved through pages very quickly), upsert a row first so we have
+            // an ID to pass to submitSurvey.
+            let submissionId = useSurveyStore.getState().submission?.id
+            if (!submissionId && user) {
+              const now  = new Date().toISOString()
+              const data = { ...sender.data }
+              const saved = await upsertSubmission(user.id, {
+                page_no: sender.currentPageNo,
+                data,
+                saved_at: now,
+                status: 'draft',
+              })
+              useSurveyStore.getState().setSubmission(saved)
+              submissionId = saved.id
+            }
+
+            if (submissionId) {
+              const updated = await submitSurvey(submissionId)
               // Update the store so Overview immediately reflects submitted status
               useSurveyStore.getState().setSubmission(updated)
             }
