@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/hooks/useAuth'
 import Toaster from '@/components/ui/Toaster'
-import { ToastContainer } from '@/components/common/Toast'
 import { ConfirmModal } from '@/components/common/ConfirmModal'
 
 // Lazy-load pages for code splitting
@@ -102,7 +101,6 @@ function AppRoutes() {
 
       {/* Global toast notifications */}
       <Toaster />
-      <ToastContainer />
       <ConfirmModal />
     </>
   )
