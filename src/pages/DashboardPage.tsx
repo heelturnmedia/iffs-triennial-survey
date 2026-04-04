@@ -15,13 +15,26 @@ import { ConfirmModal } from '@/components/common/ConfirmModal'
 import { Nav } from '@/components/common/Nav'
 
 export default function DashboardPage() {
-  const { session, loading, isAdmin, canViewReports } = useAuthStore()
-  const { activePanel } = useUIStore()
+  const { session, profile, loading, isAdmin, canViewReports } = useAuthStore()
+  const { activePanel, setActivePanel } = useUIStore()
   const navigate = useNavigate()
 
   useEffect(() => {
     if (!loading && !session) navigate('/login', { replace: true })
   }, [session, loading, navigate])
+
+  // If the user is on an admin panel but their profile is temporarily null (auth
+  // event in-flight), don't let the main area go blank — reset to overview.
+  // When the profile resolves, the sidebar will reveal the admin nav again and
+  // the user can navigate back. This is purely a safety net for the ~300ms
+  // window between an auth event clearing the profile and fetchProfile completing.
+  useEffect(() => {
+    if (profile) return // profile is loaded, nothing to do
+    const adminPanels = ['reports', 'users', 'survey-mgmt', 'wa-settings', 'app-flow']
+    if (adminPanels.includes(activePanel)) {
+      setActivePanel('overview')
+    }
+  }, [profile, activePanel, setActivePanel])
 
   if (loading) return <PageLoader />
 

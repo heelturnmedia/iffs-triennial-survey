@@ -65,18 +65,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Awaiting fetchProfile before setting session causes a race: navigate('/dashboard')
         // fires while session is still null → AuthGuard bounces user back to /login.
         //
-        // TOKEN_REFRESHED: the session is the same user, profile hasn't changed — don't
-        // clear it or the dashboard flashes to the user role view while we re-fetch.
-        const isTokenRefresh = event === 'TOKEN_REFRESHED'
+        // Events that should NOT wipe the profile before the new one arrives:
+        //   TOKEN_REFRESHED — same user, token silently rotated, profile unchanged
+        //   USER_UPDATED    — same user, re-fetch in background but keep old profile visible
+        // Events that should clear the profile:
+        //   SIGNED_IN       — could be a different user, stale profile must go
+        //   INITIAL_SESSION — first load, profile is null anyway
+        //   SIGNED_OUT      — clear everything
+        const shouldPreserveProfile =
+          event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'
+
         set((state) => ({
           session,
           user: session?.user ?? null,
           loading: false,
-          // Only clear the profile on actual sign-in/sign-out transitions, not token refreshes
-          profile: isTokenRefresh ? state.profile : null,
+          profile: shouldPreserveProfile ? state.profile : null,
         }))
-        // Fetch profile in the background (skip on refresh if we already have one)
-        if (session && !isTokenRefresh) {
+
+        // Re-fetch profile whenever there is a session, EXCEPT pure token refreshes
+        // (profile data hasn't changed on TOKEN_REFRESHED)
+        if (session && event !== 'TOKEN_REFRESHED') {
           const profile = await fetchProfile(session.user.id)
           set({ profile })
         }
