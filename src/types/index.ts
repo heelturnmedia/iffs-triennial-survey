@@ -84,6 +84,7 @@ export type ActivePanel =
   | 'users'
   | 'survey-mgmt'
   | 'wa-settings'
+  | 'app-flow'
 
 export interface ConfirmModalConfig {
   title: string

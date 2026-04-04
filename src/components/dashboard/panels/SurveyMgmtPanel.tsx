@@ -9,6 +9,7 @@ import {
   getSurveyDefinitions,
   getActiveDefinition,
   saveSurveyDefinition,
+  updateSurveyDefinition,
   setActiveDefinition,
 } from '@/services/surveyService'
 import { formatDateTime } from '@/utils/formatDate'
@@ -32,8 +33,8 @@ interface LibraryTabProps {
   definitions: SurveyDefinition[]
   loading: boolean
   onSetActive: (id: string) => void
-  onPreview: (def: SurveyDefinition) => void
   onEdit: (def: SurveyDefinition) => void
+  onPreview: (def: SurveyDefinition) => void
   settingActiveId: string | null
 }
 
@@ -41,8 +42,8 @@ function LibraryTab({
   definitions,
   loading,
   onSetActive,
-  onPreview,
   onEdit,
+  onPreview,
   settingActiveId,
 }: LibraryTabProps) {
   if (loading) {
@@ -97,7 +98,7 @@ function LibraryTab({
             <button
               type="button"
               onClick={() => onEdit(def)}
-              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all"
+              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#7c3aed] hover:text-[#7c3aed] hover:bg-[#f5f3ff] transition-all"
             >
               Edit
             </button>
@@ -140,16 +141,17 @@ function LibraryTab({
 // Per SurveyJS docs: https://surveyjs.io/survey-creator/documentation/get-started-react
 
 interface CreatorTabProps {
-  editingDefinition: SurveyDefinition | null
-  onSave: (json: Record<string, unknown>, name: string) => Promise<void>
+  definitionToEdit: SurveyDefinition | null
+  onSave: (json: Record<string, unknown>) => Promise<void>
 }
 
-function CreatorTab({ editingDefinition, onSave }: CreatorTabProps) {
-  // Keep onSave stable via ref to avoid recreating the creator
+function CreatorTab({ definitionToEdit, onSave }: CreatorTabProps) {
+  // Keep onSave stable via ref — creator model captures it at call time
   const onSaveRef = useRef(onSave)
   useEffect(() => { onSaveRef.current = onSave }, [onSave])
 
-  // Create model once; update JSON when the editing definition changes
+  // Create model once; parent uses key prop to force remount when editing target changes,
+  // so definitionToEdit is always correct at mount time.
   const [creator] = useState(() => {
     const model = new SurveyCreatorModel({
       showLogicTab: true,
@@ -157,9 +159,12 @@ function CreatorTab({ editingDefinition, onSave }: CreatorTabProps) {
       haveCommercialLicense: true,
     })
 
+    if (definitionToEdit?.definition) {
+      model.JSON = definitionToEdit.definition
+    }
+
     model.saveSurveyFunc = (saveNo: number, callback: (no: number, ok: boolean) => void) => {
-      const name = editingDefinition?.name ?? ('Survey ' + new Date().toLocaleDateString())
-      onSaveRef.current(model.JSON as Record<string, unknown>, name)
+      onSaveRef.current(model.JSON as Record<string, unknown>)
         .then(() => callback(saveNo, true))
         .catch(() => callback(saveNo, false))
     }
@@ -167,14 +172,27 @@ function CreatorTab({ editingDefinition, onSave }: CreatorTabProps) {
     return model
   })
 
-  // Load definition JSON whenever the editing target changes
-  useEffect(() => {
-    creator.JSON = editingDefinition?.definition ?? {}
-  }, [creator, editingDefinition])
-
   return (
-    <div style={{ height: '82vh' }}>
-      <SurveyCreator model={creator} />
+    <div>
+      {definitionToEdit && (
+        <div
+          className="mb-3 px-4 py-2 rounded-lg flex items-center gap-2"
+          style={{ background: '#f5f3ff', border: '1px solid #ddd6fe' }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M9.5 2L12 4.5L5 11.5H2.5V9L9.5 2Z" stroke="#7c3aed" strokeWidth="1.4" strokeLinejoin="round"/>
+          </svg>
+          <p className="font-body text-[12px] font-semibold text-[#5b21b6]">
+            Editing: <span className="font-normal">{definitionToEdit.name}</span>
+            {definitionToEdit.is_active && (
+              <span className="ml-2 text-[#0e5921] bg-[#e8f5ec] border border-[#afc7b4] rounded-full px-2 py-0.5 text-[10px]">Active</span>
+            )}
+          </p>
+        </div>
+      )}
+      <div style={{ height: '80vh' }}>
+        <SurveyCreator model={creator} />
+      </div>
     </div>
   )
 }
@@ -241,7 +259,7 @@ export function SurveyMgmtPanel() {
   const [loading, setLoading] = useState(true)
   const [settingActiveId, setSettingActiveId] = useState<string | null>(null)
   const [previewDef, setPreviewDef] = useState<SurveyDefinition | null>(null)
-  const [editingDefinition, setEditingDefinition] = useState<SurveyDefinition | null>(null)
+  const [editingDef, setEditingDef] = useState<SurveyDefinition | null>(null)
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -275,28 +293,33 @@ export function SurveyMgmtPanel() {
     }
   }
 
+  const handleEditDef = (def: SurveyDefinition) => {
+    setEditingDef(def)
+    setTab('creator')
+  }
+
   // ── Preview from library ──────────────────────────────────────────────────
   const handlePreview = (def: SurveyDefinition) => {
     setPreviewDef(def)
     setTab('preview')
   }
 
-  // ── Edit in creator ───────────────────────────────────────────────────────
-  const handleEdit = (def: SurveyDefinition) => {
-    setEditingDefinition(def)
-    setTab('creator')
-  }
-
-  // ── Save from creator ─────────────────────────────────────────────────────
-  const handleSave = useCallback(async (json: Record<string, unknown>, name: string) => {
-    await saveSurveyDefinition(name, json, user?.id)
-    toast(`Saved "${name}".`, 'ok')
+  // ── Save from creator — update existing or insert new ─────────────────────
+  const handleSave = useCallback(async (json: Record<string, unknown>) => {
+    if (editingDef?.id) {
+      await updateSurveyDefinition(editingDef.id, json)
+      toast(`"${editingDef.name}" updated.`, 'ok')
+    } else {
+      const name = 'Survey ' + new Date().toLocaleDateString()
+      await saveSurveyDefinition(name, json, user?.id)
+      toast(`Saved "${name}".`, 'ok')
+    }
     await fetchAll()
-  }, [user?.id, toast, fetchAll])
+  }, [editingDef, user?.id, toast, fetchAll])
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'library', label: 'Library' },
-    { id: 'creator', label: 'Creator' },
+    { id: 'creator', label: editingDef ? `Editing: ${editingDef.name}` : 'Creator' },
     { id: 'preview', label: 'Preview' },
   ]
 
@@ -324,23 +347,18 @@ export function SurveyMgmtPanel() {
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => {
+              if (t.id === 'library') setEditingDef(null)
               if (t.id !== 'preview') setPreviewDef(null)
-              if (t.id !== 'creator') setEditingDefinition(null)
               setTab(t.id)
             }}
-            className="font-display text-[11px] font-bold tracking-[0.10em] uppercase px-4 py-2 rounded-lg transition-all"
+            className="font-display text-[11px] font-bold tracking-[0.10em] uppercase px-4 py-2 rounded-lg transition-all max-w-[200px] truncate"
             style={{
               background: tab === t.id ? '#ffffff' : 'transparent',
-              color: tab === t.id ? 'var(--g1)' : 'var(--f3)',
+              color: tab === t.id ? (t.id === 'creator' && editingDef ? '#7c3aed' : 'var(--g1)') : 'var(--f3)',
               boxShadow: tab === t.id ? 'var(--shadow-sm)' : 'none',
             }}
           >
             {t.label}
-            {t.id === 'creator' && editingDefinition && (
-              <span className="ml-1.5 font-body text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#e8f5ec] text-[#0e5921]">
-                editing
-              </span>
-            )}
           </button>
         ))}
       </div>
@@ -351,14 +369,17 @@ export function SurveyMgmtPanel() {
           definitions={definitions}
           loading={loading}
           onSetActive={handleSetActive}
+          onEdit={handleEditDef}
           onPreview={handlePreview}
-          onEdit={handleEdit}
           settingActiveId={settingActiveId}
         />
       )}
       {tab === 'creator' && (
+        // key forces remount when the definition being edited changes,
+        // ensuring the creator model always loads the correct JSON.
         <CreatorTab
-          editingDefinition={editingDefinition}
+          key={editingDef?.id ?? 'new'}
+          definitionToEdit={editingDef}
           onSave={handleSave}
         />
       )}
