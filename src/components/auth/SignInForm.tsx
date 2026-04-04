@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { signIn, getProfile } from '@/services/authService'
-import { useAuthStore } from '@/stores/authStore'
+import { useState, useRef, useEffect } from 'react'
+import { signIn } from '@/services/authService'
 import { useUIStore } from '@/stores/uiStore'
 import { supabase } from '@/lib/supabase'
+
+// ─── Demo accounts (dev only) ─────────────────────────────────────────────────
 
 const DEMO_ACCOUNTS = [
   { label: 'Admin',       email: 'admin@iffs-demo.org',      password: 'Demo1234!' },
@@ -12,24 +12,41 @@ const DEMO_ACCOUNTS = [
   { label: 'User',        email: 'user@iffs-demo.org',       password: 'Demo1234!' },
 ]
 
-const SOCIAL_PROVIDERS = [
-  { id: 'google',     label: 'Google',     icon: 'G'  },
-  { id: 'microsoft',  label: 'Microsoft',  icon: 'M'  },
-  { id: 'orcid',      label: 'ORCID',      icon: '⊙' },
-  { id: 'openathens', label: 'OpenAthens', icon: 'OA' },
-  { id: 'linkedin',   label: 'LinkedIn',   icon: 'in' },
-]
+// ─── Supabase error → human-readable message ──────────────────────────────────
+
+function mapAuthError(message: string): string {
+  if (message.includes('Invalid login credentials'))
+    return 'Incorrect email or password. Please try again.'
+  if (message.includes('Email not confirmed'))
+    return 'Please confirm your email address before signing in. Check your inbox.'
+  if (message.includes('Too many requests'))
+    return 'Too many sign-in attempts. Please wait a few minutes and try again.'
+  if (message.includes('User not found'))
+    return 'No account found with that email address.'
+  if (message.includes('Network') || message.includes('fetch'))
+    return 'Network error — check your connection and try again.'
+  return message || 'Sign in failed. Please try again.'
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function SignInForm() {
-  const navigate = useNavigate()
-  const { setProfile } = useAuthStore()
   const { toast } = useUIStore()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [email,      setEmail]      = useState('')
+  const [password,   setPassword]   = useState('')
+  const [isLoading,  setIsLoading]  = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
   const [forgotSent, setForgotSent] = useState(false)
+  const [timedOut,   setTimedOut]   = useState(false)
+  const [capsLock,   setCapsLock]   = useState(false)
+
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clear timeout on unmount
+  useEffect(() => () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,21 +55,23 @@ export function SignInForm() {
       return
     }
     setError(null)
+    setTimedOut(false)
     setIsLoading(true)
 
+    // Show escape hatch if the redirect stalls for any reason
+    timeoutRef.current = setTimeout(() => setTimedOut(true), 10_000)
+
     try {
-      const data = await signIn({ email: email.trim(), password })
-
-      if (data.user) {
-        const profile = await getProfile(data.user.id)
-        setProfile(profile)
-      }
-
-      navigate('/dashboard', { replace: true })
+      await signIn({ email: email.trim(), password })
+      // Hard redirect — reads Supabase session from localStorage on reload via
+      // authStore.initialize() → getSession(). Bypasses the unreliable
+      // onAuthStateChange → Zustand → AuthRedirect chain that stalls in production.
+      window.location.href = '/dashboard'
+      // Intentionally no setIsLoading(false) here — button stays in loading state
+      // until the page navigates away. Resetting it would cause a flash.
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Sign in failed. Please try again.'
-      setError(message)
-    } finally {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      setError(mapAuthError(err instanceof Error ? err.message : ''))
       setIsLoading(false)
     }
   }
@@ -73,15 +92,12 @@ export function SignInForm() {
     }
   }
 
-  const handleSocialLogin = (provider: string) => {
-    toast(`${provider} login requires backend OAuth configuration.`, 'info')
-  }
-
   const fillDemo = (acc: (typeof DEMO_ACCOUNTS)[0]) => {
     setEmail(acc.email)
     setPassword(acc.password)
     setError(null)
     setForgotSent(false)
+    setTimedOut(false)
   }
 
   return (
@@ -104,6 +120,25 @@ export function SignInForm() {
                 <span className="text-[11px] text-[#b0bec5]">{acc.email}</span>
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Timeout escape hatch */}
+      {timedOut && (
+        <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+          <span className="text-amber-500 text-base flex-shrink-0 mt-0.5">⏱</span>
+          <div>
+            <p className="font-body text-[13px] text-amber-800 font-semibold">
+              Taking longer than expected
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="font-body text-[12px] text-amber-700 underline hover:text-amber-900 mt-0.5"
+            >
+              Click here to refresh and try again
+            </button>
           </div>
         </div>
       )}
@@ -160,10 +195,17 @@ export function SignInForm() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyUp={(e) => setCapsLock(e.getModifierState('CapsLock'))}
+            onBlur={() => setCapsLock(false)}
             placeholder="••••••••"
             required
             className="w-full font-body text-[14px] text-[#0d1117] bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-[#b0bec5] outline-none transition-all focus:border-[#1d7733] focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
           />
+          {capsLock && (
+            <p className="font-body text-[12px] text-amber-600 flex items-center gap-1.5 mt-1.5">
+              <span aria-hidden="true">⚠</span> Caps Lock is on
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end">
@@ -192,34 +234,6 @@ export function SignInForm() {
           )}
         </button>
       </form>
-
-      {/* Divider */}
-      <div className="flex items-center gap-3">
-        <hr className="flex-1 border-[#e2ebe4]" />
-        <span className="font-body text-[11px] text-[#b0bec5] uppercase tracking-[0.08em]">
-          or continue with
-        </span>
-        <hr className="flex-1 border-[#e2ebe4]" />
-      </div>
-
-      {/* Social providers */}
-      <div className="grid grid-cols-5 gap-2">
-        {SOCIAL_PROVIDERS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => handleSocialLogin(p.label)}
-            title={`Sign in with ${p.label}`}
-            className="flex items-center justify-center h-10 rounded-lg border-[1.5px] border-[#e2ebe4] bg-white hover:border-[#afc7b4] hover:bg-[#f7f9f7] transition-all font-body text-[12px] font-bold text-[#3d4a52]"
-          >
-            {p.icon}
-          </button>
-        ))}
-      </div>
-
-      <p className="font-body text-[11px] text-[#b0bec5] text-center">
-        Social login requires institutional OAuth configuration.
-      </p>
     </div>
   )
 }
