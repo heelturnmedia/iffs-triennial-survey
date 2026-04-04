@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+// ─────────────────────────────────────────────────────────────────────────────
+// Survey Management Panel
+// Uses SurveyJS Creator v2 per https://surveyjs.io/survey-creator/documentation
+// ─────────────────────────────────────────────────────────────────────────────
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import {
@@ -10,9 +14,15 @@ import {
 import { formatDateTime } from '@/utils/formatDate'
 import type { SurveyDefinition } from '@/types'
 
-// Survey Creator & Preview — dynamically imported to avoid SSR issues and keep
-// the main bundle lean. (survey-creator-react and survey-core must be in package.json)
-let SurveyCreatorComponent: React.ComponentType<{ model: unknown }> | null = null
+// ── SurveyJS CSS — must be static imports so Vite injects them at load time ──
+import 'survey-core/defaultV2.min.css'
+import 'survey-creator-core/survey-creator-core.min.css'
+
+// ── SurveyJS modules ─────────────────────────────────────────────────────────
+import { SurveyCreatorModel } from 'survey-creator-core'
+import { SurveyCreator } from 'survey-creator-react'
+import { Model } from 'survey-core'
+import { Survey } from 'survey-react-ui'
 
 type Tab = 'library' | 'creator' | 'preview'
 
@@ -23,6 +33,7 @@ interface LibraryTabProps {
   loading: boolean
   onSetActive: (id: string) => void
   onPreview: (def: SurveyDefinition) => void
+  onEdit: (def: SurveyDefinition) => void
   settingActiveId: string | null
 }
 
@@ -31,6 +42,7 @@ function LibraryTab({
   loading,
   onSetActive,
   onPreview,
+  onEdit,
   settingActiveId,
 }: LibraryTabProps) {
   if (loading) {
@@ -43,10 +55,7 @@ function LibraryTab({
 
   if (definitions.length === 0) {
     return (
-      <div
-        className="bg-white rounded-2xl p-10 text-center"
-        style={{ border: '1px solid var(--bd)' }}
-      >
+      <div className="bg-white rounded-2xl p-10 text-center" style={{ border: '1px solid var(--bd)' }}>
         <p className="font-body text-[14px] text-[#b0bec5]">
           No survey definitions yet. Use the Creator tab to build one.
         </p>
@@ -87,6 +96,13 @@ function LibraryTab({
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               type="button"
+              onClick={() => onEdit(def)}
+              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
               onClick={() => onPreview(def)}
               className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all"
             >
@@ -100,17 +116,16 @@ function LibraryTab({
                 className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg text-white transition-all disabled:opacity-60"
                 style={{ background: 'var(--g1)' }}
                 onMouseEnter={(e) => {
-                  if (settingActiveId !== def.id) {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g2)'
-                  }
+                  if (settingActiveId !== def.id)
+                    (e.currentTarget as HTMLButtonElement).style.background = 'var(--g2)'
                 }}
                 onMouseLeave={(e) => {
-                  ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g1)'
+                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--g1)'
                 }}
               >
-                {settingActiveId === def.id ? (
+                {settingActiveId === def.id && (
                   <span className="w-3 h-3 rounded-full border border-white border-t-transparent animate-spin" />
-                ) : null}
+                )}
                 Set Active
               </button>
             )}
@@ -122,97 +137,50 @@ function LibraryTab({
 }
 
 // ─── Creator tab ──────────────────────────────────────────────────────────────
+// Per SurveyJS docs: https://surveyjs.io/survey-creator/documentation/get-started-react
 
 interface CreatorTabProps {
-  activeDefinition: SurveyDefinition | null
+  editingDefinition: SurveyDefinition | null
   onSave: (json: Record<string, unknown>, name: string) => Promise<void>
 }
 
-function CreatorTab({ activeDefinition, onSave }: CreatorTabProps) {
-  const [creatorLoaded, setCreatorLoaded] = useState(false)
-  const [creatorError, setCreatorError] = useState<string | null>(null)
-  const creatorRef = useRef<{
-    JSON: Record<string, unknown>
-    saveSurveyFunc: ((saveNo: number, cb: (no: number, ok: boolean) => void) => void) | null
-  } | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+function CreatorTab({ editingDefinition, onSave }: CreatorTabProps) {
+  // Keep onSave stable via ref to avoid recreating the creator
+  const onSaveRef = useRef(onSave)
+  useEffect(() => { onSaveRef.current = onSave }, [onSave])
 
+  // Create model once; update JSON when the editing definition changes
+  const [creator] = useState(() => {
+    const model = new SurveyCreatorModel({
+      showLogicTab: true,
+      isAutoSave: false,
+      haveCommercialLicense: true,
+    })
+
+    model.saveSurveyFunc = (saveNo: number, callback: (no: number, ok: boolean) => void) => {
+      const name = editingDefinition?.name ?? ('Survey ' + new Date().toLocaleDateString())
+      onSaveRef.current(model.JSON as Record<string, unknown>, name)
+        .then(() => callback(saveNo, true))
+        .catch(() => callback(saveNo, false))
+    }
+
+    return model
+  })
+
+  // Load definition JSON whenever the editing target changes
   useEffect(() => {
-    // Dynamically import survey-creator to avoid issues if not installed
-    Promise.all([
-      import('survey-creator-core').catch(() => null),
-      import('survey-creator-react').catch(() => null),
-    ])
-      .then(([coreModule, reactModule]) => {
-        if (!coreModule || !reactModule) {
-          setCreatorError(
-            'survey-creator-react is not installed. Run: npm install survey-creator-react'
-          )
-          return
-        }
-        // Import CSS (fire-and-forget; may already be loaded)
-        import('survey-creator-core/survey-creator-core.min.css').catch(() => {
-          // CSS may already be bundled or unavailable in some environments
-        })
-
-        const { SurveyCreatorModel } = coreModule
-        const { SurveyCreator } = reactModule
-
-        const model = new SurveyCreatorModel({
-          showLogicTab: true,
-          isAutoSave: false,
-          haveCommercialLicense: true,
-        })
-
-        if (activeDefinition?.definition) {
-          model.JSON = activeDefinition.definition
-        }
-
-        model.saveSurveyFunc = (saveNo: number, callback: (no: number, ok: boolean) => void) => {
-          const name = 'Survey ' + new Date().toLocaleDateString()
-          onSave(model.JSON as Record<string, unknown>, name)
-            .then(() => callback(saveNo, true))
-            .catch(() => callback(saveNo, false))
-        }
-
-        creatorRef.current = model
-        SurveyCreatorComponent = SurveyCreator as unknown as React.ComponentType<{ model: unknown }>
-        setCreatorLoaded(true)
-      })
-      .catch((err) => {
-        setCreatorError(String(err))
-      })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  if (creatorError) {
-    return (
-      <div
-        className="bg-white rounded-2xl p-8 text-center"
-        style={{ border: '1px solid var(--bd)' }}
-      >
-        <p className="font-body text-[14px] text-red-600 mb-2">Survey Creator unavailable</p>
-        <p className="font-body text-[12px] text-[#7a8a96]">{creatorError}</p>
-      </div>
-    )
-  }
-
-  if (!creatorLoaded || !SurveyCreatorComponent || !creatorRef.current) {
-    return (
-      <div className="flex justify-center py-16">
-        <div className="w-8 h-8 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
-      </div>
-    )
-  }
+    creator.JSON = editingDefinition?.definition ?? {}
+  }, [creator, editingDefinition])
 
   return (
-    <div ref={containerRef} style={{ height: '82vh' }}>
-      <SurveyCreatorComponent model={creatorRef.current} />
+    <div style={{ height: '82vh' }}>
+      <SurveyCreator model={creator} />
     </div>
   )
 }
 
 // ─── Preview tab ──────────────────────────────────────────────────────────────
+// Per SurveyJS docs: https://surveyjs.io/form-library/documentation/get-started-react
 
 interface PreviewTabProps {
   definition: SurveyDefinition | null
@@ -220,26 +188,7 @@ interface PreviewTabProps {
 }
 
 function PreviewTab({ definition, previewOverride }: PreviewTabProps) {
-  const [surveyLoaded, setSurveyLoaded] = useState(false)
-  const [surveyError, setSurveyError] = useState<string | null>(null)
   const def = previewOverride ?? definition
-
-  useEffect(() => {
-    if (!def) return
-
-    Promise.all([
-      import('survey-core').catch(() => null),
-      import('survey-react-ui').catch(() => null),
-    ])
-      .then(([coreModule, reactModule]) => {
-        if (!coreModule || !reactModule) {
-          setSurveyError('survey-react-ui is not installed. Run: npm install survey-react-ui')
-          return
-        }
-        setSurveyLoaded(true)
-      })
-      .catch((err) => setSurveyError(String(err)))
-  }, [def])
 
   if (!def) {
     return (
@@ -247,15 +196,6 @@ function PreviewTab({ definition, previewOverride }: PreviewTabProps) {
         <p className="font-body text-[14px] text-[#b0bec5]">
           No active survey definition to preview.
         </p>
-      </div>
-    )
-  }
-
-  if (surveyError) {
-    return (
-      <div className="bg-white rounded-2xl p-8 text-center" style={{ border: '1px solid var(--bd)' }}>
-        <p className="font-body text-[14px] text-red-600 mb-2">Preview unavailable</p>
-        <p className="font-body text-[12px] text-[#7a8a96]">{surveyError}</p>
       </div>
     )
   }
@@ -274,50 +214,19 @@ function PreviewTab({ definition, previewOverride }: PreviewTabProps) {
           This is a preview — no data will be saved.
         </p>
       </div>
-
-      {!surveyLoaded ? (
-        <div className="flex justify-center py-12">
-          <div className="w-8 h-8 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
-        </div>
-      ) : (
-        <SurveyJsPreview definition={def} />
-      )}
+      <SurveyPreview key={def.id} definition={def} />
     </div>
   )
 }
 
-// Separate component so lazy import works correctly
-function SurveyJsPreview({ definition }: { definition: SurveyDefinition }) {
-  const containerRef = useRef<HTMLDivElement>(null)
+function SurveyPreview({ definition }: { definition: SurveyDefinition }) {
+  const [model] = useState(() => {
+    const m = new Model(definition.definition)
+    m.mode = 'display'
+    return m
+  })
 
-  useEffect(() => {
-    let cleanup: (() => void) | null = null
-
-    Promise.all([
-      import('survey-core'),
-      import('survey-react-ui'),
-      import('react-dom/client'),
-    ]).then(([coreModule, reactModule, domModule]) => {
-      if (!containerRef.current) return
-
-      const { Model } = coreModule
-      const { Survey } = reactModule
-      const { createRoot } = domModule
-
-      const model = new Model(definition.definition)
-      model.mode = 'display'
-
-      const root = createRoot(containerRef.current)
-      root.render(
-        <Survey model={model} />
-      )
-      cleanup = () => root.unmount()
-    }).catch(console.error)
-
-    return () => cleanup?.()
-  }, [definition])
-
-  return <div ref={containerRef} />
+  return <Survey model={model} />
 }
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
@@ -332,6 +241,7 @@ export function SurveyMgmtPanel() {
   const [loading, setLoading] = useState(true)
   const [settingActiveId, setSettingActiveId] = useState<string | null>(null)
   const [previewDef, setPreviewDef] = useState<SurveyDefinition | null>(null)
+  const [editingDefinition, setEditingDefinition] = useState<SurveyDefinition | null>(null)
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -349,9 +259,7 @@ export function SurveyMgmtPanel() {
     }
   }, [toast])
 
-  useEffect(() => {
-    void fetchAll()
-  }, [fetchAll])
+  useEffect(() => { void fetchAll() }, [fetchAll])
 
   // ── Set active ────────────────────────────────────────────────────────────
   const handleSetActive = async (id: string) => {
@@ -373,14 +281,19 @@ export function SurveyMgmtPanel() {
     setTab('preview')
   }
 
+  // ── Edit in creator ───────────────────────────────────────────────────────
+  const handleEdit = (def: SurveyDefinition) => {
+    setEditingDefinition(def)
+    setTab('creator')
+  }
+
   // ── Save from creator ─────────────────────────────────────────────────────
-  const handleSave = async (json: Record<string, unknown>, name: string) => {
+  const handleSave = useCallback(async (json: Record<string, unknown>, name: string) => {
     await saveSurveyDefinition(name, json, user?.id)
     toast(`Saved "${name}".`, 'ok')
     await fetchAll()
-  }
+  }, [user?.id, toast, fetchAll])
 
-  // ── Tab config ────────────────────────────────────────────────────────────
   const tabs: { id: Tab; label: string }[] = [
     { id: 'library', label: 'Library' },
     { id: 'creator', label: 'Creator' },
@@ -412,6 +325,7 @@ export function SurveyMgmtPanel() {
             aria-selected={tab === t.id}
             onClick={() => {
               if (t.id !== 'preview') setPreviewDef(null)
+              if (t.id !== 'creator') setEditingDefinition(null)
               setTab(t.id)
             }}
             className="font-display text-[11px] font-bold tracking-[0.10em] uppercase px-4 py-2 rounded-lg transition-all"
@@ -422,6 +336,11 @@ export function SurveyMgmtPanel() {
             }}
           >
             {t.label}
+            {t.id === 'creator' && editingDefinition && (
+              <span className="ml-1.5 font-body text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#e8f5ec] text-[#0e5921]">
+                editing
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -433,12 +352,13 @@ export function SurveyMgmtPanel() {
           loading={loading}
           onSetActive={handleSetActive}
           onPreview={handlePreview}
+          onEdit={handleEdit}
           settingActiveId={settingActiveId}
         />
       )}
       {tab === 'creator' && (
         <CreatorTab
-          activeDefinition={activeDefinition}
+          editingDefinition={editingDefinition}
           onSave={handleSave}
         />
       )}
