@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+// Fix RC-2: static CSS import so Vite bundles it correctly.
+// Dynamic import of CSS inside useEffect is broken in Vite 4+ and fails silently.
+import 'survey-creator-core/survey-creator-core.min.css'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import {
   getSurveyDefinitions,
   getActiveDefinition,
   saveSurveyDefinition,
+  updateSurveyDefinition,
   setActiveDefinition,
 } from '@/services/surveyService'
 import { formatDateTime } from '@/utils/formatDate'
 import type { SurveyDefinition } from '@/types'
 
-// Survey Creator & Preview — dynamically imported to avoid SSR issues and keep
-// the main bundle lean. (survey-creator-react and survey-core must be in package.json)
+// Survey Creator — dynamically imported to keep the main bundle lean.
 let SurveyCreatorComponent: React.ComponentType<{ model: unknown }> | null = null
 
 type Tab = 'library' | 'creator' | 'preview'
@@ -22,6 +25,7 @@ interface LibraryTabProps {
   definitions: SurveyDefinition[]
   loading: boolean
   onSetActive: (id: string) => void
+  onEdit: (def: SurveyDefinition) => void
   onPreview: (def: SurveyDefinition) => void
   settingActiveId: string | null
 }
@@ -30,6 +34,7 @@ function LibraryTab({
   definitions,
   loading,
   onSetActive,
+  onEdit,
   onPreview,
   settingActiveId,
 }: LibraryTabProps) {
@@ -92,6 +97,14 @@ function LibraryTab({
             >
               Preview
             </button>
+            {/* Fix RC-1: Edit button loads the definition into the Creator */}
+            <button
+              type="button"
+              onClick={() => onEdit(def)}
+              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#7c3aed] hover:text-[#7c3aed] hover:bg-[#f5f3ff] transition-all"
+            >
+              Edit
+            </button>
             {!def.is_active && (
               <button
                 type="button"
@@ -124,21 +137,22 @@ function LibraryTab({
 // ─── Creator tab ──────────────────────────────────────────────────────────────
 
 interface CreatorTabProps {
-  activeDefinition: SurveyDefinition | null
-  onSave: (json: Record<string, unknown>, name: string) => Promise<void>
+  // Fix RC-3: renamed from activeDefinition — now receives whichever definition
+  // was explicitly selected for editing (via Edit button) or falls back to null
+  // (empty creator). The parent uses a key prop to force remount when this changes.
+  definitionToEdit: SurveyDefinition | null
+  onSave: (json: Record<string, unknown>) => Promise<void>
 }
 
-function CreatorTab({ activeDefinition, onSave }: CreatorTabProps) {
+function CreatorTab({ definitionToEdit, onSave }: CreatorTabProps) {
   const [creatorLoaded, setCreatorLoaded] = useState(false)
   const [creatorError, setCreatorError] = useState<string | null>(null)
   const creatorRef = useRef<{
     JSON: Record<string, unknown>
     saveSurveyFunc: ((saveNo: number, cb: (no: number, ok: boolean) => void) => void) | null
   } | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Dynamically import survey-creator to avoid issues if not installed
     Promise.all([
       import('survey-creator-core').catch(() => null),
       import('survey-creator-react').catch(() => null),
@@ -150,10 +164,6 @@ function CreatorTab({ activeDefinition, onSave }: CreatorTabProps) {
           )
           return
         }
-        // Import CSS (fire-and-forget; may already be loaded)
-        import('survey-creator-core/survey-creator-core.min.css').catch(() => {
-          // CSS may already be bundled or unavailable in some environments
-        })
 
         const { SurveyCreatorModel } = coreModule
         const { SurveyCreator } = reactModule
@@ -164,13 +174,14 @@ function CreatorTab({ activeDefinition, onSave }: CreatorTabProps) {
           haveCommercialLicense: true,
         })
 
-        if (activeDefinition?.definition) {
-          model.JSON = activeDefinition.definition
+        // Fix RC-3: use definitionToEdit from props (captured correctly at mount
+        // because the parent re-mounts this component via key when it changes)
+        if (definitionToEdit?.definition) {
+          model.JSON = definitionToEdit.definition
         }
 
         model.saveSurveyFunc = (saveNo: number, callback: (no: number, ok: boolean) => void) => {
-          const name = 'Survey ' + new Date().toLocaleDateString()
-          onSave(model.JSON as Record<string, unknown>, name)
+          onSave(model.JSON as Record<string, unknown>)
             .then(() => callback(saveNo, true))
             .catch(() => callback(saveNo, false))
         }
@@ -206,8 +217,26 @@ function CreatorTab({ activeDefinition, onSave }: CreatorTabProps) {
   }
 
   return (
-    <div ref={containerRef} style={{ height: '82vh' }}>
-      <SurveyCreatorComponent model={creatorRef.current} />
+    <div>
+      {definitionToEdit && (
+        <div
+          className="mb-3 px-4 py-2 rounded-lg flex items-center gap-2"
+          style={{ background: '#f5f3ff', border: '1px solid #ddd6fe' }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M9.5 2L12 4.5L5 11.5H2.5V9L9.5 2Z" stroke="#7c3aed" strokeWidth="1.4" strokeLinejoin="round"/>
+          </svg>
+          <p className="font-body text-[12px] font-semibold text-[#5b21b6]">
+            Editing: <span className="font-normal">{definitionToEdit.name}</span>
+            {definitionToEdit.is_active && (
+              <span className="ml-2 text-[#0e5921] bg-[#e8f5ec] border border-[#afc7b4] rounded-full px-2 py-0.5 text-[10px]">Active</span>
+            )}
+          </p>
+        </div>
+      )}
+      <div style={{ height: '80vh' }}>
+        <SurveyCreatorComponent model={creatorRef.current} />
+      </div>
     </div>
   )
 }
@@ -332,6 +361,8 @@ export function SurveyMgmtPanel() {
   const [loading, setLoading] = useState(true)
   const [settingActiveId, setSettingActiveId] = useState<string | null>(null)
   const [previewDef, setPreviewDef] = useState<SurveyDefinition | null>(null)
+  // Fix RC-1 & RC-3: track which definition is loaded in the Creator
+  const [editingDef, setEditingDef] = useState<SurveyDefinition | null>(null)
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -367,23 +398,35 @@ export function SurveyMgmtPanel() {
     }
   }
 
+  // Fix RC-1: load selected definition into the Creator
+  const handleEditDef = (def: SurveyDefinition) => {
+    setEditingDef(def)
+    setTab('creator')
+  }
+
   // ── Preview from library ──────────────────────────────────────────────────
   const handlePreview = (def: SurveyDefinition) => {
     setPreviewDef(def)
     setTab('preview')
   }
 
-  // ── Save from creator ─────────────────────────────────────────────────────
-  const handleSave = async (json: Record<string, unknown>, name: string) => {
-    await saveSurveyDefinition(name, json, user?.id)
-    toast(`Saved "${name}".`, 'ok')
+  // Fix RC-4: update existing definition if editing one, otherwise insert new
+  const handleSave = async (json: Record<string, unknown>) => {
+    if (editingDef?.id) {
+      await updateSurveyDefinition(editingDef.id, json)
+      toast(`"${editingDef.name}" updated.`, 'ok')
+    } else {
+      const name = 'Survey ' + new Date().toLocaleDateString()
+      await saveSurveyDefinition(name, json, user?.id)
+      toast(`Saved "${name}".`, 'ok')
+    }
     await fetchAll()
   }
 
   // ── Tab config ────────────────────────────────────────────────────────────
   const tabs: { id: Tab; label: string }[] = [
     { id: 'library', label: 'Library' },
-    { id: 'creator', label: 'Creator' },
+    { id: 'creator', label: editingDef ? `Editing: ${editingDef.name}` : 'Creator' },
     { id: 'preview', label: 'Preview' },
   ]
 
@@ -411,13 +454,14 @@ export function SurveyMgmtPanel() {
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => {
+              if (t.id === 'library') setEditingDef(null)
               if (t.id !== 'preview') setPreviewDef(null)
               setTab(t.id)
             }}
-            className="font-display text-[11px] font-bold tracking-[0.10em] uppercase px-4 py-2 rounded-lg transition-all"
+            className="font-display text-[11px] font-bold tracking-[0.10em] uppercase px-4 py-2 rounded-lg transition-all max-w-[200px] truncate"
             style={{
               background: tab === t.id ? '#ffffff' : 'transparent',
-              color: tab === t.id ? 'var(--g1)' : 'var(--f3)',
+              color: tab === t.id ? (t.id === 'creator' && editingDef ? '#7c3aed' : 'var(--g1)') : 'var(--f3)',
               boxShadow: tab === t.id ? 'var(--shadow-sm)' : 'none',
             }}
           >
@@ -432,13 +476,17 @@ export function SurveyMgmtPanel() {
           definitions={definitions}
           loading={loading}
           onSetActive={handleSetActive}
+          onEdit={handleEditDef}
           onPreview={handlePreview}
           settingActiveId={settingActiveId}
         />
       )}
       {tab === 'creator' && (
+        // Fix RC-3: key forces remount when the definition being edited changes,
+        // ensuring the creator model always loads the correct JSON.
         <CreatorTab
-          activeDefinition={activeDefinition}
+          key={editingDef?.id ?? 'new'}
+          definitionToEdit={editingDef}
           onSave={handleSave}
         />
       )}

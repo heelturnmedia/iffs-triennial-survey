@@ -8,6 +8,7 @@ import { ReportsPanel } from '@/components/dashboard/panels/ReportsPanel'
 import { UsersPanel } from '@/components/dashboard/panels/UsersPanel'
 import { SurveyMgmtPanel } from '@/components/dashboard/panels/SurveyMgmtPanel'
 import { WASettingsPanel } from '@/components/dashboard/panels/WASettingsPanel'
+import { AppFlowPanel } from '@/components/dashboard/panels/AppFlowPanel'
 import { SurveyModal } from '@/components/survey/SurveyModal'
 import { WelcomeOverlay } from '@/components/common/WelcomeOverlay'
 import { ConfirmModal } from '@/components/common/ConfirmModal'
@@ -35,6 +36,7 @@ export default function DashboardPage() {
           {activePanel === 'users' && isAdmin() && <UsersPanel />}
           {activePanel === 'survey-mgmt' && isAdmin() && <SurveyMgmtPanel />}
           {activePanel === 'wa-settings' && isAdmin() && <WASettingsPanel />}
+          {activePanel === 'app-flow'    && isAdmin() && <AppFlowPanel />}
         </main>
       </div>
       <SurveyModal />
