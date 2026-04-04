@@ -116,12 +116,13 @@ export function countryNameToIso2(name: string): string {
 }
 
 /**
- * Resolve any country value (string name, ISO2 code, or SurveyJS choicesByUrl
- * object) to an ISO 3166-1 alpha-2 code.
+ * Resolve any country value to an ISO 3166-1 alpha-2 code.
  *
- * SurveyJS stores the entire choice object from choicesByUrl when no valueName
- * is configured. The CountriesExample API returns objects with a `cca2` field
- * which is the ISO2 code directly.
+ * Handles:
+ *  - Plain object  { cca2: "PK", name: "Pakistan" }  (SurveyJS choicesByUrl result)
+ *  - JSON string   '{"cca2":"PK","name":"Pakistan"}'  (PostgREST ->> extracts JSONB objects as text)
+ *  - ISO2 string   "PK"                               (2-letter code)
+ *  - Country name  "Pakistan"                         (looked up in COUNTRY_NAME_TO_ISO2)
  */
 export function resolveCountryToIso2(value: unknown): string {
   if (!value) return ''
@@ -137,6 +138,21 @@ export function resolveCountryToIso2(value: unknown): string {
 
   const str = String(value).trim()
   if (!str) return ''
+
+  // PostgREST's ->> operator returns JSONB objects as their JSON string representation.
+  // If the survey stored a country object (e.g. SurveyJS choicesByUrl result), we get
+  // something like '{"cca2":"PK","name":"Pakistan",...}'. Parse and recurse.
+  if (str.startsWith('{')) {
+    try {
+      const parsed: unknown = JSON.parse(str)
+      if (parsed && typeof parsed === 'object') {
+        return resolveCountryToIso2(parsed)
+      }
+    } catch {
+      // Not valid JSON — fall through to string resolution
+    }
+  }
+
   // Already a 2-letter ISO2 code
   if (str.length === 2) return str.toUpperCase()
   return countryNameToIso2(str)

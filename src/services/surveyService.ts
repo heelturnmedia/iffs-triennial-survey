@@ -92,26 +92,38 @@ export async function getSubmissions(): Promise<SubmissionRow[]> {
   })
 }
 
-// ─── Lightweight map data — country + status only, no survey JSON ─────────────
-// Used exclusively by ChoroplethMap. Avoids pulling the full survey JSONB
-// payload for every submission just to draw country highlights.
+// ─── Lightweight map data — country + status only, no full survey JSON ────────
+// Used exclusively by ChoroplethMap. Extracts:
+//   1. profiles.country  — set if the user updated their profile
+//   2. data->>'Country'  — the survey Section 1 answer (PostgREST JSON extraction)
+// Most users have profiles.country = NULL because signUp() doesn't set it.
+// The survey answer is the reliable source.
 
 export async function getMapSubmissions(): Promise<MapSubmission[]> {
   const { data, error } = await supabase
     .from('survey_submissions')
-    .select('status, profile:profiles(country)')
+    // data->>Country: extracts the text value of the 'Country' key from the JSONB
+    // data column using PostgreSQL's ->> operator via PostgREST. Result field is 'Country'.
+    .select('status, Country:data->>Country, profile:profiles(country)')
   if (error) throw error
 
   return ((data ?? []) as unknown[]).map((row: unknown) => {
-    const r   = row as Record<string, unknown>
+    const r = row as Record<string, unknown>
     // PostgREST returns the joined row as an object (or null if no profile)
     const pRaw = r['profile']
     const profile = Array.isArray(pRaw)
       ? (pRaw[0] as Record<string, unknown> | undefined)
       : (pRaw as Record<string, unknown> | null | undefined)
+
+    // Priority: profile.country (explicit), then survey answer (reliable for most users)
+    const country =
+      (profile?.country as string | null | undefined) ??
+      (r['Country'] as string | null | undefined) ??
+      null
+
     return {
       status:  r['status'] as SurveyStatus,
-      country: (profile?.country as string | null | undefined) ?? null,
+      country,
     } as MapSubmission
   })
 }
