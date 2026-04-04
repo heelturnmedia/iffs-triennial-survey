@@ -28,53 +28,45 @@ export async function upsertSubmission(
     ...updates,
     updated_at: new Date().toISOString(),
   }
-  // 15-second hard timeout — same reasoning as submitSurvey: the Supabase
-  // client's JWT refresh can stall indefinitely if the refresh token has
-  // expired, leaving the fetch call waiting forever with no timeout.
-  const controller = new AbortController()
-  const watchdog   = setTimeout(() => controller.abort(), 15_000)
+  // Hard 15-second timeout via Promise.race — the Supabase client's internal
+  // JWT refresh can stall indefinitely when the refresh token has expired,
+  // leaving the underlying fetch waiting forever. .abortSignal() requires a
+  // newer postgrest-js than ^2.45.0 ships with, so we use Promise.race instead.
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('upsertSubmission timed out after 15 s')), 15_000)
+  )
+  const query = supabase
+    .from('survey_submissions')
+    .upsert(payload, { onConflict: 'user_id' })
+    .select()
+    .single()
 
-  try {
-    const { data, error } = await supabase
-      .from('survey_submissions')
-      .upsert(payload, { onConflict: 'user_id' })
-      .select()
-      .single()
-      .abortSignal(controller.signal)
-    if (error) throw error
-    return data as SurveySubmission
-  } finally {
-    clearTimeout(watchdog)
-  }
+  const { data, error } = await Promise.race([query, timeout])
+  if (error) throw error
+  return data as SurveySubmission
 }
 
 export async function submitSurvey(submissionId: string): Promise<SurveySubmission> {
-  // AbortController gives the fetch a hard 20-second deadline.
-  // Without this, the browser's native fetch has NO timeout — if the Supabase
-  // client's internal JWT refresh stalls (e.g. expired refresh token), or if
-  // there is any network-layer hang, the call waits forever and the spinner
-  // never stops. 20 s is generous for a simple UPDATE; typical is <500 ms.
-  const controller = new AbortController()
-  const watchdog   = setTimeout(() => controller.abort(), 20_000)
+  // Hard 20-second timeout via Promise.race — same reasoning as upsertSubmission.
+  // A simple UPDATE should complete in <500 ms; 20 s is the absolute ceiling
+  // before we give up and let the catch block show an error toast.
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('submitSurvey timed out after 20 s')), 20_000)
+  )
+  const query = supabase
+    .from('survey_submissions')
+    .update({
+      status:       'submitted',
+      submitted_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
+    })
+    .eq('id', submissionId)
+    .select()
+    .single()
 
-  try {
-    const { data, error } = await supabase
-      .from('survey_submissions')
-      .update({
-        status:       'submitted',
-        submitted_at: new Date().toISOString(),
-        updated_at:   new Date().toISOString(),
-      })
-      .eq('id', submissionId)
-      .select()
-      .single()
-      .abortSignal(controller.signal)
-
-    if (error) throw error
-    return data as SurveySubmission
-  } finally {
-    clearTimeout(watchdog)
-  }
+  const { data, error } = await Promise.race([query, timeout])
+  if (error) throw error
+  return data as SurveySubmission
 }
 
 export async function resetSubmission(userId: string): Promise<void> {
