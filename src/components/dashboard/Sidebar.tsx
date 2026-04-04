@@ -6,6 +6,7 @@ import {
   Settings2,
   Unplug,
   LogOut,
+  Workflow,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -32,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'users',       label: 'Users',       Icon: Users,           panel: 'users',       adminOnly: true },
   { id: 'survey-mgmt', label: 'Survey Mgmt', Icon: Settings2,       panel: 'survey-mgmt', adminOnly: true },
   { id: 'wa-settings', label: 'WA Settings', Icon: Unplug,          panel: 'wa-settings', adminOnly: true },
+  { id: 'app-flow',    label: 'App Flow',    Icon: Workflow,         panel: 'app-flow',    adminOnly: true },
 ]
 
 const ROLE_BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {

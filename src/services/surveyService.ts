@@ -136,6 +136,20 @@ export async function saveSurveyDefinition(
   return data as SurveyDefinition
 }
 
+export async function updateSurveyDefinition(
+  id: string,
+  definition: Record<string, unknown>
+): Promise<SurveyDefinition> {
+  const { data, error } = await supabase
+    .from('survey_definitions')
+    .update({ definition, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as SurveyDefinition
+}
+
 export async function setActiveDefinition(id: string): Promise<void> {
   // Deactivate all
   await supabase
