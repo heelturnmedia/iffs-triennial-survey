@@ -47,6 +47,12 @@ export interface SurveySubmission {
   updated_at?: string
 }
 
+// Lightweight row used only by the choropleth map — avoids fetching full survey JSON
+export interface MapSubmission {
+  status: SurveyStatus
+  country: string | null
+}
+
 // Row returned by admin queries (joined with profiles)
 export interface SubmissionRow extends SurveySubmission {
   profile?: Profile

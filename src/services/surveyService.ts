@@ -2,7 +2,7 @@
 // Survey Service — Supabase operations for submissions & definitions
 // ─────────────────────────────────────────────────────────────────────────────
 import { supabase } from '../lib/supabase'
-import type { SurveySubmission, SurveyDefinition, SubmissionRow } from '../types'
+import type { SurveySubmission, SurveyDefinition, SubmissionRow, MapSubmission, SurveyStatus } from '../types'
 
 // ─── Submissions ─────────────────────────────────────────────────────────────
 
@@ -74,6 +74,7 @@ export async function getSubmissions(): Promise<SubmissionRow[]> {
       )
     `)
     .order('updated_at', { ascending: false })
+    .limit(500)
   if (error) throw error
 
   return ((data ?? []) as unknown[]).map((row: unknown) => {
@@ -88,6 +89,30 @@ export async function getSubmissions(): Promise<SubmissionRow[]> {
       country: profile?.country as string | undefined,
       institution: profile?.institution as string | undefined,
     } as SubmissionRow
+  })
+}
+
+// ─── Lightweight map data — country + status only, no survey JSON ─────────────
+// Used exclusively by ChoroplethMap. Avoids pulling the full survey JSONB
+// payload for every submission just to draw country highlights.
+
+export async function getMapSubmissions(): Promise<MapSubmission[]> {
+  const { data, error } = await supabase
+    .from('survey_submissions')
+    .select('status, profile:profiles(country)')
+  if (error) throw error
+
+  return ((data ?? []) as unknown[]).map((row: unknown) => {
+    const r   = row as Record<string, unknown>
+    // PostgREST returns the joined row as an object (or null if no profile)
+    const pRaw = r['profile']
+    const profile = Array.isArray(pRaw)
+      ? (pRaw[0] as Record<string, unknown> | undefined)
+      : (pRaw as Record<string, unknown> | null | undefined)
+    return {
+      status:  r['status'] as SurveyStatus,
+      country: (profile?.country as string | null | undefined) ?? null,
+    } as MapSubmission
   })
 }
 
