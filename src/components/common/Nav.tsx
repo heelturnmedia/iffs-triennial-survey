@@ -37,13 +37,12 @@ export function Nav() {
   const { toast } = useUIStore()
 
   const handleSignOut = async () => {
-    try {
-      await signOut()
-      navigate('/')
-      toast('Signed out successfully.', 'ok')
-    } catch {
-      toast('Sign out failed. Please try again.', 'err')
-    }
+    await signOut()
+    // Hard redirect ensures the entire React tree and all Supabase client state
+    // is reset from scratch — no stale Zustand slices or cached auth state can
+    // survive a full page reload. navigate('/') would re-use the existing JS
+    // runtime and could still read an in-memory session that was just cleared.
+    window.location.href = '/'
   }
 
   const role        = (profile?.role ?? 'user') as UserRole

@@ -262,7 +262,7 @@ export function Sidebar() {
       <div className="px-3 pb-4" style={{ borderTop: '1px solid var(--bd)', paddingTop: 10 }}>
         <button
           type="button"
-          onClick={() => void signOut()}
+          onClick={() => signOut().then(() => { window.location.href = '/' })}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150"
           style={{
             fontFamily: 'var(--font-body)',

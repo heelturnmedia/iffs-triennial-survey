@@ -99,13 +99,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setProfile: (profile) => set({ profile }),
 
   signOut: async () => {
+    // ROOT CAUSE FIX: supabase.auth.signOut() makes a network call to revoke
+    // the server-side refresh token. If the token is already expired or
+    // invalidated (AuthApiError: Invalid Refresh Token), that call fails and
+    // the error branch was preserving the session in the Zustand store while
+    // Supabase's client left the token in localStorage. On next page load,
+    // getSession() read the stale token and the user appeared still logged in.
+    // The only escape was clearing browser cache.
+    //
+    // Fix: scope:'local' tells the Supabase client to clear the session from
+    // memory and localStorage immediately WITHOUT making any network call.
+    // Sign-out now always succeeds regardless of token validity or connectivity.
     set({ loading: true })
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      set({ error: error.message, loading: false })
-    } else {
-      set({ session: null, user: null, profile: null, loading: false, error: null })
+    try {
+      await supabase.auth.signOut({ scope: 'local' })
+    } catch {
+      // Even if something unexpected throws, we still clear local state.
     }
+    set({ session: null, user: null, profile: null, loading: false, error: null })
   },
 
   clearError: () => set({ error: null }),
