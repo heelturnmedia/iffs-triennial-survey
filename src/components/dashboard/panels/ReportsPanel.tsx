@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
-import { getSubmissions, resetSubmission } from '@/services/surveyService'
+import { getSubmissions, getMapSubmissions, resetSubmission } from '@/services/surveyService'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 
 const ChoroplethMap = lazy(() =>
   import('@/components/map/ChoroplethMap').then(m => ({ default: m.ChoroplethMap }))
@@ -11,7 +12,7 @@ import { formatDateTime } from '@/utils/formatDate'
 import { supabase } from '@/lib/supabase'
 import { SECTION_NAMES, STATUS_LABELS } from '@/constants'
 import { SectionResponsesView } from './SectionResponsesView'
-import type { SubmissionRow, SurveyStatus } from '@/types'
+import type { SubmissionRow, MapSubmission, SurveyStatus } from '@/types'
 
 type ReportsTab = 'overview' | 'responses'
 
@@ -343,6 +344,7 @@ export function ReportsPanel() {
 
   const [tab, setTab] = useState<ReportsTab>('overview')
   const [rows, setRows] = useState<SubmissionRow[]>([])
+  const [mapRows, setMapRows] = useState<MapSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<ReportFilters>({
     status: 'All',
@@ -350,7 +352,7 @@ export function ReportsPanel() {
     section: 'All',
   })
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
+  // ── Fetch table data ──────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     try {
       const data = await getSubmissions()
@@ -363,9 +365,21 @@ export function ReportsPanel() {
     }
   }, [toast])
 
+  // ── Fetch lightweight map data (unfiltered, no survey JSON) ───────────────
+  const fetchMapData = useCallback(async () => {
+    try {
+      const data = await getMapSubmissions()
+      setMapRows(data)
+    } catch (err) {
+      console.error('ReportsPanel map fetch error:', err)
+      // Non-critical — map will just show nothing
+    }
+  }, [])
+
   useEffect(() => {
     void fetchAll()
-  }, [fetchAll])
+    void fetchMapData()
+  }, [fetchAll, fetchMapData])
 
   // ── Realtime subscription ─────────────────────────────────────────────────
   useEffect(() => {
@@ -373,15 +387,20 @@ export function ReportsPanel() {
       .channel('reports-submissions')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'survey_submissions' },
-        () => void fetchAll()
+        { event: 'INSERT', schema: 'public', table: 'survey_submissions' },
+        () => { void fetchAll(); void fetchMapData() }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'survey_submissions' },
+        () => { void fetchAll(); void fetchMapData() }
       )
       .subscribe()
 
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [fetchAll])
+  }, [fetchAll, fetchMapData])
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const filteredRows = rows.filter((row) => {
@@ -497,9 +516,11 @@ export function ReportsPanel() {
 
           {/* ── Choropleth map ───────────────────────────────────────────────── */}
           <div className="mb-6">
-            <Suspense fallback={<div style={{ height: 380, background: 'var(--s2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--f3)', fontSize: 13 }}>Loading map…</div>}>
-              <ChoroplethMap submissions={filteredRows} height="380px" />
-            </Suspense>
+            <ErrorBoundary label="Map">
+              <Suspense fallback={<div style={{ height: 380, background: 'var(--s2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--f3)', fontSize: 13 }}>Loading map…</div>}>
+                <ChoroplethMap submissions={mapRows} height="380px" />
+              </Suspense>
+            </ErrorBoundary>
           </div>
 
           {/* ── Table ────────────────────────────────────────────────────────── */}
