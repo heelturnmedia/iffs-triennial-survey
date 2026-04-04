@@ -33,6 +33,7 @@ export function SurveyModal() {
 
   const contentAreaRef    = useRef<HTMLDivElement>(null)
   const autoSaveTimerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const saveWatchdogRef   = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // Build SurveyJS model when modal opens
   useEffect(() => {
@@ -66,14 +67,18 @@ export function SurveyModal() {
     setTotalPages(model.pageCount)
 
     // ── Auto-save on value changed (debounced 800 ms) ──────────────────────
+    // FIX: do NOT set status to 'saving' immediately on input — the debounce
+    // hasn't fired yet, nothing is being saved. The indicator was lying to
+    // users, making the app feel sluggish on every single click.
+    // Status only changes to 'saving' when the actual DB write starts.
     model.onValueChanged.add((sender) => {
       if (!user) return
       clearTimeout(autoSaveTimerRef.current)
-      setAutoSaveStatus('saving')
       autoSaveTimerRef.current = setTimeout(async () => {
         try {
           const now  = new Date().toISOString()
           const data = { ...sender.data }
+          // Write to localStorage first (sync, instant) — DB is the secondary backup
           updateSubmissionData(sender.currentPageNo, data, now)
           persistSurvey(user.email!, {
             status: 'draft',
@@ -81,19 +86,30 @@ export function SurveyModal() {
             data,
             saved_at: now,
           })
+          // Only NOW show 'saving' — the actual network write is about to start
+          setAutoSaveStatus('saving')
+          // Watchdog: if the DB write hangs for >6 s, stop showing the spinner.
+          // localStorage already has the data; the DB write will eventually complete.
+          clearTimeout(saveWatchdogRef.current)
+          saveWatchdogRef.current = setTimeout(() => {
+            if (useSurveyStore.getState().autoSaveStatus === 'saving') {
+              setAutoSaveStatus('saved')
+            }
+          }, 6_000)
           const saved = await upsertSubmission(user.id, {
             page_no: sender.currentPageNo,
             data,
             saved_at: now,
             status: 'draft',
           })
-          // If no submission row existed yet, store the newly created one
+          clearTimeout(saveWatchdogRef.current)
           if (!useSurveyStore.getState().submission?.id) {
             useSurveyStore.getState().setSubmission(saved)
           }
           setAutoSaveStatus('saved')
           setLastSavedAt(now)
         } catch {
+          clearTimeout(saveWatchdogRef.current)
           setAutoSaveStatus('error')
         }
       }, 800)
@@ -157,35 +173,42 @@ export function SurveyModal() {
 
     return () => {
       clearTimeout(autoSaveTimerRef.current)
+      clearTimeout(saveWatchdogRef.current)
     }
   }, [isModalOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isModalOpen) return null
 
   // ── Save progress and close ─────────────────────────────────────────────
-  const handleClose = async () => {
+  // FIX: was async and awaited upsertSubmission — if the DB was slow the X
+  // button was frozen until the request timed out. Users were trapped.
+  // Now: cancel any pending debounce, write to localStorage synchronously
+  // (instant), fire the DB write as fire-and-forget, close immediately.
+  // localStorage is the source of truth on next open anyway.
+  const handleClose = () => {
+    clearTimeout(autoSaveTimerRef.current)
+    clearTimeout(saveWatchdogRef.current)
+
     if (surveyModel && user) {
-      try {
-        const now  = new Date().toISOString()
-        const data = { ...surveyModel.data }
-        updateSubmissionData(surveyModel.currentPageNo, data, now)
-        persistSurvey(user.email!, {
-          status: 'draft',
-          page_no: surveyModel.currentPageNo,
-          data,
-          saved_at: now,
-        })
-        const saved = await upsertSubmission(user.id, {
-          page_no: surveyModel.currentPageNo,
-          data,
-          saved_at: now,
-          status: 'draft',
-        })
-        if (!useSurveyStore.getState().submission?.id) {
-          useSurveyStore.getState().setSubmission(saved)
-        }
-      } catch { /* fail silently */ }
+      const now  = new Date().toISOString()
+      const data = { ...surveyModel.data }
+      // Synchronous — instant, no network needed
+      updateSubmissionData(surveyModel.currentPageNo, data, now)
+      persistSurvey(user.email!, {
+        status: 'draft',
+        page_no: surveyModel.currentPageNo,
+        data,
+        saved_at: now,
+      })
+      // Fire-and-forget — don't block close on DB latency
+      upsertSubmission(user.id, {
+        page_no: surveyModel.currentPageNo,
+        data,
+        saved_at: now,
+        status: 'draft',
+      }).catch(() => { /* localStorage already has it */ })
     }
+
     closeModal()
     toast('Progress saved.', 'ok')
   }
