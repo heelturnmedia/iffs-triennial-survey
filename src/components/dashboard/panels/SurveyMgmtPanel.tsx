@@ -20,9 +20,9 @@ import 'survey-core/survey-core.min.css'
 import 'survey-creator-core/survey-creator-core.min.css'
 
 // ── SurveyJS modules ─────────────────────────────────────────────────────────
-import { SurveyCreatorModel } from 'survey-creator-core'
-// SurveyCreatorComponent is the React component; SurveyCreator is the model class.
-import { SurveyCreatorComponent } from 'survey-creator-react'
+// SurveyCreator = React-aware model class; SurveyCreatorComponent = React renderer.
+// Both come from survey-creator-react — do NOT use SurveyCreatorModel from survey-creator-core.
+import { SurveyCreator, SurveyCreatorComponent } from 'survey-creator-react'
 import { Model } from 'survey-core'
 import { Survey } from 'survey-react-ui'
 
@@ -154,7 +154,7 @@ function CreatorTab({ definitionToEdit, onSave }: CreatorTabProps) {
   // Create model once; parent uses key prop to force remount when editing target changes,
   // so definitionToEdit is always correct at mount time.
   const [creator] = useState(() => {
-    const model = new SurveyCreatorModel({
+    const model = new SurveyCreator({
       showLogicTab: true,
       isAutoSave: false,
       haveCommercialLicense: true,
