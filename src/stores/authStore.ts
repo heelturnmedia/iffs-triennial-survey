@@ -58,38 +58,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     })
 
-    // Subscribe to subsequent auth events
+    // Subscribe to subsequent auth events.
+    //
+    // Core rule: profile must NEVER go null while a session exists.
+    // Wiping profile before the re-fetch completes is what causes the admin
+    // view to flash back to "User". Instead we keep the existing profile
+    // visible until a confirmed fresh one arrives, and only clear on
+    // SIGNED_OUT (the one event where there genuinely is no profile).
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT') {
-          // Explicit sign-out — clear everything immediately, no profile needed
           set({ session: null, user: null, loading: false, profile: null })
           return
         }
 
-        if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
-          // INITIAL_SESSION: session recovered from localStorage on page load — same user.
-          //   The parallel getSession()→fetchProfile path already owns the profile load.
-          //   Do NOT clear profile here or the admin view flashes away while the network
-          //   round-trip (Supabase verifying the token) completes (~1-2 s after load).
-          // TOKEN_REFRESHED: silent token rotation — same user, profile unchanged.
-          // In both cases: update session/user, preserve whatever profile is in state.
-          set((state) => ({
-            session,
-            user: session?.user ?? null,
-            loading: false,
-            profile: state.profile,
-          }))
-          return
-        }
+        // For every other event: update session/user immediately, keep existing
+        // profile in place. We re-fetch only when the user might actually be
+        // different (SIGNED_IN, USER_UPDATED). For INITIAL_SESSION and
+        // TOKEN_REFRESHED the getSession() path or the token rotation already
+        // has the right data — a re-fetch would just race unnecessarily.
+        set((state) => ({
+          session,
+          user: session?.user ?? null,
+          loading: false,
+          profile: state.profile, // keep old profile — never null mid-session
+        }))
 
-        // SIGNED_IN / USER_UPDATED / PASSWORD_RECOVERY / any future event:
-        // Could be a different user (SIGNED_IN) or stale data (USER_UPDATED).
-        // Set session immediately so AuthGuard unblocks, then fetch fresh profile.
-        set({ session, user: session?.user ?? null, loading: false, profile: null })
-        if (session) {
+        if (session && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
+          // Re-fetch to get the correct profile for this specific user.
+          // We set it only when it arrives — no intermediate null state.
           const profile = await fetchProfile(session.user.id)
-          set({ profile })
+          if (profile) set({ profile })
         }
       }
     )

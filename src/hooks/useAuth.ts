@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useSurveyStore } from '@/stores/surveyStore'
 import { supabase } from '@/lib/supabase'
 import { getSubmission, getActiveDefinition } from '@/services/surveyService'
+import { getProfile } from '@/services/authService'
 import { loadPersistedSurvey } from '@/lib/localStorage'
 
 /**
@@ -17,6 +18,18 @@ export function useAuth() {
     const cleanup = authStore.initialize()
     return cleanup
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Safety net: if we have a valid session but profile is still null after the
+  // initial load window (e.g. fetchProfile failed silently, or an auth event
+  // cleared it), re-fetch automatically. This runs whenever user/profile changes.
+  useEffect(() => {
+    const { user, profile, loading } = authStore
+    if (loading || !user || profile) return
+    // Session exists but no profile — recover silently
+    getProfile(user.id).then((p) => {
+      if (p) useAuthStore.setState({ profile: p })
+    }).catch(() => { /* non-fatal */ })
+  }, [authStore.user?.id, authStore.profile, authStore.loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // When user signs in, load their survey submission
   useEffect(() => {
