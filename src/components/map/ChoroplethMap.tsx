@@ -78,14 +78,13 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
     const resolvedCount = stats.size
     const unresolvedSamples = [...new Set(unresolved)].slice(0, 10)
 
-    if (import.meta.env.DEV) {
-      console.info(
-        `[ChoroplethMap] ${resolvedCount} countries resolved from ${submissions.length} submissions` +
-        (unresolved.length > 0 ? ` (${unresolved.length} unresolved)` : '')
-      )
-      if (unresolved.length > 0) {
-        console.warn('[ChoroplethMap] Unresolved country values:', unresolvedSamples)
-      }
+    // Always log — admin-only panel, useful for production diagnostics
+    console.info(
+      `[ChoroplethMap] ${resolvedCount} countries resolved from ${submissions.length} submissions` +
+      (unresolved.length > 0 ? ` (${unresolved.length} unresolved)` : '')
+    )
+    if (unresolved.length > 0) {
+      console.warn('[ChoroplethMap] Unresolved country values:', unresolvedSamples)
     }
 
     const maxCount = resolvedCount > 0
@@ -166,12 +165,10 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
             <> Unresolved values: <em>{unresolvedSamples.join(', ')}</em></>
           )}
         </p>
-        {import.meta.env.DEV && (
-          <p className="font-body text-[10px] text-[#b0bec5]">
-            Check console for details. Verify country values in{' '}
-            <code>profiles.country</code> match ISO-2 codes or recognised names.
-          </p>
-        )}
+        <p className="font-body text-[10px] text-[#b0bec5]">
+          Check browser console for details. Verify country values in{' '}
+          <code>survey_submissions.data[&apos;Country&apos;]</code> match ISO-2 codes or recognised names.
+        </p>
       </div>
     )
   }
