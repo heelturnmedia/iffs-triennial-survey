@@ -6,7 +6,7 @@ import { useSurveyStore } from '@/stores/surveyStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { upsertSubmission, submitSurvey } from '@/services/surveyService'
-import { persistSurvey } from '@/lib/localStorage'
+import { persistSurvey, clearPersistedSurvey } from '@/lib/localStorage'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
 import { SurveyTimeline } from './SurveyTimeline'
 import { SurveySectionHeader } from './SurveySectionHeader'
@@ -73,6 +73,10 @@ export function SurveyModal() {
     // Status only changes to 'saving' when the actual DB write starts.
     model.onValueChanged.add((sender) => {
       if (!user) return
+      // App-level guard: never overwrite a terminal status with 'draft'.
+      // The DB trigger is the safety net; this prevents the network call entirely.
+      const currentStatus = useSurveyStore.getState().submission?.status
+      if (currentStatus === 'submitted' || currentStatus === 'reviewed') return
       clearTimeout(autoSaveTimerRef.current)
       autoSaveTimerRef.current = setTimeout(async () => {
         try {
@@ -122,6 +126,9 @@ export function SurveyModal() {
       if (contentAreaRef.current) contentAreaRef.current.scrollTop = 0
 
       if (user) {
+        // App-level guard: never overwrite a terminal status with 'draft'.
+        const currentStatus = useSurveyStore.getState().submission?.status
+        if (currentStatus === 'submitted' || currentStatus === 'reviewed') return
         try {
           const now  = new Date().toISOString()
           const data = { ...sender.data }
@@ -192,6 +199,9 @@ export function SurveyModal() {
               console.log('[Survey] submitSurvey success — status:', updated.status)
               // Update the store so Overview immediately reflects submitted status
               useSurveyStore.getState().setSubmission(updated)
+              // Clear localStorage draft so re-login merge cannot restore draft
+              // data on top of the now-submitted row.
+              if (user?.email) clearPersistedSurvey(user.email)
             } else {
               console.warn('[Survey] No submissionId — skipped submitSurvey (user may not be authenticated)')
             }
