@@ -5,7 +5,14 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { resolveCountryToIso2 } from '@/utils/countryRegions'
 import type { MapSubmission } from '@/types'
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
+declare const window: Window & { __env?: Record<string, string> }
+// window.__env is written at container start by docker-entrypoint.sh (runtime injection).
+// import.meta.env is baked in at build time. In Dokploy, runtime env vars win.
+const MAPBOX_TOKEN = (
+  (typeof window !== 'undefined' && window.__env?.VITE_MAPBOX_TOKEN) ||
+  import.meta.env.VITE_MAPBOX_TOKEN ||
+  ''
+) as string
 
 const GRAD_LIGHT   = '#1d7733'
 const GRAD_DARK    = '#0e5921'

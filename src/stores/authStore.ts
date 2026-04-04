@@ -60,13 +60,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // Subscribe to subsequent auth events (sign-in, sign-out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         // Set session/user FIRST so AuthGuard and AuthRedirect react immediately.
         // Awaiting fetchProfile before setting session causes a race: navigate('/dashboard')
         // fires while session is still null → AuthGuard bounces user back to /login.
-        set({ session, user: session?.user ?? null, loading: false, profile: null })
-        // Fetch profile in the background
-        if (session) {
+        //
+        // TOKEN_REFRESHED: the session is the same user, profile hasn't changed — don't
+        // clear it or the dashboard flashes to the user role view while we re-fetch.
+        const isTokenRefresh = event === 'TOKEN_REFRESHED'
+        set((state) => ({
+          session,
+          user: session?.user ?? null,
+          loading: false,
+          // Only clear the profile on actual sign-in/sign-out transitions, not token refreshes
+          profile: isTokenRefresh ? state.profile : null,
+        }))
+        // Fetch profile in the background (skip on refresh if we already have one)
+        if (session && !isTokenRefresh) {
           const profile = await fetchProfile(session.user.id)
           set({ profile })
         }
