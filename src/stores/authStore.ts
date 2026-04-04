@@ -58,33 +58,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     })
 
-    // Subscribe to subsequent auth events (sign-in, sign-out, token refresh)
+    // Subscribe to subsequent auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Set session/user FIRST so AuthGuard and AuthRedirect react immediately.
-        // Awaiting fetchProfile before setting session causes a race: navigate('/dashboard')
-        // fires while session is still null → AuthGuard bounces user back to /login.
-        //
-        // Events that should NOT wipe the profile before the new one arrives:
-        //   TOKEN_REFRESHED — same user, token silently rotated, profile unchanged
-        //   USER_UPDATED    — same user, re-fetch in background but keep old profile visible
-        // Events that should clear the profile:
-        //   SIGNED_IN       — could be a different user, stale profile must go
-        //   INITIAL_SESSION — first load, profile is null anyway
-        //   SIGNED_OUT      — clear everything
-        const shouldPreserveProfile =
-          event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'
+        if (event === 'SIGNED_OUT') {
+          // Explicit sign-out — clear everything immediately, no profile needed
+          set({ session: null, user: null, loading: false, profile: null })
+          return
+        }
 
-        set((state) => ({
-          session,
-          user: session?.user ?? null,
-          loading: false,
-          profile: shouldPreserveProfile ? state.profile : null,
-        }))
+        if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+          // INITIAL_SESSION: session recovered from localStorage on page load — same user.
+          //   The parallel getSession()→fetchProfile path already owns the profile load.
+          //   Do NOT clear profile here or the admin view flashes away while the network
+          //   round-trip (Supabase verifying the token) completes (~1-2 s after load).
+          // TOKEN_REFRESHED: silent token rotation — same user, profile unchanged.
+          // In both cases: update session/user, preserve whatever profile is in state.
+          set((state) => ({
+            session,
+            user: session?.user ?? null,
+            loading: false,
+            profile: state.profile,
+          }))
+          return
+        }
 
-        // Re-fetch profile whenever there is a session, EXCEPT pure token refreshes
-        // (profile data hasn't changed on TOKEN_REFRESHED)
-        if (session && event !== 'TOKEN_REFRESHED') {
+        // SIGNED_IN / USER_UPDATED / PASSWORD_RECOVERY / any future event:
+        // Could be a different user (SIGNED_IN) or stale data (USER_UPDATED).
+        // Set session immediately so AuthGuard unblocks, then fetch fresh profile.
+        set({ session, user: session?.user ?? null, loading: false, profile: null })
+        if (session) {
           const profile = await fetchProfile(session.user.id)
           set({ profile })
         }
