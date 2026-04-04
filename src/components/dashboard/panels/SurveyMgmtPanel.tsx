@@ -2,7 +2,7 @@
 // Survey Management Panel
 // Uses SurveyJS Creator v2 per https://surveyjs.io/survey-creator/documentation
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import {
@@ -21,9 +21,13 @@ import 'survey-creator-core/survey-creator-core.min.css'
 
 // ── SurveyJS modules ─────────────────────────────────────────────────────────
 import { SurveyCreatorModel } from 'survey-creator-core'
-import { SurveyCreator } from 'survey-creator-react'
+import { SurveyCreator as SurveyCreatorBase } from 'survey-creator-react'
 import { Model } from 'survey-core'
 import { Survey } from 'survey-react-ui'
+
+// survey-creator-react's class component doesn't expose props correctly in some
+// TS configs — cast to a compatible functional component type.
+const SurveyCreator = SurveyCreatorBase as unknown as React.ComponentType<{ model: SurveyCreatorModel }>
 
 type Tab = 'library' | 'creator' | 'preview'
 
