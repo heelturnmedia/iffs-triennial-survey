@@ -16,7 +16,7 @@ import { formatDateTime } from '@/utils/formatDate'
 import type { SurveyDefinition } from '@/types'
 
 // ── SurveyJS CSS — must be static imports so Vite injects them at load time ──
-import 'survey-core/defaultV2.min.css'
+import 'survey-core/survey-core.min.css'
 import 'survey-creator-core/survey-creator-core.min.css'
 
 // ── SurveyJS modules ─────────────────────────────────────────────────────────
