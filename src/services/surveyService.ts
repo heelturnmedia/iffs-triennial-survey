@@ -28,26 +28,43 @@ export async function upsertSubmission(
     ...updates,
     updated_at: new Date().toISOString(),
   }
-  const { data, error } = await supabase
+  // Hard 15-second timeout via Promise.race — the Supabase client's internal
+  // JWT refresh can stall indefinitely when the refresh token has expired,
+  // leaving the underlying fetch waiting forever. .abortSignal() requires a
+  // newer postgrest-js than ^2.45.0 ships with, so we use Promise.race instead.
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('upsertSubmission timed out after 15 s')), 15_000)
+  )
+  const query = supabase
     .from('survey_submissions')
     .upsert(payload, { onConflict: 'user_id' })
     .select()
     .single()
+
+  const { data, error } = await Promise.race([query, timeout])
   if (error) throw error
   return data as SurveySubmission
 }
 
 export async function submitSurvey(submissionId: string): Promise<SurveySubmission> {
-  const { data, error } = await supabase
+  // Hard 20-second timeout via Promise.race — same reasoning as upsertSubmission.
+  // A simple UPDATE should complete in <500 ms; 20 s is the absolute ceiling
+  // before we give up and let the catch block show an error toast.
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('submitSurvey timed out after 20 s')), 20_000)
+  )
+  const query = supabase
     .from('survey_submissions')
     .update({
-      status: 'submitted',
+      status:       'submitted',
       submitted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
     })
     .eq('id', submissionId)
     .select()
     .single()
+
+  const { data, error } = await Promise.race([query, timeout])
   if (error) throw error
   return data as SurveySubmission
 }
@@ -93,34 +110,28 @@ export async function getSubmissions(): Promise<SubmissionRow[]> {
 }
 
 // ─── Lightweight map data — country + status only, no full survey JSON ────────
-// Used exclusively by ChoroplethMap. Extracts:
-//   1. profiles.country  — set if the user updated their profile
-//   2. data->>'Country'  — the survey Section 1 answer (PostgREST JSON extraction)
-// Most users have profiles.country = NULL because signUp() doesn't set it.
-// The survey answer is the reliable source.
+// Used exclusively by ChoroplethMap.
+// Source: survey_submissions.data->>'Country' ONLY — the answer the participant
+// gave in Section 1 of the survey. We do NOT join profiles because profiles.country
+// is NULL for virtually every user (signUp() never sets it) and the survey answer
+// is the authoritative source.
+//
+// The Country question uses choicesByUrl with valueName:'cca2', so SurveyJS stores
+// a plain ISO-2 code like "IN". Older submissions may have stored the full country
+// object — resolveCountryToIso2() in ChoroplethMap handles both formats.
 
 export async function getMapSubmissions(): Promise<MapSubmission[]> {
   const { data, error } = await supabase
     .from('survey_submissions')
-    // data->>Country: extracts the text value of the 'Country' key from the JSONB
-    // data column using PostgreSQL's ->> operator via PostgREST. Result field is 'Country'.
-    .select('status, Country:data->>Country, profile:profiles(country)')
+    // data->>Country: PostgREST ->> operator extracts the text value of the
+    // 'Country' key from the JSONB data column. With valueName:'cca2' on the
+    // SurveyJS question this returns a plain ISO-2 string like "IN".
+    .select('status, Country:data->>Country')
   if (error) throw error
 
   return ((data ?? []) as unknown[]).map((row: unknown) => {
     const r = row as Record<string, unknown>
-    // PostgREST returns the joined row as an object (or null if no profile)
-    const pRaw = r['profile']
-    const profile = Array.isArray(pRaw)
-      ? (pRaw[0] as Record<string, unknown> | undefined)
-      : (pRaw as Record<string, unknown> | null | undefined)
-
-    // Priority: profile.country (explicit), then survey answer (reliable for most users)
-    const country =
-      (profile?.country as string | null | undefined) ??
-      (r['Country'] as string | null | undefined) ??
-      null
-
+    const country = (r['Country'] as string | null | undefined) ?? null
     return {
       status:  r['status'] as SurveyStatus,
       country,

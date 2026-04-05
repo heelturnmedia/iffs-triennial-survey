@@ -4,9 +4,8 @@
 // Right (authenticated): role badge + user name + "Sign Out" button
 
 import { ArrowRight } from 'lucide-react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
-import { useUIStore } from '@/stores/uiStore'
 import type { UserRole } from '@/types'
 
 // ── Role display config ────────────────────────────────────────────────────
@@ -31,10 +30,8 @@ const NAV_LINKS = [
 ]
 
 export function Nav() {
-  const navigate  = useNavigate()
   const location  = useLocation()
   const { user, profile, signOut } = useAuthStore()
-  const { toast } = useUIStore()
 
   const handleSignOut = async () => {
     await signOut()

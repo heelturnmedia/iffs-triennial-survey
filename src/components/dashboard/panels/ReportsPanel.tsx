@@ -345,6 +345,7 @@ export function ReportsPanel() {
   const [tab, setTab] = useState<ReportsTab>('overview')
   const [rows, setRows] = useState<SubmissionRow[]>([])
   const [mapRows, setMapRows] = useState<MapSubmission[]>([])
+  const [mapDataReady, setMapDataReady] = useState(false)
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<ReportFilters>({
     status: 'All',
@@ -373,6 +374,12 @@ export function ReportsPanel() {
     } catch (err) {
       console.error('ReportsPanel map fetch error:', err)
       // Non-critical — map will just show nothing
+    } finally {
+      // Gate ChoroplethMap mount until data is ready so the Mapbox Layer is
+      // always created with the correct fill expression on first render.
+      // If we mount with empty submissions first, react-map-gl does not
+      // reliably call setPaintProperty when the expression later changes.
+      setMapDataReady(true)
     }
   }, [])
 
@@ -518,7 +525,10 @@ export function ReportsPanel() {
           <div className="mb-6">
             <ErrorBoundary label="Map">
               <Suspense fallback={<div style={{ height: 380, background: 'var(--s2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--f3)', fontSize: 13 }}>Loading map…</div>}>
-                <ChoroplethMap submissions={mapRows} height="380px" />
+                {mapDataReady
+                  ? <ChoroplethMap submissions={mapRows} height="380px" />
+                  : <div style={{ height: 380, background: 'var(--s2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--f3)', fontSize: 13 }}>Loading map…</div>
+                }
               </Suspense>
             </ErrorBoundary>
           </div>

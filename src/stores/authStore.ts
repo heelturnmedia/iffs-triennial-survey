@@ -53,24 +53,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
    * Call once at app mount. Returns cleanup fn.
    */
   initialize: () => {
-    // Fetch current session immediately to avoid flash of unauthenticated state
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      // Set session/user immediately so AuthGuard can unblock the UI
-      set({ session, user: session?.user ?? null, loading: false })
-      // Then load profile in the background
-      if (session) {
-        const profile = await fetchProfile(session.user.id)
-        set({ profile })
-      }
-    })
-
-    // Subscribe to subsequent auth events.
+    // ROOT CAUSE FIX (page refresh glitch):
+    // Previously this called BOTH getSession() AND subscribed to
+    // onAuthStateChange. Both fired on load and raced each other — getSession()
+    // set state, then INITIAL_SESSION fired and set it again, producing 3-4
+    // rapid re-renders and visible flicker/glitch on every page refresh.
+    //
+    // Fix: use ONLY onAuthStateChange as the single source of truth. The
+    // INITIAL_SESSION event fires immediately from localStorage (no network),
+    // so there is no additional delay. getSession() is removed entirely.
     //
     // Core rule: profile must NEVER go null while a session exists.
-    // Wiping profile before the re-fetch completes is what causes the admin
-    // view to flash back to "User". Instead we keep the existing profile
-    // visible until a confirmed fresh one arrives, and only clear on
-    // SIGNED_OUT (the one event where there genuinely is no profile).
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT') {
@@ -93,31 +86,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return
         }
 
-        // For every other event: update session/user immediately, keep existing
-        // profile in place. We re-fetch only when the user might actually be
-        // different (SIGNED_IN, USER_UPDATED). For INITIAL_SESSION and
-        // TOKEN_REFRESHED the getSession() path or the token rotation already
-        // has the right data — a re-fetch would just race unnecessarily.
+        // Update session/user immediately, keep existing profile in place.
+        // Never null the profile mid-session — that is what caused the admin
+        // panel to flash back to the user view.
         set((state) => ({
           session,
           user: session?.user ?? null,
           loading: false,
-          profile: state.profile, // keep old profile — never null mid-session
+          profile: state.profile,
         }))
 
-        if (session && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
-          // DEADLOCK FIX: Do NOT await inside the auth-state listener.
-          //
-          // Supabase GoTrueClient holds its internal `navigator.locks` lock
-          // for the entire duration of the listener callback. If we `await`
-          // a PostgREST call here (fetchProfile), that call internally needs
-          // `getSession()` which tries to acquire the SAME lock → deadlock.
-          // The symptom is that a subsequent updateUser() call never fires
-          // its HTTP request and the UI hangs on "Updating…" forever.
-          //
-          // Defer the fetch to a microtask AFTER the listener returns and
-          // the lock releases. The user-visible effect is identical (profile
-          // is updated a few ms later) but no deadlock is possible.
+        // Fetch profile on INITIAL_SESSION (page load), SIGNED_IN, and
+        // USER_UPDATED. TOKEN_REFRESHED is excluded — the user hasn't
+        // changed, so re-fetching is unnecessary churn.
+        //
+        // DEADLOCK FIX: Do NOT await inside the auth-state listener.
+        // Supabase GoTrueClient holds its internal `navigator.locks` lock
+        // for the entire duration of the listener callback. If we `await`
+        // a PostgREST call here (fetchProfile), that call internally needs
+        // `getSession()` which tries to acquire the SAME lock → deadlock.
+        // The symptom is that a subsequent updateUser() call never fires
+        // its HTTP request and the UI hangs on "Updating…" forever.
+        //
+        // Defer the fetch to a microtask AFTER the listener returns and
+        // the lock releases. The user-visible effect is identical (profile
+        // is updated a few ms later) but no deadlock is possible.
+        if (session && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
           const userId = session.user.id
           setTimeout(() => {
             fetchProfile(userId).then((profile) => {
@@ -135,24 +129,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setPasswordRecovery: (isPasswordRecovery) => set({ isPasswordRecovery }),
 
   signOut: async () => {
-    // ROOT CAUSE FIX: supabase.auth.signOut() makes a network call to revoke
-    // the server-side refresh token. If the token is already expired or
-    // invalidated (AuthApiError: Invalid Refresh Token), that call fails and
-    // the error branch was preserving the session in the Zustand store while
-    // Supabase's client left the token in localStorage. On next page load,
-    // getSession() read the stale token and the user appeared still logged in.
-    // The only escape was clearing browser cache.
+    // ROOT CAUSE FIX (sign-out spinner/hang):
+    // Previously signOut() called set({ loading: true }) first, which
+    // immediately triggered AuthGuard to show the full-screen PageLoader
+    // spinner. Then it awaited supabase.auth.signOut() — a network call that
+    // can hang indefinitely when the auth server is slow or the token is
+    // already dead. The user was trapped staring at the spinner with no escape.
     //
-    // Fix: scope:'local' tells the Supabase client to clear the session from
-    // memory and localStorage immediately WITHOUT making any network call.
-    // Sign-out now always succeeds regardless of token validity or connectivity.
-    set({ loading: true })
-    try {
-      await supabase.auth.signOut({ scope: 'local' })
-    } catch {
-      // Even if something unexpected throws, we still clear local state.
-    }
+    // Fix — three steps, in this exact order:
+    //
+    // 1. Clear Zustand state RIGHT NOW (synchronous). AuthGuard sees
+    //    session: null and redirects. No loading flag, no spinner.
     set({ session: null, user: null, profile: null, loading: false, error: null })
+
+    // 2. Wipe the Supabase session token from localStorage directly and
+    //    synchronously. The SDK stores it under 'sb-<projectRef>-auth-token'.
+    //    This guarantees the token is gone before we navigate, so the next
+    //    page load cannot read a stale session regardless of whether the
+    //    network call below completes.
+    try {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key)
+        }
+      }
+    } catch { /* localStorage unavailable — ignore */ }
+
+    // 3. Tell the server to revoke the token — fire-and-forget, no await.
+    //    If this hangs or fails, it doesn't matter: local state is already
+    //    gone and the user is being redirected.
+    supabase.auth.signOut({ scope: 'local' }).catch(() => { /* ignore */ })
   },
 
   clearError: () => set({ error: null }),

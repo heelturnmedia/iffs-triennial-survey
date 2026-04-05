@@ -15,9 +15,13 @@ export function ConfirmModal() {
     try {
       await confirmModal.onConfirm()
     } finally {
+      // Always clear spinner and close — even if onConfirm throws or the
+      // network call times out. Previously closeConfirmModal() was outside
+      // the finally block, so any unhandled throw would leave the modal
+      // frozen open with the spinner stuck.
       setIsSubmitting(false)
+      closeConfirmModal()
     }
-    closeConfirmModal()
   }
 
   return (

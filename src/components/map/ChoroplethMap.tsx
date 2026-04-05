@@ -92,7 +92,9 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
       : 1
 
     // Build Mapbox match expression
-    const expr: unknown[] = ['match', ['get', 'iso_3166_1_alpha_2']]
+    // The mapbox.country-boundaries-v1 tileset uses 'iso_3166_1' (alpha-2),
+    // NOT 'iso_3166_1_alpha_2' — that property does not exist in the tileset.
+    const expr: unknown[] = ['match', ['get', 'iso_3166_1']]
     stats.forEach((s, iso2Upper) => {
       const n = s.submitted
       const hasDraft = s.inProgress > 0
@@ -114,7 +116,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   const handleMouseEnter = useCallback((e: MapLayerMouseEvent) => {
     if (!e.features?.length) return
     const feat = e.features[0]
-    const iso2Raw = feat.properties?.iso_3166_1_alpha_2 as string | undefined
+    const iso2Raw = feat.properties?.iso_3166_1 as string | undefined
     if (!iso2Raw) return
     const iso2 = iso2Raw.toUpperCase()
     const countryName = feat.properties?.name_en as string || iso2
