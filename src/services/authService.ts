@@ -151,7 +151,15 @@ export async function verifyAndUpdatePassword(
   })
   if (signInError) {
     const msg = (signInError.message ?? '').toLowerCase()
-    if (msg.includes('invalid login credentials') || msg.includes('invalid') || signInError.status === 400) {
+    // Narrow match: only classify as wrong-password when Supabase explicitly
+    // says so, or when it returns HTTP 400 (the documented status for bad
+    // credentials). A bare `includes('invalid')` would also swallow unrelated
+    // errors like "Invalid email format" or "invalid grant".
+    if (
+      msg.includes('invalid login credentials') ||
+      msg.includes('invalid credentials') ||
+      signInError.status === 400
+    ) {
       throw new WrongCurrentPasswordError()
     }
     throw signInError
