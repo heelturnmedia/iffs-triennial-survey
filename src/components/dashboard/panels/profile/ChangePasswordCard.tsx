@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { Eye, EyeOff, KeyRound, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
-import { updatePassword, verifyCurrentPassword } from '@/services/authService'
+import {
+  updatePassword,
+  verifyAndUpdatePassword,
+  WrongCurrentPasswordError,
+} from '@/services/authService'
 
 interface FieldErrors {
   current?: string
@@ -69,20 +73,19 @@ export function ChangePasswordCard() {
 
     setSaving(true)
     try {
-      // Verify current password (skipped in recovery mode).
-      if (!isPasswordRecovery) {
+      if (isPasswordRecovery) {
+        // Recovery mode: session is already proven via the magic link, no
+        // current-password re-verification possible.
+        await updatePassword(newPassword)
+      } else {
         if (!user?.email) {
           setError('Session email missing — please sign out and sign in again.')
           return
         }
-        const ok = await verifyCurrentPassword(user.email, currentPassword)
-        if (!ok) {
-          setFieldErrors({ current: 'Current password is incorrect' })
-          setCurrentPassword('')
-          return
-        }
+        // Single-client flow: verify current password and update on the main
+        // client in one call, avoiding navigator.locks contention.
+        await verifyAndUpdatePassword(user.email, currentPassword, newPassword)
       }
-      await updatePassword(newPassword)
       // Success — clear form, clear recovery flag, toast.
       setCurrentPassword('')
       setNewPassword('')
@@ -91,7 +94,10 @@ export function ChangePasswordCard() {
       if (isPasswordRecovery) setPasswordRecovery(false)
       toast('Password updated', 'ok')
     } catch (err) {
-      if (isPasswordRecovery && isRecoveryExpiredError(err)) {
+      if (err instanceof WrongCurrentPasswordError) {
+        setFieldErrors({ current: 'Current password is incorrect' })
+        setCurrentPassword('')
+      } else if (isPasswordRecovery && isRecoveryExpiredError(err)) {
         setRecoveryExpired(true)
       } else {
         const msg = err instanceof Error ? err.message : 'Could not update password'

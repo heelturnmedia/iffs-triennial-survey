@@ -106,10 +106,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }))
 
         if (session && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
-          // Re-fetch to get the correct profile for this specific user.
-          // We set it only when it arrives — no intermediate null state.
-          const profile = await fetchProfile(session.user.id)
-          if (profile) set({ profile })
+          // DEADLOCK FIX: Do NOT await inside the auth-state listener.
+          //
+          // Supabase GoTrueClient holds its internal `navigator.locks` lock
+          // for the entire duration of the listener callback. If we `await`
+          // a PostgREST call here (fetchProfile), that call internally needs
+          // `getSession()` which tries to acquire the SAME lock → deadlock.
+          // The symptom is that a subsequent updateUser() call never fires
+          // its HTTP request and the UI hangs on "Updating…" forever.
+          //
+          // Defer the fetch to a microtask AFTER the listener returns and
+          // the lock releases. The user-visible effect is identical (profile
+          // is updated a few ms later) but no deadlock is possible.
+          const userId = session.user.id
+          setTimeout(() => {
+            fetchProfile(userId).then((profile) => {
+              if (profile) set({ profile })
+            })
+          }, 0)
         }
       }
     )
