@@ -75,9 +75,21 @@ Self-contained form card for password change.
 
 ### Modified files
 
-**`src/services/authService.ts`** — add two functions, delete the stale `resetPasswordForEmail` export (the active caller is `SignInForm` which calls Supabase directly; see below).
+**`src/lib/supabase.ts`** — export a factory for creating an ephemeral, non-persisting client that closes over the already-resolved URL/key (so the existing `window.__env` runtime-injection logic stays in one place and we don't leak credentials through new exports):
 
 ```typescript
+export function createEphemeralClient() {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
+}
+```
+
+**`src/services/authService.ts`** — add two functions. Delete the stale `resetPasswordForEmail` export (the active caller is `SignInForm` which calls Supabase directly; see below).
+
+```typescript
+import { supabase, createEphemeralClient } from '@/lib/supabase'
+
 export async function updatePassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword })
   if (error) throw error
@@ -91,9 +103,7 @@ export async function verifyCurrentPassword(email: string, password: string): Pr
   //     unwanted profile re-fetch)
   //   - reset the main session's expiry clock
   //   - interfere with an in-flight PASSWORD_RECOVERY session
-  const tempClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  })
+  const tempClient = createEphemeralClient()
   const { error } = await tempClient.auth.signInWithPassword({ email, password })
   return !error
 }
@@ -105,9 +115,22 @@ The ephemeral-client approach is the key departure from a naive implementation. 
 
 - New field: `isPasswordRecovery: boolean` (default `false`).
 - New action: `setPasswordRecovery(flag: boolean)`.
-- In the existing `onAuthStateChange` callback, add an early branch: `if (event === 'PASSWORD_RECOVERY') { set({ session, user: session?.user ?? null, isPasswordRecovery: true, loading: false }); return }`. This MUST short-circuit before the `SIGNED_IN`/`USER_UPDATED` re-fetch branch — recovery sessions are for the same user, so a re-fetch is unnecessary and would race with the recovery UX.
+- In the existing `onAuthStateChange` callback, add an early branch that short-circuits before the `SIGNED_IN`/`USER_UPDATED` re-fetch branch (recovery sessions are for the same user, so a re-fetch is unnecessary and would race with the recovery UX):
+  ```typescript
+  if (event === 'PASSWORD_RECOVERY') {
+    set(state => ({
+      session,
+      user: session?.user ?? null,
+      profile: state.profile, // preserve — invariant: never null mid-session (commit c9596ba)
+      isPasswordRecovery: true,
+      loading: false,
+    }))
+    return
+  }
+  ```
+  The explicit `profile: state.profile` carry-forward is load-bearing: the existing store enforces the "profile must NEVER go null while a session exists" invariant, and a naive `set({ ... })` that omitted `profile` would regress the fix from commit `c9596ba`.
 
-**`src/components/dashboard/Sidebar.tsx`** — add a "Profile" entry visible to all roles (no role guard). Update `handleItemClick` (or its equivalent): when `isPasswordRecovery` is true, early-return for every click target except `'profile'`. Visual state: all other sidebar items rendered muted/disabled.
+**`src/components/dashboard/Sidebar.tsx`** — add a "Profile" entry visible to all roles (no role guard). Update `handleItemClick` (or its equivalent): when `isPasswordRecovery` is true, early-return for every click target except `'profile'`. Visual state: all other sidebar items rendered muted/disabled. **Sign-out remains available** during recovery (user may legitimately choose to abort and request a fresh reset link).
 
 **`src/pages/DashboardPage.tsx`** — register the new `profile` panel: add `import { ProfilePanel } from '@/components/dashboard/panels/ProfilePanel'` and a `{activePanel === 'profile' && <ProfilePanel />}` render branch. Panels in this file are statically imported (not lazy-loaded), so follow that convention.
 
@@ -177,11 +200,11 @@ Each card is roughly 100-150 lines with its own form state, validation, async su
 ### Password recovery flow (fixes existing broken behavior)
 
 1. User clicks "Forgot password?" in `SignInForm` → Supabase sends reset email with link to `${origin}/dashboard`.
-2. User clicks email link → Supabase parses the recovery token from the URL hash, establishes a recovery session, and lands on `/dashboard`. `AuthGuard` passes because a session exists.
+2. User clicks email link → Supabase parses the recovery token from the URL hash (via `detectSessionInUrl: true`, already enabled in `src/lib/supabase.ts`), establishes a recovery session, and lands on `/dashboard`. `AuthGuard` passes because a session exists. **Note:** `DashboardPage` must not perform any hash-based routing of its own — Supabase owns hash parsing for recovery links; any future effect reading `window.location.hash` and redirecting would break this flow.
 3. Supabase fires `onAuthStateChange` with `event === 'PASSWORD_RECOVERY'`.
 4. `authStore`'s listener catches this in the new branch and sets `isPasswordRecovery = true`.
 5. `DashboardPage`'s auto-navigation effect sees the flag flip, fires once (gated by `didAutoNavRef`), and calls `setActivePanel('profile')`.
-6. `ProfilePanel` renders a banner with `role="alert"`: *"Please set a new password to continue."*
+6. `ProfilePanel` renders a banner with `role="alert"` containing two lines: *"Please set a new password to continue."* and a secondary line in muted text: *"Do not close or refresh this page until your new password is saved — the reset link cannot be reused."*
 7. `ChangePasswordCard` reads `isPasswordRecovery === true` → hides the "Current password" field and skips `verifyCurrentPassword` in its submit handler.
 8. **Guard rail:** while `isPasswordRecovery === true`, `Sidebar.handleItemClick` early-returns for every target except `'profile'`, and `SurveyModal` open calls early-return. All other sidebar items render muted.
 9. On successful `updatePassword`, the card calls `authStore.setPasswordRecovery(false)`. The guard rail lifts; the ref resets; normal navigation resumes.
@@ -275,7 +298,8 @@ No automated tests added — consistent with current codebase conventions.
 - `src/components/dashboard/panels/profile/ChangePasswordCard.tsx`
 
 **Modified:**
-- `src/services/authService.ts` — add `updatePassword`, `verifyCurrentPassword` (ephemeral client); delete stale `resetPasswordForEmail`.
+- `src/lib/supabase.ts` — export `createEphemeralClient()` factory.
+- `src/services/authService.ts` — add `updatePassword`, `verifyCurrentPassword` (via ephemeral client); delete stale `resetPasswordForEmail`.
 - `src/stores/authStore.ts` — add `isPasswordRecovery` + `setPasswordRecovery`; add `PASSWORD_RECOVERY` branch inside existing `onAuthStateChange` callback (NOT a second subscription).
 - `src/components/dashboard/Sidebar.tsx` — add Profile nav entry (all roles); gate `handleItemClick` on `isPasswordRecovery`.
 - `src/pages/DashboardPage.tsx` — register profile panel (static import); add recovery auto-navigation effect with ref guard; block survey modal during recovery.
