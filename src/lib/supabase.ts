@@ -26,3 +26,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 })
+
+// ─── Ephemeral client factory ────────────────────────────────────────────────
+// For one-shot operations that must NOT share storage with the main app,
+// e.g. verifying a user's current password via signInWithPassword without
+// clobbering the active session, firing SIGNED_IN on the main listener,
+// or resetting the session expiry clock.
+export function createEphemeralClient() {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
+}
