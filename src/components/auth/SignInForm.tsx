@@ -83,7 +83,7 @@ export function SignInForm() {
     }
     try {
       await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth?mode=reset`,
+        redirectTo: `${window.location.origin}/dashboard`,
       })
       setForgotSent(true)
       toast('Password reset email sent.', 'ok')
