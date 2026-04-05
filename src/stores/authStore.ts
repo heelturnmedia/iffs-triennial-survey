@@ -22,10 +22,15 @@ interface AuthState {
   profile: Profile | null
   loading: boolean
   error: string | null
+  // Password recovery flag — true when a PASSWORD_RECOVERY auth event fires.
+  // While true, the UI forces the user into the Profile panel and disables
+  // other navigation until they set a new password.
+  isPasswordRecovery: boolean
 
   // Actions
   initialize: () => (() => void) | void
   setProfile: (profile: Profile | null) => void
+  setPasswordRecovery: (flag: boolean) => void
   signOut: () => Promise<void>
   clearError: () => void
 
@@ -41,6 +46,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   loading: true,
   error: null,
+  isPasswordRecovery: false,
 
   /**
    * Bootstrap the Supabase auth listener + fetch initial profile.
@@ -61,7 +67,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT') {
-          set({ session: null, user: null, loading: false, profile: null })
+          set({ session: null, user: null, loading: false, profile: null, isPasswordRecovery: false })
+          return
+        }
+
+        if (event === 'PASSWORD_RECOVERY') {
+          // Recovery sessions are for the same user — keep the cached profile
+          // to preserve the "profile never null while session exists" invariant
+          // (commit c9596ba). Flip the recovery flag so the UI can force
+          // the user into the Profile panel.
+          set((state) => ({
+            session,
+            user: session?.user ?? null,
+            profile: state.profile,
+            isPasswordRecovery: true,
+            loading: false,
+          }))
           return
         }
 
@@ -78,9 +99,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Fetch profile on INITIAL_SESSION (page load), SIGNED_IN, and
         // USER_UPDATED. TOKEN_REFRESHED is excluded — the user hasn't
         // changed, so re-fetching is unnecessary churn.
+        //
+        // DEADLOCK FIX: Do NOT await inside the auth-state listener.
+        // Supabase GoTrueClient holds its internal `navigator.locks` lock
+        // for the entire duration of the listener callback. If we `await`
+        // a PostgREST call here (fetchProfile), that call internally needs
+        // `getSession()` which tries to acquire the SAME lock → deadlock.
+        // The symptom is that a subsequent updateUser() call never fires
+        // its HTTP request and the UI hangs on "Updating…" forever.
+        //
+        // Defer the fetch to a microtask AFTER the listener returns and
+        // the lock releases. The user-visible effect is identical (profile
+        // is updated a few ms later) but no deadlock is possible.
         if (session && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
-          const profile = await fetchProfile(session.user.id)
-          if (profile) set({ profile })
+          const userId = session.user.id
+          setTimeout(() => {
+            fetchProfile(userId).then((profile) => {
+              if (profile) set({ profile })
+            })
+          }, 0)
         }
       }
     )
@@ -89,6 +126,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setProfile: (profile) => set({ profile }),
+  setPasswordRecovery: (isPasswordRecovery) => set({ isPasswordRecovery }),
 
   signOut: async () => {
     // ROOT CAUSE FIX (sign-out spinner/hang):

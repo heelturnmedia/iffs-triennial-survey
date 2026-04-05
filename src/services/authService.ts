@@ -109,13 +109,66 @@ export async function updateProfile(
   return data as Profile
 }
 
-// ─── Reset Password ───────────────────────────────────────────────────────────
+// ─── Update Password ──────────────────────────────────────────────────────────
 
-export async function resetPasswordForEmail(email: string) {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/login?mode=reset`,
-  })
+export async function updatePassword(newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
   if (error) throw error
+}
+
+// ─── Verify + Update Password ────────────────────────────────────────────────
+// Re-authenticates the user with the main client (using signInWithPassword),
+// then updates the password on the same client. Doing both on the main client
+// avoids the navigator.locks contention that arises when a second (ephemeral)
+// GoTrueClient instance runs signInWithPassword concurrently — that hangs the
+// main client's subsequent updateUser() call indefinitely even after the
+// server has already accepted it.
+//
+// The signInWithPassword call safely refreshes the existing session for the
+// same user (no SIGNED_OUT event fires). On wrong password, Supabase returns
+// an AuthApiError with message 'Invalid login credentials' — we surface this
+// as a dedicated `WrongCurrentPasswordError` so the UI can show the right
+// field error without leaking Supabase internals.
+
+export class WrongCurrentPasswordError extends Error {
+  constructor() {
+    super('Current password is incorrect')
+    this.name = 'WrongCurrentPasswordError'
+  }
+}
+
+export async function verifyAndUpdatePassword(
+  email: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  // Re-verify credentials on the main client. A successful call refreshes the
+  // session for the same user — no onAuthStateChange disruption beyond the
+  // usual TOKEN_REFRESHED / SIGNED_IN events the listener already handles.
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password: currentPassword,
+  })
+  if (signInError) {
+    const msg = (signInError.message ?? '').toLowerCase()
+    // Narrow match: only classify as wrong-password when Supabase explicitly
+    // says so, or when it returns HTTP 400 (the documented status for bad
+    // credentials). A bare `includes('invalid')` would also swallow unrelated
+    // errors like "Invalid email format" or "invalid grant".
+    if (
+      msg.includes('invalid login credentials') ||
+      msg.includes('invalid credentials') ||
+      signInError.status === 400
+    ) {
+      throw new WrongCurrentPasswordError()
+    }
+    throw signInError
+  }
+
+  // Now update the password on the same client — no lock contention, no
+  // second GoTrueClient instance.
+  const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+  if (updateError) throw updateError
 }
 
 // ─── Update Role ──────────────────────────────────────────────────────────────

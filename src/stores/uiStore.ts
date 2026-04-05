@@ -21,6 +21,7 @@ interface UIState {
   isConfirmModalOpen: boolean
   confirmModal: ConfirmModalConfig | null
   welcomeOverlayOpen: boolean
+  profileFormDirty: boolean
 
   setActivePanel: (panel: ActivePanel) => void
   addToast: (message: string, type?: ToastType) => void
@@ -28,6 +29,7 @@ interface UIState {
   openConfirmModal: (config: ConfirmModalConfig) => void
   closeConfirmModal: () => void
   setWelcomeOverlayOpen: (open: boolean) => void
+  setProfileFormDirty: (dirty: boolean) => void
   /** Shorthand: toast(message, type) */
   toast: (message: string, type?: ToastType) => void
 }
@@ -37,6 +39,7 @@ export const useUIStore = create<UIState>(() => ({
   isConfirmModalOpen: false,
   confirmModal: null,
   welcomeOverlayOpen: false,
+  profileFormDirty: false,
 
   setActivePanel: (activePanel) => useUIStore.setState({ activePanel }),
 
@@ -57,6 +60,9 @@ export const useUIStore = create<UIState>(() => ({
 
   setWelcomeOverlayOpen: (welcomeOverlayOpen) =>
     useUIStore.setState({ welcomeOverlayOpen }),
+
+  setProfileFormDirty: (profileFormDirty) =>
+    useUIStore.setState({ profileFormDirty }),
 
   toast: (message, type = 'info') => {
     useToastStore.getState().add({ message, variant: TOAST_VARIANT_MAP[type] ?? 'info' })

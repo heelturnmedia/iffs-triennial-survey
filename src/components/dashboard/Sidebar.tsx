@@ -7,6 +7,7 @@ import {
   Unplug,
   LogOut,
   Workflow,
+  UserCircle2,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -34,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'survey-mgmt', label: 'Survey Mgmt', Icon: Settings2,       panel: 'survey-mgmt', adminOnly: true },
   { id: 'wa-settings', label: 'WA Settings', Icon: Unplug,          panel: 'wa-settings', adminOnly: true },
   { id: 'app-flow',    label: 'App Flow',    Icon: Workflow,         panel: 'app-flow',    adminOnly: true },
+  { id: 'profile',     label: 'My Profile',  Icon: UserCircle2,       panel: 'profile' },
 ]
 
 const ROLE_BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -46,8 +48,11 @@ const ROLE_BADGE_COLORS: Record<string, { bg: string; text: string; border: stri
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Sidebar() {
-  const { profile, isAdmin, canViewReports, signOut } = useAuthStore()
+  const { profile, isAdmin, canViewReports, signOut, isPasswordRecovery } = useAuthStore()
   const { activePanel, setActivePanel } = useUIStore()
+  const profileFormDirty = useUIStore((s) => s.profileFormDirty)
+  const openConfirmModal = useUIStore((s) => s.openConfirmModal)
+  const setProfileFormDirty = useUIStore((s) => s.setProfileFormDirty)
   const { openModal } = useSurveyStore()
 
   const role = profile?.role ?? 'user'
@@ -72,11 +77,33 @@ export function Sidebar() {
   }
 
   const handleItemClick = (item: NavItem) => {
-    if (item.opensSurvey) {
-      openModal()
-    } else if (item.panel) {
-      setActivePanel(item.panel)
+    // During password recovery, only the profile panel is reachable.
+    if (isPasswordRecovery && item.panel !== 'profile') return
+
+    const performNavigation = () => {
+      if (item.opensSurvey) {
+        openModal()
+      } else if (item.panel) {
+        setActivePanel(item.panel)
+      }
     }
+
+    // If the user is leaving the profile panel with unsaved changes, confirm.
+    const leavingProfile = activePanel === 'profile' && item.panel !== 'profile'
+    if (leavingProfile && profileFormDirty) {
+      openConfirmModal({
+        title: 'Discard unsaved changes?',
+        message: 'You have unsaved profile changes. Leave without saving?',
+        variant: 'warning',
+        onConfirm: () => {
+          setProfileFormDirty(false)
+          performNavigation()
+        },
+      })
+      return
+    }
+
+    performNavigation()
   }
 
   return (
@@ -174,12 +201,15 @@ export function Sidebar() {
         <ul className="space-y-0.5" role="list">
           {NAV_ITEMS.filter(isVisible).map((item) => {
             const active = isActive(item)
+            const disabled = isPasswordRecovery && item.panel !== 'profile'
             const { Icon } = item
             return (
               <li key={item.id} role="listitem">
                 <button
                   type="button"
                   onClick={() => handleItemClick(item)}
+                  disabled={disabled}
+                  aria-disabled={disabled || undefined}
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150"
                   style={{
                     background: active ? 'rgba(29,119,51,0.07)' : 'transparent',
@@ -187,19 +217,20 @@ export function Sidebar() {
                     fontFamily: 'var(--font-body)',
                     fontSize: 13,
                     fontWeight: active ? 600 : 400,
-                    cursor: 'pointer',
+                    cursor: disabled ? 'not-allowed' : 'pointer',
                     border: 'none',
                     outline: 'none',
                     position: 'relative',
+                    opacity: disabled ? 0.4 : 1,
                   }}
                   onMouseEnter={(e) => {
-                    if (!active) {
+                    if (!active && !disabled) {
                       (e.currentTarget as HTMLButtonElement).style.background = 'rgba(29,119,51,0.04)'
                       ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--f1)'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!active) {
+                    if (!active && !disabled) {
                       (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
                       ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--f2)'
                     }

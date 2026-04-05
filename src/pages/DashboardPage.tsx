@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -9,13 +9,14 @@ import { UsersPanel } from '@/components/dashboard/panels/UsersPanel'
 import { SurveyMgmtPanel } from '@/components/dashboard/panels/SurveyMgmtPanel'
 import { WASettingsPanel } from '@/components/dashboard/panels/WASettingsPanel'
 import { AppFlowPanel } from '@/components/dashboard/panels/AppFlowPanel'
+import { ProfilePanel } from '@/components/dashboard/panels/ProfilePanel'
 import { SurveyModal } from '@/components/survey/SurveyModal'
 import { WelcomeOverlay } from '@/components/common/WelcomeOverlay'
 import { ConfirmModal } from '@/components/common/ConfirmModal'
 import { Nav } from '@/components/common/Nav'
 
 export default function DashboardPage() {
-  const { session, profile, loading, isAdmin, canViewReports } = useAuthStore()
+  const { session, profile, loading, isAdmin, canViewReports, isPasswordRecovery } = useAuthStore()
   const { activePanel, setActivePanel } = useUIStore()
   const navigate = useNavigate()
 
@@ -36,6 +37,20 @@ export default function DashboardPage() {
     }
   }, [profile, activePanel, setActivePanel])
 
+  // Password recovery: auto-navigate to the profile panel exactly once per
+  // activation. The ref gate prevents a loop if something else later tries
+  // to flip activePanel while recovery is active.
+  const didAutoNavRef = useRef(false)
+  useEffect(() => {
+    if (isPasswordRecovery && !didAutoNavRef.current) {
+      didAutoNavRef.current = true
+      setActivePanel('profile')
+    }
+    if (!isPasswordRecovery) {
+      didAutoNavRef.current = false
+    }
+  }, [isPasswordRecovery, setActivePanel])
+
   if (loading) return <PageLoader />
 
   return (
@@ -50,6 +65,7 @@ export default function DashboardPage() {
           {activePanel === 'survey-mgmt' && isAdmin() && <SurveyMgmtPanel />}
           {activePanel === 'wa-settings' && isAdmin() && <WASettingsPanel />}
           {activePanel === 'app-flow'    && isAdmin() && <AppFlowPanel />}
+          {activePanel === 'profile' && <ProfilePanel />}
         </main>
       </div>
       <SurveyModal />
