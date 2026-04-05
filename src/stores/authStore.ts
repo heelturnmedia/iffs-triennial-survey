@@ -22,10 +22,15 @@ interface AuthState {
   profile: Profile | null
   loading: boolean
   error: string | null
+  // Password recovery flag — true when a PASSWORD_RECOVERY auth event fires.
+  // While true, the UI forces the user into the Profile panel and disables
+  // other navigation until they set a new password.
+  isPasswordRecovery: boolean
 
   // Actions
   initialize: () => (() => void) | void
   setProfile: (profile: Profile | null) => void
+  setPasswordRecovery: (flag: boolean) => void
   signOut: () => Promise<void>
   clearError: () => void
 
@@ -41,6 +46,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   loading: true,
   error: null,
+  isPasswordRecovery: false,
 
   /**
    * Bootstrap the Supabase auth listener + fetch initial profile.
@@ -68,7 +74,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT') {
-          set({ session: null, user: null, loading: false, profile: null })
+          set({ session: null, user: null, loading: false, profile: null, isPasswordRecovery: false })
+          return
+        }
+
+        if (event === 'PASSWORD_RECOVERY') {
+          // Recovery sessions are for the same user — keep the cached profile
+          // to preserve the "profile never null while session exists" invariant
+          // (commit c9596ba). Flip the recovery flag so the UI can force
+          // the user into the Profile panel.
+          set((state) => ({
+            session,
+            user: session?.user ?? null,
+            profile: state.profile,
+            isPasswordRecovery: true,
+            loading: false,
+          }))
           return
         }
 
@@ -97,6 +118,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setProfile: (profile) => set({ profile }),
+  setPasswordRecovery: (isPasswordRecovery) => set({ isPasswordRecovery }),
 
   signOut: async () => {
     // ROOT CAUSE FIX: supabase.auth.signOut() makes a network call to revoke
