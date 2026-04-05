@@ -1747,7 +1747,7 @@ Only commit if Step 1-13 surfaced issues that required code changes. Otherwise t
 
 ## Done
 
-At the end of Task 12, all files in the Files Summary section of the spec are implemented, committed, and verified. The branch `feature/auth-and-content-updates` is ready for a PR against `main`.
+At the end of Task 14, all files in the Files Summary section of the spec are implemented, committed, and verified. The branch `feature/auth-and-content-updates` is ready for a PR against `main`.
 
 **PR title suggestion:** `feat: user profile panel and password change`
 
