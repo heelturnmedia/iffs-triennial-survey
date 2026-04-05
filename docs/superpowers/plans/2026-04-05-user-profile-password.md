@@ -420,11 +420,29 @@ interface FieldErrors {
   confirm?: string
 }
 
+// Detect Supabase errors that indicate an expired / invalid recovery session.
+// Supabase surfaces these as AuthApiError with status 401 or messages mentioning
+// expired/invalid refresh tokens or JWT. We match permissively to catch variants.
+function isRecoveryExpiredError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false
+  const e = err as { status?: number; code?: string; message?: string }
+  if (e.status === 401) return true
+  const msg = (e.message ?? '').toLowerCase()
+  return (
+    msg.includes('expired') ||
+    msg.includes('invalid refresh') ||
+    msg.includes('jwt') ||
+    e.code === 'session_not_found'
+  )
+}
+
 export function ChangePasswordCard() {
   const user = useAuthStore((s) => s.user)
   const isPasswordRecovery = useAuthStore((s) => s.isPasswordRecovery)
   const setPasswordRecovery = useAuthStore((s) => s.setPasswordRecovery)
+  const signOut = useAuthStore((s) => s.signOut)
   const toast = useUIStore((s) => s.toast)
+  const [recoveryExpired, setRecoveryExpired] = useState(false)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -483,11 +501,21 @@ export function ChangePasswordCard() {
       if (isPasswordRecovery) setPasswordRecovery(false)
       toast('Password updated', 'ok')
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not update password'
-      setError(msg)
+      if (isPasswordRecovery && isRecoveryExpiredError(err)) {
+        setRecoveryExpired(true)
+      } else {
+        const msg = err instanceof Error ? err.message : 'Could not update password'
+        setError(msg)
+      }
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleSignOutAndRestart = async () => {
+    setPasswordRecovery(false)
+    await signOut()
+    window.location.href = '/login'
   }
 
   return (
@@ -524,6 +552,40 @@ export function ChangePasswordCard() {
         </div>
       </header>
 
+      {recoveryExpired ? (
+        <div
+          role="alert"
+          style={{
+            padding: '14px 16px',
+            borderRadius: 12,
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+          }}
+        >
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#991b1b' }}>
+            Reset link expired
+          </p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#b91c1c', marginTop: 4, marginBottom: 12 }}>
+            Your password reset link has expired. Please sign in again and request a new one.
+          </p>
+          <button
+            type="button"
+            onClick={handleSignOutAndRestart}
+            className="rounded-xl px-4 py-2"
+            style={{
+              background: '#b91c1c',
+              color: '#fff',
+              fontFamily: 'var(--font-body)',
+              fontSize: 13,
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Sign out and request new link
+          </button>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {!isPasswordRecovery && (
           <PasswordField
@@ -600,6 +662,7 @@ export function ChangePasswordCard() {
           </button>
         </div>
       </form>
+      )}
     </section>
   )
 }
@@ -774,11 +837,14 @@ export function ProfileDetailsCard() {
     setError(null)
     setSaving(true)
     try {
+      // Send trimmed values as-is (including empty strings) so clearing a
+      // field actually persists. Falling back to `undefined` would drop the
+      // key from the payload and leave the old value intact.
       const updated = await updateProfile(profile.id, {
         first_name: firstNameTrimmed,
         last_name: lastNameTrimmed,
-        country: country.trim() || undefined,
-        institution: institution.trim() || undefined,
+        country: country.trim(),
+        institution: institution.trim(),
       })
       setProfile(updated)
       toast('Profile saved', 'ok')
@@ -1151,7 +1217,109 @@ EOF
 
 ## Chunk 3: Wire into existing Dashboard shell
 
-### Task 9: Add Profile entry to Sidebar and gate `handleItemClick`
+### Task 9: Add `profileFormDirty` flag to `uiStore`
+
+**Files:**
+- Modify: `src/stores/uiStore.ts`
+- Modify: `src/types/index.ts` (if UIState is typed there; otherwise purely in uiStore.ts)
+
+This flag lets the Sidebar intercept panel switches when the profile form has unsaved changes and route them through `ConfirmModal`. The flag lives in `uiStore` (not `authStore`) because it's pure UI state.
+
+- [ ] **Step 1: Add `profileFormDirty` to `UIState` in `src/stores/uiStore.ts`.**
+
+In the `UIState` interface, add:
+```typescript
+  profileFormDirty: boolean
+  setProfileFormDirty: (dirty: boolean) => void
+```
+
+- [ ] **Step 2: Initialize the field and action in the store body.**
+
+In the `create<UIState>` body, add `profileFormDirty: false,` next to the other initial state fields, and add the action below `setActivePanel`:
+```typescript
+  setProfileFormDirty: (profileFormDirty) => useUIStore.setState({ profileFormDirty }),
+```
+
+- [ ] **Step 3: Verify typecheck.**
+
+Run: `npx tsc --noEmit`
+Expected: clean exit.
+
+- [ ] **Step 4: Commit.**
+
+```bash
+git add src/stores/uiStore.ts
+git commit -m "$(cat <<'EOF'
+feat(ui-store): add profileFormDirty flag
+
+Lets the Sidebar intercept panel switches when the profile details
+form has unsaved changes and confirm with the user before discarding.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Task 10: Wire `ProfileDetailsCard` to publish its dirty state
+
+**Files:**
+- Modify: `src/components/dashboard/panels/profile/ProfileDetailsCard.tsx`
+
+- [ ] **Step 1: Import and subscribe to the setter.**
+
+At the top of the component, add to the `useUIStore` selectors:
+```typescript
+const setProfileFormDirty = useUIStore((s) => s.setProfileFormDirty)
+```
+
+- [ ] **Step 2: Publish dirty state via `useEffect`.**
+
+Below the existing `dirty` `useMemo`, add:
+```typescript
+useEffect(() => {
+  setProfileFormDirty(dirty)
+  // Clear the flag when the card unmounts so a stale flag can't block nav.
+  return () => setProfileFormDirty(false)
+}, [dirty, setProfileFormDirty])
+```
+
+Add `useEffect` to the react import at the top of the file:
+```typescript
+import { useState, useMemo, useEffect } from 'react'
+```
+
+- [ ] **Step 3: Also clear the flag after a successful save.**
+
+In `handleSubmit`, after `setProfile(updated)` and before `toast(...)`, add:
+```typescript
+setProfileFormDirty(false)
+```
+
+- [ ] **Step 4: Verify typecheck.**
+
+Run: `npx tsc --noEmit`
+Expected: clean exit.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add src/components/dashboard/panels/profile/ProfileDetailsCard.tsx
+git commit -m "$(cat <<'EOF'
+feat(profile): publish dirty state to uiStore
+
+Lets the Sidebar gate panel switches on unsaved profile changes.
+Flag clears on unmount and on successful save.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Task 11: Add Profile entry to Sidebar and gate `handleItemClick`
 
 **Files:**
 - Modify: `src/components/dashboard/Sidebar.tsx`
@@ -1197,7 +1365,7 @@ const NAV_ITEMS: NavItem[] = [
 ]
 ```
 
-- [ ] **Step 3: Read `isPasswordRecovery` in the component.**
+- [ ] **Step 3: Read `isPasswordRecovery` and the uiStore bits in the component.**
 
 In `Sidebar()`, update the auth store destructure to include it:
 
@@ -1205,7 +1373,16 @@ In `Sidebar()`, update the auth store destructure to include it:
 const { profile, isAdmin, canViewReports, signOut, isPasswordRecovery } = useAuthStore()
 ```
 
-- [ ] **Step 4: Gate `handleItemClick` on recovery mode.**
+Also pull `profileFormDirty`, `openConfirmModal`, and `setProfileFormDirty` from the uiStore:
+
+```typescript
+const { activePanel, setActivePanel } = useUIStore()
+const profileFormDirty = useUIStore((s) => s.profileFormDirty)
+const openConfirmModal = useUIStore((s) => s.openConfirmModal)
+const setProfileFormDirty = useUIStore((s) => s.setProfileFormDirty)
+```
+
+- [ ] **Step 4: Gate `handleItemClick` on recovery mode and dirty form.**
 
 Replace the existing `handleItemClick` (lines 74-80) with:
 
@@ -1213,11 +1390,31 @@ Replace the existing `handleItemClick` (lines 74-80) with:
 const handleItemClick = (item: NavItem) => {
   // During password recovery, only the profile panel is reachable.
   if (isPasswordRecovery && item.panel !== 'profile') return
-  if (item.opensSurvey) {
-    openModal()
-  } else if (item.panel) {
-    setActivePanel(item.panel)
+
+  const performNavigation = () => {
+    if (item.opensSurvey) {
+      openModal()
+    } else if (item.panel) {
+      setActivePanel(item.panel)
+    }
   }
+
+  // If the user is leaving the profile panel with unsaved changes, confirm.
+  const leavingProfile = activePanel === 'profile' && item.panel !== 'profile'
+  if (leavingProfile && profileFormDirty) {
+    openConfirmModal({
+      title: 'Discard unsaved changes?',
+      message: 'You have unsaved profile changes. Leave without saving?',
+      variant: 'warning',
+      onConfirm: () => {
+        setProfileFormDirty(false)
+        performNavigation()
+      },
+    })
+    return
+  }
+
+  performNavigation()
 }
 ```
 
@@ -1298,7 +1495,7 @@ EOF
 
 ---
 
-### Task 10: Register Profile panel in `DashboardPage` and add recovery auto-navigation
+### Task 12: Register Profile panel in `DashboardPage` and add recovery auto-navigation
 
 **Files:**
 - Modify: `src/pages/DashboardPage.tsx`
@@ -1395,17 +1592,17 @@ EOF
 
 ---
 
-### Task 11: Block survey modal from opening during recovery
+### Task 13: Block survey modal from opening during recovery
 
 **Files:**
 - Modify: `src/stores/surveyStore.ts` OR `src/components/dashboard/Sidebar.tsx` (whichever owns the `openModal` call path)
 
-The Sidebar already gates the "My Survey" sidebar click via the `handleItemClick` guard in Task 9 (the `opensSurvey` item falls through the `item.panel !== 'profile'` check and is blocked). However, the survey modal can also be opened from other places (e.g. the Overview panel's "Start survey" button). To be thorough, we also gate at the store level.
+The Sidebar already gates the "My Survey" sidebar click via the `handleItemClick` guard in Task 11 (the `opensSurvey` item falls through the `item.panel !== 'profile'` check and is blocked). However, the survey modal can also be opened from other places (e.g. the Overview panel's "Start survey" button). To be thorough, we also gate at the store level.
 
 - [ ] **Step 1: Search for `openModal` callers.**
 
 Run: `git grep -n "openModal\(\)" src/`
-Expected: list of call sites. Note all non-Sidebar callers.
+Expected: list of call sites. Note all non-Sidebar callers — these are the concrete targets for the fallback if circular imports force per-caller guarding instead of a store-level guard.
 
 - [ ] **Step 2: Open `src/stores/surveyStore.ts` and locate `openModal`.**
 
@@ -1455,7 +1652,7 @@ EOF
 
 ## Chunk 4: Manual verification via preview
 
-### Task 12: End-to-end preview verification
+### Task 14: End-to-end preview verification
 
 **Files:** none (manual verification only)
 
@@ -1525,6 +1722,10 @@ To fully verify the PASSWORD_RECOVERY flow, manually: (a) trigger a reset email 
 (Manual, requires live recovery session from Step 9.) While `isPasswordRecovery === true`, attempt to click Overview, Reports, My Survey, Users (if admin). Expect:
 - All non-Profile items are visually muted and do not respond to clicks.
 - Sign Out remains clickable.
+
+- [ ] **Step 10b: Verify dirty-form confirm modal on panel switch.**
+
+Open Profile → edit First name → click Overview in the sidebar without saving. Expect: `ConfirmModal` appears with "Discard unsaved changes?" copy. Click Cancel → stays on Profile panel with form still dirty. Click the same item again → confirm → navigates to Overview and the form dirty flag clears. Re-open Profile → verify the form state was discarded (shows the original values from the store).
 
 - [ ] **Step 11: Verify dirty-form edit is preserved on retry after error.**
 
