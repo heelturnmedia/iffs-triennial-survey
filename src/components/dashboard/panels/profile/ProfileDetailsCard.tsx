@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { UserCircle2, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -10,6 +10,7 @@ export function ProfileDetailsCard() {
   const user = useAuthStore((s) => s.user)
   const setProfile = useAuthStore((s) => s.setProfile)
   const toast = useUIStore((s) => s.toast)
+  const setProfileFormDirty = useUIStore((s) => s.setProfileFormDirty)
 
   const [firstName, setFirstName] = useState(profile?.first_name ?? '')
   const [lastName, setLastName] = useState(profile?.last_name ?? '')
@@ -26,6 +27,12 @@ export function ProfileDetailsCard() {
       institution !== (profile?.institution ?? '')
     )
   }, [firstName, lastName, country, institution, profile])
+
+  useEffect(() => {
+    setProfileFormDirty(dirty)
+    // Clear the flag when the card unmounts so a stale flag can't block nav.
+    return () => setProfileFormDirty(false)
+  }, [dirty, setProfileFormDirty])
 
   const firstNameTrimmed = firstName.trim()
   const lastNameTrimmed = lastName.trim()
@@ -48,6 +55,7 @@ export function ProfileDetailsCard() {
         institution: institution.trim(),
       })
       setProfile(updated)
+      setProfileFormDirty(false)
       toast('Profile saved', 'ok')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not save profile'
