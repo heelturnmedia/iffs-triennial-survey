@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { create } from 'zustand'
 import type { SurveySubmission, SurveyDefinition } from '@/types'
+import { useAuthStore } from './authStore'
 
 type AutoSaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -41,7 +42,12 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     set({ submission: { ...existing, page_no: pageNo, data, saved_at: savedAt } })
   },
 
-  openModal: () => set({ isModalOpen: true }),
+  openModal: () => {
+    // Block during password recovery — the user must finish setting a new
+    // password before accessing the survey.
+    if (useAuthStore.getState().isPasswordRecovery) return
+    set({ isModalOpen: true })
+  },
   closeModal: () => set({ isModalOpen: false }),
   setSurveyLoaded: (isSurveyLoaded) => set({ isSurveyLoaded }),
   setAutoSaveStatus: (autoSaveStatus) => set({ autoSaveStatus }),
