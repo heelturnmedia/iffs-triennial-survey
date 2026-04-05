@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth Service — wraps Supabase auth calls
 // ─────────────────────────────────────────────────────────────────────────────
-import { supabase } from '../lib/supabase'
+import { supabase, createEphemeralClient } from '../lib/supabase'
 import type { Profile, UserRole } from '../types'
 
 export interface SignInParams {
@@ -109,13 +109,26 @@ export async function updateProfile(
   return data as Profile
 }
 
-// ─── Reset Password ───────────────────────────────────────────────────────────
+// ─── Update Password ──────────────────────────────────────────────────────────
 
-export async function resetPasswordForEmail(email: string) {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/login?mode=reset`,
-  })
+export async function updatePassword(newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
   if (error) throw error
+}
+
+// ─── Verify Current Password ─────────────────────────────────────────────────
+// Verifies the current password via an ephemeral Supabase client, so the main
+// session is untouched (no SIGNED_IN emission, no refresh-token rotation, no
+// expiry reset). Failed attempts still count against Supabase's per-email
+// auth rate limiter — that's desirable (prevents brute-force).
+
+export async function verifyCurrentPassword(
+  email: string,
+  password: string,
+): Promise<boolean> {
+  const tempClient = createEphemeralClient()
+  const { error } = await tempClient.auth.signInWithPassword({ email, password })
+  return !error
 }
 
 // ─── Update Role ──────────────────────────────────────────────────────────────
