@@ -5,7 +5,14 @@ import { getSubmissions, getMapSubmissions, resetSubmission } from '@/services/s
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 
 const ChoroplethMap = lazy(() =>
-  import('@/components/map/ChoroplethMap').then(m => ({ default: m.ChoroplethMap }))
+  import('@/components/map/ChoroplethMap')
+    .then(m => ({ default: m.ChoroplethMap }))
+    .catch(() => {
+      // Stale chunk after redeployment — force a full reload so the browser
+      // fetches the new index with correct chunk hashes.
+      window.location.reload()
+      return { default: (() => null) as unknown as typeof import('@/components/map/ChoroplethMap')['ChoroplethMap'] }
+    })
 )
 import { getRegion, resolveCountryToIso2, resolveCountryName } from '@/utils/countryRegions'
 import { formatDateTime } from '@/utils/formatDate'
