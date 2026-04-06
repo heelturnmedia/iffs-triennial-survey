@@ -14,8 +14,7 @@ const MAPBOX_TOKEN = (
   ''
 ) as string
 
-const GRAD_LIGHT   = '#1d7733'
-const GRAD_DARK    = '#0e5921'
+const COLOR_SUBMITTED = '#1d7733'
 const COLOR_DRAFT  = 'rgba(245,158,11,0.75)'
 const COLOR_NONE   = 'rgba(0,0,0,0)'
 const SOURCE_ID    = 'iffs-countries'
@@ -23,14 +22,6 @@ const LAYER_FILL   = 'iffs-country-fills'
 const LAYER_LINE   = 'iffs-country-outlines'
 const SOURCE_URL   = 'mapbox://mapbox.country-boundaries-v1'
 const SOURCE_LAYER = 'country_boundaries'
-
-function lerpColor(a: string, b: string, t: number): string {
-  const hex = (h: string, o: number) => parseInt(h.slice(o, o + 2), 16)
-  const r = Math.round(hex(a, 1) + (hex(b, 1) - hex(a, 1)) * t)
-  const g = Math.round(hex(a, 3) + (hex(b, 3) - hex(a, 3)) * t)
-  const v = Math.round(hex(a, 5) + (hex(b, 5) - hex(a, 5)) * t)
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${v.toString(16).padStart(2, '0')}`
-}
 
 /** Resolve a MapSubmission's country to an uppercase ISO-2 code, or '' */
 function resolveIso2(row: MapSubmission): string {
@@ -55,7 +46,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
   const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null)
 
   // ── Derive per-country data ─────────────────────────────────────────────────
-  const { fillColorExpr, maxCount, countryStats, resolvedCount, unresolvedSamples } = useMemo(() => {
+  const { fillColorExpr, countryStats, resolvedCount, unresolvedSamples } = useMemo(() => {
     const stats = new Map<string, { submitted: number; inProgress: number }>()
     const unresolved: string[] = []
 
@@ -87,20 +78,14 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
       console.warn('[ChoroplethMap] Unresolved country values:', unresolvedSamples)
     }
 
-    const maxCount = resolvedCount > 0
-      ? Math.max(1, ...Array.from(stats.values()).map(s => s.submitted))
-      : 1
-
     // Build Mapbox match expression
     // The mapbox.country-boundaries-v1 tileset uses 'iso_3166_1' (alpha-2),
     // NOT 'iso_3166_1_alpha_2' — that property does not exist in the tileset.
     const expr: unknown[] = ['match', ['get', 'iso_3166_1']]
     stats.forEach((s, iso2Upper) => {
-      const n = s.submitted
-      const hasDraft = s.inProgress > 0
-      const color = n > 0
-        ? lerpColor(GRAD_LIGHT, GRAD_DARK, maxCount === 1 ? 0.5 : (n - 1) / (maxCount - 1))
-        : hasDraft
+      const color = s.submitted > 0
+        ? COLOR_SUBMITTED
+        : s.inProgress > 0
           ? COLOR_DRAFT
           : COLOR_DRAFT
       expr.push(iso2Upper, color)
@@ -109,7 +94,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
     if (stats.size === 0) expr.push('__none__', COLOR_NONE)
     expr.push(COLOR_NONE) // fallback
 
-    return { fillColorExpr: expr, maxCount, countryStats: stats, resolvedCount, unresolvedSamples }
+    return { fillColorExpr: expr, countryStats: stats, resolvedCount, unresolvedSamples }
   }, [submissions])
 
   // ── Hover ───────────────────────────────────────────────────────────────────
@@ -225,7 +210,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
         )}
       </ReactMap>
 
-      <Legend maxCount={maxCount} />
+      <Legend />
     </div>
   )
 }
@@ -279,11 +264,7 @@ function CountryPopup({
 
 // ── Legend ──────────────────────────────────────────────────────────────────────
 
-function Legend({ maxCount }: { maxCount: number }) {
-  const steps = maxCount <= 1 ? 1 : Math.min(maxCount, 5)
-  const stops = Array.from({ length: steps }, (_, i) =>
-    lerpColor(GRAD_LIGHT, GRAD_DARK, steps === 1 ? 0.5 : i / (steps - 1))
-  )
+function Legend() {
   return (
     <div
       className="absolute bottom-4 left-4 rounded-xl px-3 py-2.5"
@@ -301,20 +282,9 @@ function Legend({ maxCount }: { maxCount: number }) {
       >
         Submissions
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#7a8a96', width: 8 }}>1</span>
-        <div style={{ flex: 1, height: 10, borderRadius: 4, background: `linear-gradient(to right, ${GRAD_LIGHT}, ${GRAD_DARK})` }} />
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#7a8a96', width: 20 }}>
-          {maxCount > 1 ? maxCount : ''}
-        </span>
-      </div>
-      <div style={{ display: 'flex', gap: 3, marginBottom: 8 }}>
-        {stops.map((color, i) => (
-          <div key={i} style={{ width: 12, height: 12, borderRadius: 2, background: color }} />
-        ))}
-      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {[
+          { color: COLOR_SUBMITTED, label: 'Submitted' },
           { color: COLOR_DRAFT, label: 'In Progress' },
           { color: '#d4d8d0', label: 'No Response' },
         ].map(({ color, label }) => (
