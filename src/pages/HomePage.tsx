@@ -17,6 +17,7 @@ interface FeatureCard {
   number: string
   title: string
   description: string
+  icon: React.ElementType
 }
 
 
@@ -32,20 +33,23 @@ const FEATURE_CARDS: FeatureCard[] = [
   {
     number: '01',
     title: 'Secure & Private',
+    icon: Shield,
     description:
       'Your responses are encrypted and only visible to IFFS administrators.',
   },
   {
     number: '02',
     title: 'Auto-Save',
+    icon: FileText,
     description:
       'Progress saves automatically after every answer — complete at your own pace.',
   },
   {
     number: '03',
     title: 'One Submission',
+    icon: CheckCircle2,
     description:
-      'Each country submits once, ensuring data integrity across the global dataset.',
+      'Each user submits once, ensuring data integrity across the global dataset.',
   },
 ]
 
@@ -337,6 +341,21 @@ export default function HomePage() {
                   el.style.transform       = 'translateY(0)'
                 }}
               >
+                {/* Icon tile */}
+                <div
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    background: '#e8f5ec',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <card.icon size={22} color="#1d7733" strokeWidth={2} />
+                </div>
                 <div
                   className="font-display font-light mb-5 leading-none"
                   style={{ fontSize: '40px', color: 'rgba(29,119,51,0.18)' }}
