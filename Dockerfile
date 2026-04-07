@@ -27,8 +27,9 @@ FROM nginx:stable-alpine
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# SPA routing config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# SPA routing config (server block) + http-level rate limiting zone
+COPY nginx.conf      /etc/nginx/conf.d/default.conf
+COPY nginx-http.conf /etc/nginx/conf.d/00-http.conf
 
 # Entrypoint writes runtime env vars into env-config.js before nginx starts
 COPY docker-entrypoint.sh /docker-entrypoint.sh
