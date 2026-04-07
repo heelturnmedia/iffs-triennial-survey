@@ -94,8 +94,9 @@ function UserFlowTab() {
         {/* Col 1 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--f4)', marginBottom: 4 }}>Entry Points</div>
-          <FlowNode icon="🌐" title="Homepage" desc="Marketing landing page — hero, features, about sections" tagType="public" tagLabel="Public · /" accent="var(--g1)" />
-          <FlowNode icon="🔐" title="Auth Page" desc="Sign In or Sign Up via Supabase email/password auth" tagType="public" tagLabel="Public · /auth" accent="var(--g1)" />
+          <FlowNode icon="🌐" title="Homepage" desc="Hero with dual CTA + deadline badge, icon feature cards (Secure, Auto-Save, One Submission), green gradient separator" tagType="public" tagLabel="Public · /" accent="var(--g1)" />
+          <FlowNode icon="🔐" title="Auth Page" desc="Sign In or Sign Up via Supabase email/password auth" tagType="public" tagLabel="Public · /login" accent="var(--g1)" />
+          <FlowNode icon="📜" title="Legal Pages" desc="Privacy Policy, Terms of Use, Contact — static informational pages" tagType="public" tagLabel="Public · /privacy /terms /contact" accent="var(--g1)" />
           <FlowNode icon="🔗" title="WildApricot" desc="Optional member verification synced by admin" tagType="external" tagLabel="External API" accent="#dc2626" />
         </div>
 
@@ -176,12 +177,13 @@ function ArchTab() {
       accent: '#7c3aed',
       bg: 'rgba(124,58,237,0.04)',
       items: [
-        { icon: '📄', name: 'Pages (4)', desc: 'HomePage, AuthPage, DashboardPage, NotFoundPage — lazy-loaded with Suspense' },
+        { icon: '📄', name: 'Pages (7)', desc: 'HomePage, AuthPage, DashboardPage, PrivacyPolicyPage, TermsOfUsePage, ContactPage, NotFoundPage — lazy-loaded with Suspense' },
         { icon: '🧩', name: 'Components', desc: 'Nav, Sidebar, SurveyModal, Dashboard Panels, WelcomeOverlay, ConfirmModal, Toast' },
         { icon: '🗄️', name: 'Zustand Stores (3)', desc: 'authStore · surveyStore · uiStore — global state, no prop drilling' },
         { icon: '🪝', name: 'Custom Hooks', desc: 'useAuth (bootstrap + realtime) · useToast · useWildApricot' },
         { icon: '💾', name: 'localStorage', desc: 'Draft survey data persisted locally — merged with DB on next sign-in' },
         { icon: '🗺️', name: 'ChoroplethMap', desc: 'Mapbox GL interactive world map — per-country submission data' },
+        { icon: '🔤', name: 'Self-hosted Fonts', desc: 'Raleway + Source Sans 3 via @fontsource-variable — bundled by Vite, no Google Fonts CDN dependency' },
       ],
     },
     {
@@ -202,7 +204,7 @@ function ArchTab() {
       bg: 'rgba(217,119,6,0.04)',
       items: [
         { icon: '🍑', name: 'WildApricot', desc: 'Member verification API — checks IFFS membership, returns memberId & level' },
-        { icon: '🐳', name: 'Docker + Nginx', desc: 'Containerized via Dokploy. Nginx serves Vite build. Env vars injected at runtime.' },
+        { icon: '🐳', name: 'Docker + Nginx', desc: 'Containerized via Dokploy. Nginx serves Vite build. Env vars injected at runtime via env-config.js. Security headers (CSP, HSTS, X-Frame-Options) + rate limiting (60 req/min) on all routes.' },
         { icon: '📦', name: 'SurveyJS', desc: 'Open-source survey engine. Definition loaded from DB (JSON). 20-section form.' },
       ],
     },
