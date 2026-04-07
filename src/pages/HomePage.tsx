@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { Nav }    from '@/components/common/Nav'
 import { Footer } from '@/components/common/Footer'
+import { Shield, FileText, CheckCircle2, CalendarDays, type LucideIcon } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StatItem {
@@ -16,6 +17,7 @@ interface FeatureCard {
   number: string
   title: string
   description: string
+  icon: LucideIcon
 }
 
 
@@ -31,20 +33,23 @@ const FEATURE_CARDS: FeatureCard[] = [
   {
     number: '01',
     title: 'Secure & Private',
+    icon: Shield,
     description:
       'Your responses are encrypted and only visible to IFFS administrators.',
   },
   {
     number: '02',
     title: 'Auto-Save',
+    icon: FileText,
     description:
       'Progress saves automatically after every answer — complete at your own pace.',
   },
   {
     number: '03',
     title: 'One Submission',
+    icon: CheckCircle2,
     description:
-      'Each country submits once, ensuring data integrity across the global dataset.',
+      'Each user submits once, ensuring data integrity across the global dataset.',
   },
 ]
 
@@ -180,7 +185,44 @@ export default function HomePage() {
                 <span aria-hidden="true">→</span>
               </button>
 
+              {!isLoggedIn && (
+                <button
+                  type="button"
+                  aria-label="Learn more about the survey features"
+                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none"
+                  style={{ border: '1px solid rgba(29,119,51,0.45)', color: '#1d7733', backgroundColor: 'transparent' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(29,119,51,0.06)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent' }}
+                >
+                  Learn More <span aria-hidden="true">↓</span>
+                </button>
+              )}
+
             </div>
+
+            {/* Deadline badge */}
+            <div
+              className="animate-fade-slide-up mt-2"
+              style={{ opacity: 0, animationDelay: '0.42s' }}
+            >
+              <div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg"
+                style={{
+                  backgroundColor: 'rgba(232,245,236,0.8)',
+                  border: '1px solid rgba(29,119,51,0.2)',
+                }}
+              >
+                <CalendarDays size={13} color="#0e5921" strokeWidth={2} />
+                <span
+                  className="font-display text-[11px] font-semibold tracking-[0.06em]"
+                  style={{ color: '#0e5921' }}
+                >
+                  Submissions close 31 March 2027
+                </span>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -288,9 +330,19 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Hero → Features separator ──────────────────────────────────────── */}
+      <div
+        aria-hidden="true"
+        style={{
+          height: '4px',
+          background: 'linear-gradient(to right, #1d7733, #2a9444, #1d7733)',
+        }}
+      />
+
       {/* ── FEATURES ──────────────────────────────────────────────────────── */}
       <section
-        className="py-24 px-6"
+        id="features"
+        className="py-24 px-6 scroll-mt-[68px]"
         style={{ backgroundColor: '#ffffff' }}
         aria-label="Features"
       >
@@ -336,6 +388,21 @@ export default function HomePage() {
                   el.style.transform       = 'translateY(0)'
                 }}
               >
+                {/* Icon tile */}
+                <div
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    backgroundColor: '#e8f5ec',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <card.icon size={22} color="#1d7733" strokeWidth={2} />
+                </div>
                 <div
                   className="font-display font-light mb-5 leading-none"
                   style={{ fontSize: '40px', color: 'rgba(29,119,51,0.18)' }}
