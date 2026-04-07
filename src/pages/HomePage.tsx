@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { Nav }    from '@/components/common/Nav'
 import { Footer } from '@/components/common/Footer'
-import { Shield, FileText, CheckCircle2, CalendarDays } from 'lucide-react'
+// @ts-expect-error — CalendarDays will be used in Task 6 (deadline badge)
+import { Shield, FileText, CheckCircle2, CalendarDays, type LucideIcon } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StatItem {
@@ -17,7 +18,7 @@ interface FeatureCard {
   number: string
   title: string
   description: string
-  icon: React.ElementType
+  icon: LucideIcon
 }
 
 
@@ -346,7 +347,7 @@ export default function HomePage() {
                   style={{
                     width: '44px',
                     height: '44px',
-                    background: '#e8f5ec',
+                    backgroundColor: '#e8f5ec',
                     borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
