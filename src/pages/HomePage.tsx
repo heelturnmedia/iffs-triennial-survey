@@ -191,9 +191,9 @@ export default function HomePage() {
                   aria-label="Learn more about the survey features"
                   onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                   className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none"
-                  style={{ border: '1.5px solid rgba(29,119,51,0.45)', color: '#1d7733', backgroundColor: 'transparent' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(29,119,51,0.06)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                  style={{ border: '1px solid rgba(29,119,51,0.45)', color: '#1d7733', backgroundColor: 'transparent' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(29,119,51,0.06)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent' }}
                 >
                   Learn More <span aria-hidden="true">↓</span>
                 </button>
@@ -203,7 +203,7 @@ export default function HomePage() {
 
             {/* Deadline badge */}
             <div
-              className="animate-fade-slide-up flex items-center gap-2 mt-2"
+              className="animate-fade-slide-up mt-2"
               style={{ opacity: 0, animationDelay: '0.42s' }}
             >
               <div
@@ -342,7 +342,7 @@ export default function HomePage() {
       {/* ── FEATURES ──────────────────────────────────────────────────────── */}
       <section
         id="features"
-        className="py-24 px-6"
+        className="py-24 px-6 scroll-mt-[68px]"
         style={{ backgroundColor: '#ffffff' }}
         aria-label="Features"
       >
