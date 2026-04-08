@@ -44,7 +44,8 @@ interface WaSettings {
 // ─── WA API helpers ───────────────────────────────────────────────────────────
 
 async function getWaAccessToken(apiKey: string): Promise<string> {
-  const credentials = btoa(`${apiKey}:${apiKey}`)
+  // WildApricot OAuth: username must be the literal string "APIKEY", password is the key value
+  const credentials = btoa(`APIKEY:${apiKey}`)
 
   const res = await fetch('https://oauth.wildapricot.org/auth/token', {
     method: 'POST',
@@ -220,9 +221,10 @@ serve(async (req: Request) => {
         testAccessToken = await getWaAccessToken(testApiKey)
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
+        // Return 200 so the Supabase JS client surfaces the real error message
         return new Response(
-          JSON.stringify({ success: false, error: `Invalid API key: ${message}` }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ success: false, error: `Invalid API key — ${message}` }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
@@ -238,8 +240,8 @@ serve(async (req: Request) => {
 
       if (!accountRes.ok) {
         return new Response(
-          JSON.stringify({ success: false, error: 'Could not reach WildApricot account — check Account ID' }),
-          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ success: false, error: `Could not reach WildApricot account (ID: ${testAccountId}) — check your Account ID` }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
