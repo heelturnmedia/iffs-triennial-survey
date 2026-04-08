@@ -37,11 +37,15 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
+# verify_jwt = false because this project uses ES256 JWTs (asymmetric).
+# The Supabase gateway HS256 verifier rejects them with 401 before the
+# function runs. Each function's verifyAuth() calls supabase.auth.getUser()
+# instead, which correctly validates ES256 tokens via the auth REST API.
 [functions.wa-sync]
-verify_jwt = true
+verify_jwt = false
 
 [functions.export-report]
-verify_jwt = true
+verify_jwt = false
 
 [functions.rate-limit]
-verify_jwt = true
+verify_jwt = false
