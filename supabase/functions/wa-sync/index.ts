@@ -69,22 +69,42 @@ async function fetchActiveWaMembers(
   accessToken: string,
   accountId: string
 ): Promise<WaContact[]> {
-  const url = `https://api.wildapricot.org/v2.1/accounts/${accountId}/contacts?$async=false&$filter=MembershipStatus%20eq%20'Active'`
+  // Paginate so each request is small and fast.
+  // $select limits fields to only what we need, cutting response size significantly.
+  const PAGE_SIZE = 200
+  const all: WaContact[] = []
+  let skip = 0
 
-  const res = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Accept': 'application/json',
-    },
-  })
+  while (true) {
+    const url =
+      `https://api.wildapricot.org/v2.1/accounts/${accountId}/contacts` +
+      `?$async=false` +
+      `&$filter=MembershipStatus%20eq%20'Active'` +
+      `&$select=Email,DisplayName,MembershipStatus` +
+      `&$top=${PAGE_SIZE}` +
+      `&$skip=${skip}`
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`WildApricot contacts fetch failed (${res.status}): ${text}`)
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+      },
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`WildApricot contacts fetch failed (${res.status}): ${text}`)
+    }
+
+    const data: WaContactsResponse = await res.json()
+    const page = data.Contacts ?? []
+    all.push(...page)
+
+    if (page.length < PAGE_SIZE) break   // last page
+    skip += PAGE_SIZE
   }
 
-  const data: WaContactsResponse = await res.json()
-  return data.Contacts ?? []
+  return all
 }
 
 async function fetchSingleWaMember(
