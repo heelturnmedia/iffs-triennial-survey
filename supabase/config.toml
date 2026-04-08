@@ -37,5 +37,11 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
-[functions]
+[functions.wa-sync]
+verify_jwt = true
+
+[functions.export-report]
+verify_jwt = true
+
+[functions.rate-limit]
 verify_jwt = true
