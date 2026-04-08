@@ -49,7 +49,7 @@ export function useWildApricot() {
         saveWaCreds({ api_key: apiKey, account_id: accountId })
         return { success: true, accountName: data.accountName }
       }
-      return { success: false, error: 'Connection test failed' }
+      return { success: false, error: data?.error ?? 'Connection test failed' }
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
