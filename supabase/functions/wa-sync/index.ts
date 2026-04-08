@@ -80,7 +80,6 @@ async function fetchActiveWaMembers(
       `https://api.wildapricot.org/v2.1/accounts/${accountId}/contacts` +
       `?$async=false` +
       `&$filter=Status%20eq%20'Active'` +
-      `&$select=Email,DisplayName,Status` +
       `&$top=${PAGE_SIZE}` +
       `&$skip=${skip}`
 
