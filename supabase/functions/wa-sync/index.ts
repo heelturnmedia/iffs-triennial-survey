@@ -10,7 +10,7 @@ import { verifyAuth } from '../_shared/auth.ts'
 interface WaContact {
   Email: string
   DisplayName: string
-  MembershipStatus: string
+  Status: string   // WildApricot field is 'Status', not 'MembershipStatus'
 }
 
 interface WaContactsResponse {
@@ -79,8 +79,8 @@ async function fetchActiveWaMembers(
     const url =
       `https://api.wildapricot.org/v2.1/accounts/${accountId}/contacts` +
       `?$async=false` +
-      `&$filter=MembershipStatus%20eq%20'Active'` +
-      `&$select=Email,DisplayName,MembershipStatus` +
+      `&$filter=Status%20eq%20'Active'` +
+      `&$select=Email,DisplayName,Status` +
       `&$top=${PAGE_SIZE}` +
       `&$skip=${skip}`
 
@@ -299,7 +299,7 @@ serve(async (req: Request) => {
     // ── email lookup: check single member ─────────────────────────────────────
     if (body.email) {
       const member = await fetchSingleWaMember(accessToken, waSettings.account_id, body.email)
-      const isActiveMember = member !== null && member.MembershipStatus === 'Active'
+      const isActiveMember = member !== null && member.Status === 'Active'
 
       return new Response(
         JSON.stringify({ role: isActiveMember ? 'iffs-member' : 'user' }),
