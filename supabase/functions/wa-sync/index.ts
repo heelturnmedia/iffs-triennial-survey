@@ -28,6 +28,11 @@ interface WaTokenResponse {
 interface RequestBody {
   email?: string
   testOnly?: boolean
+  // Credentials supplied by the admin UI when testing new credentials.
+  // The function will use these to test against WildApricot and, on success,
+  // persist them to the wa_settings table.
+  apiKey?: string
+  accountId?: string
 }
 
 interface WaSettings {
@@ -194,24 +199,38 @@ serve(async (req: Request) => {
       )
     }
 
-    if (!waSettings.api_key || !waSettings.account_id) {
-      return new Response(
-        JSON.stringify({ error: 'WA credentials are not configured' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Obtain a WA access token
-    const accessToken = await getWaAccessToken(waSettings.api_key)
-
-    // ── testOnly: verify connection ───────────────────────────────────────────
+    // ── testOnly: verify connection (accepts credentials from request body) ────
     if (body.testOnly) {
-      // Fetch account info to get the account name
+      // For the test-credentials flow, prefer body-supplied credentials so the
+      // admin can validate NEW credentials before they are persisted.
+      // Fall back to whatever is already in the DB for a re-test.
+      const testApiKey     = body.apiKey     || waSettings.api_key
+      const testAccountId  = body.accountId  || waSettings.account_id
+
+      if (!testApiKey || !testAccountId) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'No credentials provided' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Verify the credentials against WildApricot
+      let testAccessToken: string
+      try {
+        testAccessToken = await getWaAccessToken(testApiKey)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return new Response(
+          JSON.stringify({ success: false, error: `Invalid API key: ${message}` }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       const accountRes = await fetch(
-        `https://api.wildapricot.org/v2.1/accounts/${waSettings.account_id}`,
+        `https://api.wildapricot.org/v2.1/accounts/${testAccountId}`,
         {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${testAccessToken}`,
             'Accept': 'application/json',
           },
         }
@@ -219,17 +238,41 @@ serve(async (req: Request) => {
 
       if (!accountRes.ok) {
         return new Response(
-          JSON.stringify({ success: false, error: 'Could not reach WildApricot account' }),
+          JSON.stringify({ success: false, error: 'Could not reach WildApricot account — check Account ID' }),
           { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
       const accountData = await accountRes.json()
+
+      // Persist the verified credentials to wa_settings so all future
+      // Edge Function calls (email lookup, full sync) can use them.
+      if (body.apiKey && body.accountId) {
+        await supabase
+          .from('wa_settings')
+          .update({ api_key: body.apiKey, account_id: body.accountId, sync_enabled: true })
+          .eq('id', waSettings.id)
+      }
+
       return new Response(
-        JSON.stringify({ success: true, accountName: accountData.Name ?? accountData.PrimaryDomainName ?? waSettings.account_id }),
+        JSON.stringify({
+          success: true,
+          accountName: accountData.Name ?? accountData.PrimaryDomainName ?? testAccountId,
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // ── All non-testOnly paths require credentials to already be in the DB ────
+    if (!waSettings.api_key || !waSettings.account_id) {
+      return new Response(
+        JSON.stringify({ error: 'WA credentials are not configured — use the WA Settings panel to save credentials first' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Obtain a WA access token using the persisted credentials
+    const accessToken = await getWaAccessToken(waSettings.api_key)
 
     // ── email lookup: check single member ─────────────────────────────────────
     if (body.email) {
