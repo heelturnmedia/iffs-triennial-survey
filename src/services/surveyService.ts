@@ -116,16 +116,15 @@ export async function getSubmissions(): Promise<SubmissionRow[]> {
 // is NULL for virtually every user (signUp() never sets it) and the survey answer
 // is the authoritative source.
 //
-// The Country question uses choicesByUrl with valueName:'cca2', so SurveyJS stores
-// a plain ISO-2 code like "IN". Older submissions may have stored the full country
-// object — resolveCountryToIso2() in ChoroplethMap handles both formats.
+// The Country question uses choicesByUrl without valueName, so SurveyJS stores
+// the full country name (e.g. "India"). resolveCountryToIso2() in ChoroplethMap
+// converts names to ISO-2 codes for the map fill expression.
 
 export async function getMapSubmissions(): Promise<MapSubmission[]> {
   const { data, error } = await supabase
     .from('survey_submissions')
     // data->>Country: PostgREST ->> operator extracts the text value of the
-    // 'Country' key from the JSONB data column. With valueName:'cca2' on the
-    // SurveyJS question this returns a plain ISO-2 string like "IN".
+    // 'Country' key from the JSONB data column.
     .select('status, Country:data->>Country')
   if (error) throw error
 
