@@ -8,6 +8,7 @@ import { useUIStore } from '@/stores/uiStore'
 import { upsertSubmission, submitSurvey } from '@/services/surveyService'
 import { persistSurvey, clearPersistedSurvey } from '@/lib/localStorage'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
+import { COUNTRY_CHOICES } from '@/data/countries'
 import { SurveyTimeline } from './SurveyTimeline'
 import { SurveySectionHeader } from './SurveySectionHeader'
 import { formatSavedAt } from '@/utils/formatDate'
@@ -54,6 +55,15 @@ export function SurveyModal() {
       focusFirstQuestionAutomatic: false,
       firstPageIsStartPage:        false,
     })
+
+    // Patch the Country question to use inline choices. The DB-stored
+    // definition may still have choicesByUrl pointing at a third-party
+    // API that returns 503. Override it with the embedded list.
+    const countryQ = model.getQuestionByName('Country')
+    if (countryQ) {
+      countryQ.choicesByUrl.clear()
+      countryQ.choices = COUNTRY_CHOICES
+    }
 
     // Restore saved state
     if (submission?.page_no && submission.page_no > 0 && submission.page_no < model.pageCount) {
