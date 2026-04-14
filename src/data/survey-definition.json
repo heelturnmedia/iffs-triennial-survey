@@ -119,7 +119,9 @@
               "isRequired": true,
               "choicesOrder": "asc",
               "choicesByUrl": {
-                "url": "https://surveyjs.io/api/CountriesExample"
+                "url": "https://surveyjs.io/api/CountriesExample",
+                "valueName": "name",
+                "titleName": "name"
               },
               "placeholder": "Select Country ...",
               "autocomplete": "country-name"
