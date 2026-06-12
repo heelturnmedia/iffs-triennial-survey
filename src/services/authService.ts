@@ -184,6 +184,20 @@ export async function updateUserRole(userId: string, role: UserRole) {
   return data as Profile
 }
 
+// ─── Delete User (admin only) ────────────────────────────────────────────────
+// Calls the delete-user Edge Function, which verifies the caller is an admin,
+// writes an audit entry, and removes the auth user — profile, submission, and
+// activity rows follow via ON DELETE CASCADE. Client-side deletes are blocked
+// by RLS by design.
+
+export async function deleteUser(userId: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('delete-user', {
+    body: { userId },
+  })
+  if (error) throw error
+  if (!data?.success) throw new Error(data?.error ?? 'Delete failed')
+}
+
 // ─── List All Profiles ───────────────────────────────────────────────────────
 
 export async function listProfiles(): Promise<Profile[]> {

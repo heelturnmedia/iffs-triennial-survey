@@ -194,7 +194,7 @@ function ArchTab() {
         { icon: '🔑', name: 'Auth', desc: 'Email/password, session management, JWT tokens, onAuthStateChange listener' },
         { icon: '🗃️', name: 'Database (PostgreSQL)', desc: 'profiles · survey_submissions · survey_definitions — RLS policies per role' },
         { icon: '⚡', name: 'Realtime', desc: 'Postgres changes subscribed per user_id — live updates when admin resets submission' },
-        { icon: '🌐', name: 'Edge Functions (3)', desc: 'export-report · wa-sync · rate-limit — Deno runtime with CORS + auth middleware' },
+        { icon: '🌐', name: 'Edge Functions (2)', desc: 'wa-sync · delete-user — Deno runtime with CORS + in-function auth' },
         { icon: '🔒', name: 'Row Level Security', desc: '5 migrations — schema, RLS policies, seed data, recursion fix, timestamps' },
       ],
     },

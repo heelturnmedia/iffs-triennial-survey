@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
-import { listProfiles, updateUserRole } from '@/services/authService'
+import { listProfiles, updateUserRole, deleteUser } from '@/services/authService'
 import { getSubmissions, resetSubmission } from '@/services/surveyService'
 import { supabase } from '@/lib/supabase'
 import { formatSavedAt } from '@/utils/formatDate'
@@ -322,7 +322,7 @@ export function UsersPanel() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () =>
         void fetchAll()
       )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, () =>
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_submissions' }, () =>
         void fetchAll()
       )
       .subscribe()
@@ -370,6 +370,26 @@ export function UsersPanel() {
     })
   }
 
+
+  // ── Delete user ───────────────────────────────────────────────────────────
+  const handleDeleteUser = (row: UserRow) => {
+    const name =
+      `${row.profile.first_name} ${row.profile.last_name}`.trim() || row.profile.email
+    openConfirmModal({
+      title: 'Delete User',
+      message: `Permanently delete ${name} (${row.profile.email})? Their account, profile, and all survey responses will be removed. This cannot be undone.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteUser(row.profile.id)
+          toast(`User ${name} deleted.`, 'ok')
+          await fetchAll()
+        } catch {
+          toast('Failed to delete user.', 'err')
+        }
+      },
+    })
+  }
 
   // ── Search filter ─────────────────────────────────────────────────────────
   const filteredRows = userRows.filter((row) => {
@@ -595,6 +615,16 @@ export function UsersPanel() {
                               aria-label={`Reset survey for ${name}`}
                             >
                               Reset Survey
+                            </button>
+                          )}
+                          {!isMe && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(row)}
+                              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-white bg-red-600 border-red-600 hover:bg-red-700 hover:border-red-700 transition-all"
+                              aria-label={`Delete user ${name}`}
+                            >
+                              Delete User
                             </button>
                           )}
                         </div>
