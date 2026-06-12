@@ -44,8 +44,5 @@ enable_confirmations = false
 [functions.wa-sync]
 verify_jwt = false
 
-[functions.export-report]
-verify_jwt = false
-
-[functions.rate-limit]
+[functions.delete-user]
 verify_jwt = false
