@@ -397,7 +397,8 @@ export function UsersPanel() {
     const q = search.toLowerCase()
     const name = `${row.profile.first_name} ${row.profile.last_name}`.toLowerCase()
     const email = row.profile.email.toLowerCase()
-    return name.includes(q) || email.includes(q)
+    const ref = (row.submission?.reference_no ?? '').toLowerCase()
+    return name.includes(q) || email.includes(q) || ref.includes(q)
   })
 
   return (
@@ -426,7 +427,7 @@ export function UsersPanel() {
         </span>
         <input
           type="search"
-          placeholder="Search by name or email…"
+          placeholder="Search by name, email, or reference…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-9 pr-3 py-2 font-body text-[13px] border border-[#e2ebe4] rounded-lg bg-white placeholder-[#b0bec5] text-[#0d1117] focus:outline-none focus:border-[#1d7733] transition-colors"
@@ -515,6 +516,11 @@ export function UsersPanel() {
                               )}
                             </p>
                             <p className="font-body text-[11px] text-[#7a8a96]">{profile.email}</p>
+                            {submission?.reference_no && (
+                              <p className="font-mono text-[10px] text-[#1d7733] tracking-tight mt-0.5">
+                                {submission.reference_no}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </td>

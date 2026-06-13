@@ -52,11 +52,12 @@ function calcProgress(pageNo: number): number {
 }
 
 function exportCsv(rows: SubmissionRow[]) {
-  const headers = ['Name', 'Email', 'Country', 'Institution', 'Status', 'Progress %', 'Submitted At', 'Saved At']
+  const headers = ['Reference', 'Name', 'Email', 'Country', 'Institution', 'Status', 'Progress %', 'Submitted At', 'Saved At']
   const lines = rows.map((r) => {
     const name = `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
     const pct = r.status === 'submitted' || r.status === 'reviewed' ? 100 : calcProgress(r.page_no)
     return [
+      `"${r.reference_no ?? ''}"`,
       `"${name}"`,
       `"${r.email ?? ''}"`,
       `"${resolveCountryName(r.country ?? r.profile?.country ?? r.data?.['Country'])}"`,
@@ -264,6 +265,11 @@ function SubmissionsTable({
                         {row.email && (
                           <p className="font-body text-[11px] text-[#7a8a96]">{row.email}</p>
                         )}
+                        {row.reference_no && (
+                          <p className="font-mono text-[10px] text-[#1d7733] tracking-tight mt-0.5">
+                            {row.reference_no}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -354,6 +360,7 @@ export function ReportsPanel() {
   const [mapRows, setMapRows] = useState<MapSubmission[]>([])
   const [mapDataReady, setMapDataReady] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
   const [filters, setFilters] = useState<ReportFilters>({
     status: 'All',
     region: 'All',
@@ -418,6 +425,14 @@ export function ReportsPanel() {
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const filteredRows = rows.filter((row) => {
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      const name = `${row.first_name ?? ''} ${row.last_name ?? ''}`.toLowerCase()
+      const email = (row.email ?? '').toLowerCase()
+      const ref = (row.reference_no ?? '').toLowerCase()
+      if (!name.includes(q) && !email.includes(q) && !ref.includes(q)) return false
+    }
+
     if (filters.status !== 'All' && row.status !== filters.status) return false
 
     if (filters.region !== 'All') {
@@ -520,8 +535,24 @@ export function ReportsPanel() {
             <StatsCards rows={rows} />
           </div>
 
-          {/* ── Filter bar ───────────────────────────────────────────────────── */}
-          <div className="mb-5">
+          {/* ── Search + filter bar ──────────────────────────────────────────── */}
+          <div className="mb-5 flex flex-wrap items-center gap-4">
+            <div className="relative max-w-xs flex-shrink-0">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0bec5]" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+                  <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+              </span>
+              <input
+                type="search"
+                placeholder="Search name, email, or reference…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 font-body text-[13px] border border-[#e2ebe4] rounded-lg bg-white placeholder-[#b0bec5] text-[#0d1117] focus:outline-none focus:border-[#1d7733] transition-colors"
+                aria-label="Search submissions"
+              />
+            </div>
             <FilterBar
               filters={filters}
               onChange={(partial) => setFilters((prev) => ({ ...prev, ...partial }))}
