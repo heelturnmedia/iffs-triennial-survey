@@ -1,4 +1,4 @@
-import type { SurveyProgress, WACredentials } from '../types';
+import type { SurveyProgress } from '../types';
 import { SURVEY } from '../constants';
 
 // ─── Survey Progress ─────────────────────────────────────
@@ -33,32 +33,28 @@ export function clearPersistedSurvey(email: string): void {
   }
 }
 
-// ─── WildApricot Credentials ─────────────────────────────
-
-export function getWaCreds(): WACredentials | null {
+// Privacy: on sign-out, remove every survey draft from this browser — not just
+// the current user's. Shared clinic/university machines must not retain any
+// participant's answers after a sign-out.
+export function clearAllPersistedSurveys(): void {
   try {
-    const api_key = localStorage.getItem(SURVEY.LS_WA_KEY);
-    const account_id = localStorage.getItem(SURVEY.LS_WA_ACCOUNT_ID);
-    if (!api_key || !account_id) return null;
-    return { api_key, account_id };
-  } catch {
-    return null;
-  }
-}
-
-export function saveWaCreds(creds: WACredentials): void {
-  try {
-    localStorage.setItem(SURVEY.LS_WA_KEY, creds.api_key);
-    localStorage.setItem(SURVEY.LS_WA_ACCOUNT_ID, creds.account_id);
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(SURVEY.LS_PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    }
   } catch {
     // Fail silently
   }
 }
 
-export function clearWaCreds(): void {
+// One-time cleanup: WildApricot credentials used to be cached in localStorage
+// (XSS-stealable, survived logout). They now live server-side only (wa_settings)
+// — purge any leftovers from browsers that stored them.
+export function purgeLegacyWaCreds(): void {
   try {
-    localStorage.removeItem(SURVEY.LS_WA_KEY);
-    localStorage.removeItem(SURVEY.LS_WA_ACCOUNT_ID);
+    localStorage.removeItem('iffs_wa_api_key');
+    localStorage.removeItem('iffs_wa_account_id');
   } catch {
     // Fail silently
   }

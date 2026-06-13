@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useWildApricot } from '@/hooks/useWildApricot'
 import { useUIStore } from '@/stores/uiStore'
-import { getWaCreds } from '@/lib/localStorage'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -124,25 +123,34 @@ function CredentialsForm({ onSaved }: CredFormProps) {
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function WASettingsPanel() {
-  const { clearCredentials, runFullSync, isConfigured } = useWildApricot()
+  const { clearCredentials, runFullSync, getStatus } = useWildApricot()
   const { toast, openConfirmModal } = useUIStore()
   const [configured, setConfigured] = useState(false)
+  const [accountId, setAccountId] = useState<string | null>(null)
   const [accountName, setAccountName] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<{ synced: number; at: string } | null>(null)
 
+  // Connection state comes from the server (wa_settings, admin-only RLS) —
+  // credentials are never stored in or read from this browser.
+  const refreshStatus = useCallback(async () => {
+    const status = await getStatus()
+    setConfigured(status.configured)
+    setAccountId(status.accountId)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    setConfigured(isConfigured())
+    void refreshStatus()
     try {
       const stored = localStorage.getItem('iffs_wa_account_name')
       if (stored) setAccountName(stored)
     } catch {
       // ignore
     }
-  }, [isConfigured])
+  }, [refreshStatus])
 
   const handleSaved = (name: string) => {
-    setConfigured(true)
+    void refreshStatus()
     setAccountName(name || null)
     if (name) {
       try {
@@ -157,18 +165,23 @@ export function WASettingsPanel() {
     openConfirmModal({
       title: 'Clear WildApricot Credentials',
       message:
-        'This will remove the stored API key and account ID from this browser. You can re-enter them at any time.',
+        'This will remove the stored API key and account ID from the server and disable membership sync. You can re-enter them at any time.',
       variant: 'warning',
-      onConfirm: () => {
-        clearCredentials()
+      onConfirm: async () => {
+        const ok = await clearCredentials()
         try {
           localStorage.removeItem('iffs_wa_account_name')
         } catch {
           // ignore
         }
-        setConfigured(false)
-        setAccountName(null)
-        toast('WildApricot credentials cleared.', 'info')
+        if (ok) {
+          setConfigured(false)
+          setAccountId(null)
+          setAccountName(null)
+          toast('WildApricot credentials cleared.', 'info')
+        } else {
+          toast('Failed to clear credentials.', 'err')
+        }
       },
     })
   }
@@ -193,11 +206,6 @@ export function WASettingsPanel() {
       setSyncing(false)
     }
   }
-
-  const creds = getWaCreds()
-  const maskedKey = creds?.api_key
-    ? creds.api_key.slice(0, 6) + '...' + creds.api_key.slice(-4)
-    : null
 
   return (
     <div className="p-6 md:p-8 max-w-[700px]">
@@ -237,20 +245,18 @@ export function WASettingsPanel() {
               </div>
             )}
 
-            {maskedKey && (
-              <div
-                className="flex items-center justify-between py-2.5 border-b"
-                style={{ borderColor: 'var(--bd)' }}
-              >
-                <span className="font-body text-[12px] text-[#7a8a96]">API Key</span>
-                <span className="font-mono text-[12px] text-[#3d4a52]">{maskedKey}</span>
-              </div>
-            )}
+            <div
+              className="flex items-center justify-between py-2.5 border-b"
+              style={{ borderColor: 'var(--bd)' }}
+            >
+              <span className="font-body text-[12px] text-[#7a8a96]">API Key</span>
+              <span className="font-mono text-[12px] text-[#3d4a52]">Stored server-side</span>
+            </div>
 
-            {creds?.account_id && (
+            {accountId && (
               <div className="flex items-center justify-between py-2.5">
                 <span className="font-body text-[12px] text-[#7a8a96]">Account ID</span>
-                <span className="font-mono text-[12px] text-[#3d4a52]">{creds.account_id}</span>
+                <span className="font-mono text-[12px] text-[#3d4a52]">{accountId}</span>
               </div>
             )}
 
@@ -315,8 +321,8 @@ export function WASettingsPanel() {
           {configured ? 'Update Credentials' : 'Enter Credentials'}
         </h2>
         <p className="font-body text-[12px] text-[#7a8a96] mb-5">
-          Credentials are stored locally in your browser and sent only to the Supabase Edge
-          Function for verification. They are never stored in plain text on the server.
+          Credentials are verified against WildApricot and then stored server-side, where only
+          the wa-sync Edge Function can use them. They are never kept in your browser.
         </p>
         <CredentialsForm onSaved={handleSaved} />
       </div>
