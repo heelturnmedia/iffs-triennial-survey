@@ -43,6 +43,7 @@ export interface SurveySubmission {
   saved_at: string | null
   submitted_at?: string | null
   reviewed_at?: string | null
+  reference_no?: string | null
   created_at?: string
   updated_at?: string
 }
