@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { Redis } from 'https://esm.sh/@upstash/redis@1'
 import { Ratelimit } from 'https://esm.sh/@upstash/ratelimit@1'
-import { corsHeaders, handleCors } from '../_shared/cors.ts'
+import { corsHeadersFor, handleCors } from '../_shared/cors.ts'
 import { verifyAuth } from '../_shared/auth.ts'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -159,6 +159,8 @@ serve(async (req: Request) => {
   const corsResponse = handleCors(req)
   if (corsResponse) return corsResponse
 
+  const corsHeaders = corsHeadersFor(req)
+
   try {
     // Auth: only admins may call this function
     const { user, role } = await verifyAuth(req)
@@ -173,7 +175,7 @@ serve(async (req: Request) => {
     // Rate limiting
     const rateLimiter = buildRateLimiter()
     if (rateLimiter) {
-      const { success, remaining, reset } = await rateLimiter.limit(user.id)
+      const { success, reset } = await rateLimiter.limit(user.id)
       if (!success) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded', remaining: 0, reset }),
@@ -336,17 +338,14 @@ serve(async (req: Request) => {
 
       if (!existingProfiles || existingProfiles.length === 0) continue
 
-      // Build upsert payload: update role to iffs-member for matched profiles
-      const upsertPayload = existingProfiles.map((profile) => {
-        const waContact = batch.find(
-          (m) => m.Email.toLowerCase() === profile.email.toLowerCase()
-        )
-        return {
-          id: profile.id,
-          role: 'iffs-member' as const,
-          name: waContact?.DisplayName ?? undefined,
-        }
-      })
+      // Build upsert payload: update role to iffs-member for matched profiles.
+      // Only the role is touched — profiles has first_name/last_name (no `name`
+      // column; including one made PostgREST reject every batch), and users'
+      // self-entered names must not be overwritten by WildApricot data.
+      const upsertPayload = existingProfiles.map((profile) => ({
+        id: profile.id,
+        role: 'iffs-member' as const,
+      }))
 
       const { error: upsertError } = await supabase
         .from('profiles')

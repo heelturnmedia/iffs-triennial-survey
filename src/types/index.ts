@@ -102,9 +102,10 @@ export interface ConfirmModalConfig {
 
 // ─── WildApricot ─────────────────────────────────────────────────────────────
 
-export interface WACredentials {
-  api_key: string
-  account_id: string
+export interface WAStatus {
+  configured: boolean
+  accountId: string | null
+  lastSyncAt: string | null
 }
 
 export interface WAMemberCheckResult {

@@ -1,22 +1,39 @@
 import { useState } from 'react'
-import { getWaCreds, saveWaCreds, clearWaCreds } from '@/lib/localStorage'
 import { supabase } from '@/lib/supabase'
-import type { UserRole } from '@/types'
+import type { UserRole, WAStatus } from '@/types'
+
+// WildApricot credentials live SERVER-SIDE ONLY (wa_settings table, written by
+// the wa-sync Edge Function after a successful connection test). They were
+// previously also cached in localStorage — XSS-stealable and persistent across
+// logouts — which this hook no longer does.
 
 export function useWildApricot() {
   const [isChecking, setIsChecking] = useState(false)
 
-  const isConfigured = (): boolean => {
-    const creds = getWaCreds()
-    return Boolean(creds?.api_key && creds?.account_id)
+  /**
+   * Read connection status from wa_settings (admin-only via RLS).
+   * The api_key itself is never fetched to the browser.
+   */
+  const getStatus = async (): Promise<WAStatus> => {
+    const { data, error } = await supabase
+      .from('wa_settings')
+      .select('account_id, sync_enabled, last_sync_at')
+      .maybeSingle()
+    if (error || !data) return { configured: false, accountId: null, lastSyncAt: null }
+    return {
+      configured: Boolean(data.sync_enabled && data.account_id),
+      accountId: (data.account_id as string) || null,
+      lastSyncAt: (data.last_sync_at as string) || null,
+    }
   }
 
   /**
    * Check if an email is an active WildApricot member.
-   * Returns 'iffs-member' if Active, 'user' otherwise (including on error).
+   * Returns 'iffs-member' if Active, 'user' otherwise (including on error —
+   * wa-sync requires an admin JWT, so for anonymous sign-ups this resolves
+   * to 'user' and membership is granted later via the admin's full sync).
    */
   const checkMembership = async (email: string): Promise<UserRole> => {
-    if (!isConfigured()) return 'user'
     setIsChecking(true)
     try {
       const { data, error } = await supabase.functions.invoke('wa-sync', {
@@ -33,7 +50,8 @@ export function useWildApricot() {
   }
 
   /**
-   * Test connection + save credentials if successful.
+   * Test connection; the Edge Function persists the credentials to
+   * wa_settings on success. Nothing is stored in the browser.
    * Returns { success, accountName? }
    */
   const saveCredentials = async (
@@ -46,7 +64,6 @@ export function useWildApricot() {
       })
       if (error) throw new Error(error.message)
       if (data?.success) {
-        saveWaCreds({ api_key: apiKey, account_id: accountId })
         return { success: true, accountName: data.accountName }
       }
       return { success: false, error: data?.error ?? 'Connection test failed' }
@@ -55,7 +72,18 @@ export function useWildApricot() {
     }
   }
 
-  const clearCredentials = () => clearWaCreds()
+  /**
+   * Remove the stored credentials server-side and disable sync.
+   */
+  const clearCredentials = async (): Promise<boolean> => {
+    const { data } = await supabase.from('wa_settings').select('id').maybeSingle()
+    if (!data?.id) return true
+    const { error } = await supabase
+      .from('wa_settings')
+      .update({ api_key: '', account_id: '', sync_enabled: false })
+      .eq('id', data.id)
+    return !error
+  }
 
   /**
    * Trigger a full WA member sync (admin only).
@@ -72,5 +100,5 @@ export function useWildApricot() {
     }
   }
 
-  return { checkMembership, saveCredentials, clearCredentials, runFullSync, isConfigured, isChecking }
+  return { checkMembership, saveCredentials, clearCredentials, runFullSync, getStatus, isChecking }
 }

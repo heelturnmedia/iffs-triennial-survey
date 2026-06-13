@@ -16,8 +16,6 @@ export const SURVEY = {
   TOTAL_SECTIONS: 20,
   AUTOSAVE_INTERVAL_MS: 3000,
   LS_PREFIX: 'iffs_survey_progress_',
-  LS_WA_KEY: 'iffs_wa_api_key',
-  LS_WA_ACCOUNT_ID: 'iffs_wa_account_id',
   LS_MAPBOX_TOKEN: 'iffs_mapbox_token',
 } as const;
 

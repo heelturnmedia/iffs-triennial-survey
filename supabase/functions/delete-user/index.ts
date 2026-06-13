@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { corsHeaders, handleCors } from '../_shared/cors.ts'
+import { corsHeadersFor, handleCors } from '../_shared/cors.ts'
 import { verifyAuth } from '../_shared/auth.ts'
 
 // ─── delete-user ──────────────────────────────────────────────────────────────
@@ -10,17 +10,20 @@ import { verifyAuth } from '../_shared/auth.ts'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function jsonResponse(body: Record<string, unknown>, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+function jsonResponseWith(corsHeaders: Record<string, string>) {
+  return (body: Record<string, unknown>, status: number): Response =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
 }
 
 serve(async (req: Request) => {
   // CORS preflight
   const corsResponse = handleCors(req)
   if (corsResponse) return corsResponse
+
+  const jsonResponse = jsonResponseWith(corsHeadersFor(req))
 
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'Method not allowed. Use POST.' }, 405)
