@@ -2,7 +2,7 @@
 // SectionResponsesView — per-section aggregated survey responses for admins
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useMemo } from 'react'
-import { Download } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import { SECTION_NAMES, SECTION_DESCRIPTIONS } from '@/constants'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
 import { useSurveyStore } from '@/stores/surveyStore'
@@ -500,6 +500,37 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
           >
             <Download size={11} strokeWidth={2.2} aria-hidden="true" />
             Export CSV
+          </button>
+          <button
+            type="button"
+            disabled={totalSubmitted === 0}
+            onClick={async () => {
+              // Lazy-load jsPDF (~350 KB) only when an admin actually exports.
+              const { exportAllSectionsAsPdf } = await import('@/utils/exportSectionsPdf')
+              exportAllSectionsAsPdf(submissions, pages, SECTION_NAMES, SECTION_DESCRIPTIONS)
+            }}
+            className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              borderColor: '#afc7b4',
+              color: '#1d7733',
+              background: '#fff',
+            }}
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.background = '#e8f5ec'
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#fff'
+            }}
+            title={
+              totalSubmitted === 0
+                ? 'No submitted surveys to export'
+                : `Export all sections as a PDF report (${totalSubmitted} submitted)`
+            }
+          >
+            <FileText size={11} strokeWidth={2.2} aria-hidden="true" />
+            Export PDF
           </button>
         </div>
       </div>

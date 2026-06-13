@@ -451,7 +451,7 @@ export function UsersPanel() {
           style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse" style={{ minWidth: '900px' }}>
+            <table className="w-full text-left border-collapse" style={{ minWidth: '1080px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--bd)' }}>
                   {['User', 'Role', 'Status', 'Progress', 'Last Saved', 'Actions'].map((h) => (
@@ -596,7 +596,7 @@ export function UsersPanel() {
 
                       {/* Actions */}
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
                           {submission && Object.keys(submission.data ?? {}).length > 0 && (
                             <button
                               type="button"
