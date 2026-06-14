@@ -5,8 +5,6 @@
 import { create } from 'zustand'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { useSurveyStore } from '@/stores/surveyStore'
-import { upsertSubmission } from '@/services/surveyService'
 import { clearAllPersistedSurveys, purgeLegacyWaCreds } from '@/lib/localStorage'
 import type { Profile, UserRole } from '@/types'
 
@@ -132,30 +130,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setPasswordRecovery: (isPasswordRecovery) => set({ isPasswordRecovery }),
 
   signOut: async () => {
-    // PRIVACY: survey answers must not survive a sign-out on this machine
-    // (shared clinic/university computers). Flush the in-progress draft to the
-    // server first — bounded to 2 s so a dead network can never trap the user —
-    // then wipe every local survey draft regardless of the flush outcome.
-    try {
-      const user = get().user
-      const submission = useSurveyStore.getState().submission
-      if (
-        user &&
-        submission?.status === 'draft' &&
-        Object.keys(submission.data ?? {}).length > 0
-      ) {
-        const flush = upsertSubmission(user.id, {
-          page_no: submission.page_no,
-          data: submission.data,
-          saved_at: new Date().toISOString(),
-          status: 'draft',
-        })
-        await Promise.race([
-          flush.catch(() => { /* server still has the last autosave */ }),
-          new Promise((resolve) => setTimeout(resolve, 2_000)),
-        ])
-      }
-    } catch { /* never block sign-out */ }
+    // PRIVACY: wipe every local survey draft on this machine (shared
+    // clinic/university computers).
+    //
+    // We deliberately do NOT flush the in-memory draft to the server here. The
+    // survey autosave already persists answers continuously (on every change,
+    // page turn, and modal close), so the server is the source of truth. Writing
+    // on sign-out re-uploaded the in-memory store — which, after an admin reset,
+    // still held the old answers — resurrecting them on the server after the
+    // user logged back in. Removing the flush closes that hole.
     clearAllPersistedSurveys()
     purgeLegacyWaCreds()
 
