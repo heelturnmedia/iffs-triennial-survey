@@ -2,10 +2,12 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // ─── notify-admins ────────────────────────────────────────────────────────────
-// Invoked by DB triggers (pg_net) on new signups and survey submissions.
-//  • signup     → emails every admin
-//  • completion → emails every admin AND sends a branded thank-you to the
-//                 participant, quoting their survey reference number.
+// Invoked by DB triggers (pg_net) on auth/survey events.
+//  • signup         → emails every admin
+//  • completion     → emails every admin AND sends a branded thank-you to the
+//                     participant, quoting their survey reference number.
+//  • password_reset → emails every admin (the reset link itself goes to the
+//                     user via Supabase Auth SMTP).
 // Not browser-facing — secured by a shared secret (Vault: notify_admins_secret)
 // sent in the x-notify-secret header.
 
@@ -13,7 +15,7 @@ const LOGO_URL = 'https://iffssurvey.com/iffs-logo.png'
 const FROM = 'IFFS Survey <info@iffssurvey.com>'
 
 interface Payload {
-  type?: 'signup' | 'completion'
+  type?: 'signup' | 'completion' | 'password_reset'
   user_id?: string
   email?: string
   first_name?: string
@@ -21,6 +23,7 @@ interface Payload {
   submitted_at?: string | null
   country?: string | null
   reference_no?: string | null
+  requested_at?: string | null
 }
 
 function esc(s: string): string {
@@ -216,6 +219,36 @@ serve(async (req: Request) => {
     }
 
     return json({ type: 'completion', adminSent, thankYouSent, reference_no: ref }, 200)
+  }
+
+  // ── Password reset requested ───────────────────────────────────────────────
+  // The reset email itself is sent to the user by Supabase Auth (SMTP); this
+  // only informs the admins that a reset was requested.
+  if (body.type === 'password_reset') {
+    if (adminTo.length === 0) return json({ skipped: 'no admins' }, 200)
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', body.user_id ?? '')
+      .maybeSingle()
+    const name = `${p?.first_name ?? ''} ${p?.last_name ?? ''}`.trim() || body.email || 'A user'
+    const r = await sendEmail(
+      resendKey,
+      adminTo,
+      `Password reset requested — ${name}`,
+      adminTemplate(
+        'Password reset requested',
+        'A user has requested a password reset link for their IFFS 2026 Triennial Survey account.',
+        [
+          ['Name', name],
+          ['Email', body.email ?? ''],
+          ['Requested', body.requested_at ? new Date(body.requested_at).toUTCString() : new Date().toUTCString()],
+        ]
+      )
+    )
+    return r.ok
+      ? json({ sent: adminTo.length, type: 'password_reset' }, 200)
+      : json({ error: 'Send failed', detail: r.detail }, 502)
   }
 
   return json({ error: 'Unknown event type' }, 400)
