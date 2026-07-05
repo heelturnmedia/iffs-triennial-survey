@@ -40,6 +40,10 @@ export function SignInForm() {
   const [forgotSent, setForgotSent] = useState(false)
   const [timedOut,   setTimedOut]   = useState(false)
   const [capsLock,   setCapsLock]   = useState(false)
+  // "Email not confirmed" rescue flow
+  const [emailNotConfirmed,  setEmailNotConfirmed]  = useState(false)
+  const [resending,          setResending]          = useState(false)
+  const [confirmationResent, setConfirmationResent] = useState(false)
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -56,6 +60,8 @@ export function SignInForm() {
     }
     setError(null)
     setTimedOut(false)
+    setEmailNotConfirmed(false)
+    setConfirmationResent(false)
     setIsLoading(true)
 
     // Show escape hatch if the redirect stalls for any reason
@@ -71,8 +77,33 @@ export function SignInForm() {
       // until the page navigates away. Resetting it would cause a flash.
     } catch (err: unknown) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      setError(mapAuthError(err instanceof Error ? err.message : ''))
+      const msg = err instanceof Error ? err.message : ''
+      setError(mapAuthError(msg))
+      // Offer the self-rescue path: resend the confirmation email.
+      setEmailNotConfirmed(msg.includes('Email not confirmed'))
       setIsLoading(false)
+    }
+  }
+
+  const handleResendConfirmation = async () => {
+    if (!email.trim() || resending) return
+    setResending(true)
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+      })
+      if (resendError) throw resendError
+      setConfirmationResent(true)
+      setError(null)
+      setEmailNotConfirmed(false)
+      toast('Confirmation email re-sent.', 'ok')
+    } catch (err: unknown) {
+      // GoTrue rate-limits resends (e.g. one per 60 s) — surface its message.
+      const msg = err instanceof Error ? err.message : ''
+      toast(msg || 'Could not resend the confirmation email. Please try again.', 'err')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -86,7 +117,9 @@ export function SignInForm() {
         redirectTo: `${window.location.origin}/dashboard`,
       })
       setForgotSent(true)
-      toast('Password reset email sent.', 'ok')
+      // Deliberately non-committal: Supabase returns success even for unknown
+      // emails (anti-enumeration), so we must not promise an email was sent.
+      toast('If an account exists for this email, a reset link has been sent.', 'ok')
     } catch {
       toast('Could not send reset email. Please try again.', 'err')
     }
@@ -98,6 +131,8 @@ export function SignInForm() {
     setError(null)
     setForgotSent(false)
     setTimedOut(false)
+    setEmailNotConfirmed(false)
+    setConfirmationResent(false)
   }
 
   return (
@@ -147,7 +182,30 @@ export function SignInForm() {
       {error && (
         <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
           <span className="text-red-500 text-base flex-shrink-0 mt-0.5">✕</span>
-          <p className="font-body text-[13px] text-red-700">{error}</p>
+          <div>
+            <p className="font-body text-[13px] text-red-700">{error}</p>
+            {emailNotConfirmed && (
+              <button
+                type="button"
+                onClick={handleResendConfirmation}
+                disabled={resending}
+                className="font-body text-[12px] font-semibold text-red-700 underline hover:text-red-900 mt-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {resending ? 'Resending…' : 'Resend confirmation email'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation email re-sent */}
+      {confirmationResent && !error && (
+        <div className="flex items-start gap-2.5 bg-[#e8f5ec] border border-[#afc7b4] rounded-lg px-4 py-3">
+          <span className="text-[#1d7733] text-base flex-shrink-0 mt-0.5">✓</span>
+          <p className="font-body text-[13px] text-[#0e5921]">
+            Confirmation email re-sent. Check your inbox (and spam folder), then sign in
+            after clicking the link.
+          </p>
         </div>
       )}
 
@@ -156,7 +214,8 @@ export function SignInForm() {
         <div className="flex items-start gap-2.5 bg-[#e8f5ec] border border-[#afc7b4] rounded-lg px-4 py-3">
           <span className="text-[#1d7733] text-base flex-shrink-0 mt-0.5">✓</span>
           <p className="font-body text-[13px] text-[#0e5921]">
-            Password reset email sent. Check your inbox.
+            If an account exists for this email, a password reset link has been sent.
+            Check your inbox and spam folder.
           </p>
         </div>
       )}
