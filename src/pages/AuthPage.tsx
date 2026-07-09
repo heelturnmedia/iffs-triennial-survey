@@ -7,11 +7,25 @@ import { signIn, signUp, signInWithProvider } from '@/services/authService'
 import { useAuthStore }         from '@/stores/authStore'
 import { useUIStore }           from '@/stores/uiStore'
 import { useWildApricot }       from '@/hooks/useWildApricot'
+import { supabase }             from '@/lib/supabase'
 import { Nav }                  from '@/components/common/Nav'
 import { Footer }               from '@/components/common/Footer'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type TabMode = 'signin' | 'signup'
+
+// ─── Supabase error → human-readable message ──────────────────────────────────
+function mapAuthError(message: string): string {
+  if (message.includes('Invalid login credentials'))
+    return 'Incorrect email or password. Please try again.'
+  if (message.includes('Email not confirmed'))
+    return 'Please confirm your email address before signing in. Check your inbox.'
+  if (message.includes('Too many requests'))
+    return 'Too many sign-in attempts. Please wait a few minutes and try again.'
+  if (message.includes('Network') || message.includes('fetch'))
+    return 'Network error — check your connection and try again.'
+  return message || 'Sign in failed. Please try again.'
+}
 
 interface DemoAccount {
   label:    string
@@ -213,6 +227,11 @@ export default function AuthPage() {
   const [siPassword, setSiPassword] = useState('')
   const [siLoading,  setSiLoading]  = useState(false)
   const [siError,    setSiError]    = useState<string | null>(null)
+  // Forgot-password + "Email not confirmed" rescue flows
+  const [forgotSent,         setForgotSent]         = useState(false)
+  const [emailNotConfirmed,  setEmailNotConfirmed]  = useState(false)
+  const [resending,          setResending]          = useState(false)
+  const [confirmationResent, setConfirmationResent] = useState(false)
 
   // Sign-up form
   const [suFirst,    setSuFirst]    = useState('')
@@ -254,14 +273,43 @@ export default function AuthPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setSiError(null)
+    setForgotSent(false)
+    setEmailNotConfirmed(false)
+    setConfirmationResent(false)
     setSiLoading(true)
     try {
       await signIn({ email: siEmail, password: siPassword })
       navigate('/dashboard')
     } catch (err) {
-      setSiError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')
+      const msg = err instanceof Error ? err.message : ''
+      setSiError(mapAuthError(msg))
+      // Offer the self-rescue path: resend the confirmation email.
+      setEmailNotConfirmed(msg.includes('Email not confirmed'))
     } finally {
       setSiLoading(false)
+    }
+  }
+
+  // ── Resend confirmation email (rescue for unconfirmed accounts) ───────────
+  const handleResendConfirmation = async () => {
+    if (!siEmail.trim() || resending) return
+    setResending(true)
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type:  'signup',
+        email: siEmail.trim(),
+      })
+      if (resendError) throw resendError
+      setConfirmationResent(true)
+      setSiError(null)
+      setEmailNotConfirmed(false)
+      toast('Confirmation email re-sent.', 'ok')
+    } catch (err) {
+      // GoTrue rate-limits resends (e.g. one per 60 s) — surface its message.
+      const msg = err instanceof Error ? err.message : ''
+      toast(msg || 'Could not resend the confirmation email. Please try again.', 'err')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -297,8 +345,27 @@ export default function AuthPage() {
   const handleSocialToast = (msg: string) => toast(msg, 'info')
 
   // ── Forgot password ──────────────────────────────────────────────────────
-  const handleForgotPassword = () => {
-    toast('Password reset — enter your email and we will send a reset link.', 'info')
+  // Actually sends the reset email (the previous version only showed a toast
+  // and never called the API). Copy is deliberately non-committal: Supabase
+  // returns success even for unknown emails (anti-enumeration), so we must
+  // not promise an email was sent.
+  const handleForgotPassword = async () => {
+    if (!siEmail.trim() || !siEmail.includes('@')) {
+      setSiError('Enter your email address above first, then click "Forgot password?".')
+      return
+    }
+    setSiError(null)
+    setEmailNotConfirmed(false)
+    setConfirmationResent(false)
+    try {
+      await supabase.auth.resetPasswordForEmail(siEmail.trim(), {
+        redirectTo: `${window.location.origin}/dashboard`,
+      })
+      setForgotSent(true)
+      toast('If an account exists for this email, a reset link has been sent.', 'ok')
+    } catch {
+      toast('Could not send reset email. Please try again.', 'err')
+    }
   }
 
   const isDev = import.meta.env.DEV
@@ -517,6 +584,9 @@ export default function AuthPage() {
                     setTab(t)
                     setSiError(null)
                     setSuError(null)
+                    setForgotSent(false)
+                    setEmailNotConfirmed(false)
+                    setConfirmationResent(false)
                   }}
                   className="flex-1 py-3 font-display text-[12px] font-bold tracking-[0.1em] uppercase transition-all duration-200 focus-visible:outline-none"
                   style={{
@@ -587,6 +657,49 @@ export default function AuthPage() {
                       role="alert"
                     >
                       {siError}
+                      {emailNotConfirmed && (
+                        <button
+                          type="button"
+                          onClick={handleResendConfirmation}
+                          disabled={resending}
+                          className="block font-body text-xs font-semibold underline mt-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                          style={{ color: '#b91c1c' }}
+                        >
+                          {resending ? 'Resending…' : 'Resend confirmation email'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Confirmation email re-sent */}
+                  {confirmationResent && !siError && (
+                    <div
+                      className="rounded-xl px-4 py-3 font-body text-sm"
+                      style={{
+                        backgroundColor: '#e8f5ec',
+                        border:          '1px solid #afc7b4',
+                        color:           '#0e5921',
+                      }}
+                      role="status"
+                    >
+                      Confirmation email re-sent. Check your inbox (and spam folder), then
+                      sign in after clicking the link.
+                    </div>
+                  )}
+
+                  {/* Forgot password confirmation */}
+                  {forgotSent && !siError && (
+                    <div
+                      className="rounded-xl px-4 py-3 font-body text-sm"
+                      style={{
+                        backgroundColor: '#e8f5ec',
+                        border:          '1px solid #afc7b4',
+                        color:           '#0e5921',
+                      }}
+                      role="status"
+                    >
+                      If an account exists for this email, a password reset link has been
+                      sent. Check your inbox and spam folder.
                     </div>
                   )}
 
