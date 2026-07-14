@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// HomePage — IFFS 2026 Triennial Survey · Marketing Landing Page
+// HomePage — IFFS 2026 Biennial Survey · Marketing Landing Page
 // ─────────────────────────────────────────────────────────────────────────────
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,7 +25,7 @@ interface FeatureCard {
 const HERO_STATS: StatItem[] = [
   { value: '20',   label: 'SURVEY SECTIONS' },
   { value: '2026', label: 'SURVEY YEAR' },
-  { value: '3 yr', label: 'REPORTING CYCLE' },
+  { value: '2 yr', label: 'REPORTING CYCLE' },
   { value: 'IFFS', label: 'GLOBAL BODY' },
 ]
 
@@ -115,7 +115,7 @@ export default function HomePage() {
                 className="font-display text-[11px] font-bold tracking-[0.18em] uppercase"
                 style={{ color: '#0e5921' }}
               >
-                IFFS · Triennial Survey · 2026
+                IFFS · Biennial Survey · 2026
               </span>
             </div>
 
@@ -155,7 +155,7 @@ export default function HomePage() {
                 animationDelay: '0.22s',
               }}
             >
-              The International Federation of Fertility Societies 2026 Triennial
+              The International Federation of Fertility Societies 2026 Biennial
               Survey collects global data on ART infrastructure, regulation,
               financing, and clinical practice.
             </p>
@@ -218,7 +218,7 @@ export default function HomePage() {
                   className="font-display text-[11px] font-semibold tracking-[0.06em]"
                   style={{ color: '#0e5921' }}
                 >
-                  Submissions close 31 March 2027
+                  Submissions close 31st March 2028
                 </span>
               </div>
             </div>

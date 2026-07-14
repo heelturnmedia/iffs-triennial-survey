@@ -18,6 +18,9 @@ import { getRegion, resolveCountryToIso2, resolveCountryName } from '@/utils/cou
 import { formatDateTime } from '@/utils/formatDate'
 import { supabase } from '@/lib/supabase'
 import { SECTION_NAMES, STATUS_LABELS } from '@/constants'
+import { SURVEY_DEFINITION } from '@/data/survey-definition'
+import { useSurveyStore } from '@/stores/surveyStore'
+import { exportIndividualCsv } from '@/utils/exportIndividualResponse'
 import { SectionResponsesView } from './SectionResponsesView'
 import type { SubmissionRow, MapSubmission, SurveyStatus } from '@/types'
 
@@ -188,10 +191,14 @@ function StatsCards({ rows }: { rows: SubmissionRow[] }) {
 function SubmissionsTable({
   rows,
   onReset,
+  onExportCsv,
+  onExportPdf,
   isAdmin,
 }: {
   rows: SubmissionRow[]
   onReset: (row: SubmissionRow) => void
+  onExportCsv: (row: SubmissionRow) => void
+  onExportPdf: (row: SubmissionRow) => void
   isAdmin: boolean
 }) {
   if (rows.length === 0) {
@@ -328,15 +335,37 @@ function SubmissionsTable({
                   {/* Actions — admin only */}
                   {isAdmin && (
                     <td className="px-4 py-3">
-                      {row.id && (
-                        <button
-                          type="button"
-                          onClick={() => onReset(row)}
-                          className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-red-600 border-red-200 hover:bg-red-50 transition-all"
-                        >
-                          Reset
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
+                        {Object.keys(row.data ?? {}).length > 0 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => onExportCsv(row)}
+                              title={`Download ${name}'s answers as CSV`}
+                              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all"
+                            >
+                              CSV
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onExportPdf(row)}
+                              title={`Download ${name}'s answers as PDF`}
+                              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all"
+                            >
+                              PDF
+                            </button>
+                          </>
+                        )}
+                        {row.id && (
+                          <button
+                            type="button"
+                            onClick={() => onReset(row)}
+                            className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-red-600 border-red-200 hover:bg-red-50 transition-all"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -450,6 +479,20 @@ export function ReportsPanel() {
 
     return true
   })
+
+  // ── Individual response export (per participant, all sections) ────────────
+  const { activeDefinition } = useSurveyStore()
+  const definitionPages = ((activeDefinition?.definition ?? SURVEY_DEFINITION) as Record<string, unknown>)['pages'] as unknown[] ?? []
+
+  const handleExportRowCsv = (row: SubmissionRow) => {
+    exportIndividualCsv(row, definitionPages, SECTION_NAMES)
+  }
+
+  const handleExportRowPdf = async (row: SubmissionRow) => {
+    // Lazy-load jsPDF (~140 KB gzip) only when an admin actually exports.
+    const { exportIndividualPdf } = await import('@/utils/exportIndividualPdf')
+    exportIndividualPdf(row, definitionPages, SECTION_NAMES)
+  }
 
   // ── Reset action ──────────────────────────────────────────────────────────
   const handleReset = (row: SubmissionRow) => {
@@ -580,6 +623,8 @@ export function ReportsPanel() {
             <SubmissionsTable
               rows={filteredRows}
               onReset={handleReset}
+              onExportCsv={handleExportRowCsv}
+              onExportPdf={handleExportRowPdf}
               isAdmin={isAdmin()}
             />
           )}

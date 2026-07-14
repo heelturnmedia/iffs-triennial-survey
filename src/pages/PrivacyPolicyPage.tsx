@@ -40,7 +40,7 @@ export default function PrivacyPolicyPage() {
               </h2>
               <p>
                 The International Federation of Fertility Societies ("IFFS", "we", "us", or "our") operates
-                the IFFS 2026 Triennial Survey on Assisted Reproductive Technology. This Privacy Policy
+                the IFFS 2026 Biennial Survey on Assisted Reproductive Technology. This Privacy Policy
                 explains how we collect, use, disclose, and safeguard your information when you use our
                 survey platform.
               </p>
@@ -76,7 +76,7 @@ export default function PrivacyPolicyPage() {
               <p className="mb-3">We use the information we collect to:</p>
               <ul className="list-disc list-inside space-y-1 pl-2">
                 <li>Operate and maintain the survey platform</li>
-                <li>Compile and publish the IFFS Triennial Surveillance Report</li>
+                <li>Compile and publish the IFFS Biennial Surveillance Report</li>
                 <li>Verify your identity and professional credentials</li>
                 <li>Send administrative communications related to the survey</li>
                 <li>Improve the platform and ensure its security</li>

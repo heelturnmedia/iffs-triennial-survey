@@ -44,7 +44,7 @@ function adminTemplate(heading: string, intro: string, rows: Array<[string, stri
   return `<!doctype html><html><body style="margin:0;background:#f0f4f1;padding:24px;font-family:Arial,Helvetica,sans-serif">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e2ebe4;border-radius:14px;overflow:hidden">
-      <tr><td style="background:#1d7733;padding:16px 24px;color:#fff;font-size:13px;font-weight:700;letter-spacing:1px">IFFS 2026 TRIENNIAL SURVEY</td></tr>
+      <tr><td style="background:#1d7733;padding:16px 24px;color:#fff;font-size:13px;font-weight:700;letter-spacing:1px">IFFS 2026 BIENNIAL SURVEY</td></tr>
       <tr><td style="padding:24px">
         <h1 style="margin:0 0 8px;font-size:18px;color:#0d1117">${esc(heading)}</h1>
         <p style="margin:0 0 16px;font-size:14px;color:#3d4a52;line-height:1.5">${esc(intro)}</p>
@@ -73,12 +73,12 @@ function thankYouTemplate(firstName: string, referenceNo: string | null): string
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e2ebe4;border-radius:16px;overflow:hidden">
       <tr><td align="center" style="background:#1d7733;padding:24px">
         <img src="${LOGO_URL}" alt="IFFS" width="64" height="64" style="display:block;border:0;outline:none;background:#fff;border-radius:50%;padding:6px" />
-        <div style="color:#fff;font-size:13px;font-weight:700;letter-spacing:2px;margin-top:10px">IFFS 2026 TRIENNIAL SURVEY</div>
+        <div style="color:#fff;font-size:13px;font-weight:700;letter-spacing:2px;margin-top:10px">IFFS 2026 BIENNIAL SURVEY</div>
       </td></tr>
       <tr><td style="padding:28px 32px">
         <h1 style="margin:0 0 12px;font-size:22px;color:#0d1117">${greeting}</h1>
         <p style="margin:0 0 14px;font-size:15px;color:#3d4a52;line-height:1.6">
-          Your response to the IFFS 2026 Triennial Survey has been received. On behalf of the
+          Your response to the IFFS 2026 Biennial Survey has been received. On behalf of the
           International Federation of Fertility Societies, thank you for contributing to this global
           effort to advance the understanding and practice of reproductive medicine.
         </p>
@@ -90,7 +90,7 @@ function thankYouTemplate(firstName: string, referenceNo: string | null): string
         <p style="margin:20px 0 0;font-size:14px;color:#0d1117;font-weight:600">— The IFFS Survey Team</p>
       </td></tr>
       <tr><td style="padding:16px 32px;border-top:1px solid #eef2ef;color:#b0bec5;font-size:11px">
-        International Federation of Fertility Societies · 2026 Triennial Survey on ART
+        International Federation of Fertility Societies · 2026 Biennial Survey on ART
       </td></tr>
     </table>
   </td></tr></table>
@@ -168,7 +168,7 @@ serve(async (req: Request) => {
       `New survey registration — ${name}`,
       adminTemplate(
         'New user registered',
-        'A new participant has created an account on the IFFS 2026 Triennial Survey.',
+        'A new participant has created an account on the IFFS 2026 Biennial Survey.',
         [
           ['Name', name],
           ['Email', body.email ?? ''],
@@ -212,7 +212,7 @@ serve(async (req: Request) => {
       const r = await sendEmail(
         resendKey,
         [p.email as string],
-        'Thank you for completing the IFFS 2026 Triennial Survey',
+        'Thank you for completing the IFFS 2026 Biennial Survey',
         thankYouTemplate((p.first_name as string) ?? '', ref)
       )
       thankYouSent = r.ok
@@ -238,7 +238,7 @@ serve(async (req: Request) => {
       `Password reset requested — ${name}`,
       adminTemplate(
         'Password reset requested',
-        'A user has requested a password reset link for their IFFS 2026 Triennial Survey account.',
+        'A user has requested a password reset link for their IFFS 2026 Biennial Survey account.',
         [
           ['Name', name],
           ['Email', body.email ?? ''],
