@@ -23,9 +23,12 @@ revoke execute on function public.on_profile_created_notify() from public, anon,
 revoke execute on function public.on_submission_submitted_notify() from public, anon, authenticated;
 revoke execute on function public.on_recovery_requested_notify() from public, anon, authenticated;
 
--- RLS policies evaluate as the querying user, so `authenticated` must keep
--- EXECUTE on get_user_role. anon loses it (role-enumeration probe).
-revoke execute on function public.get_user_role(uuid) from public, anon;
+-- get_user_role is referenced by the RLS policies on profiles/survey_submissions.
+-- BOTH anon and authenticated must keep EXECUTE, otherwise an anon read of those
+-- tables ERRORS (permission denied) instead of returning an empty set. Revoke
+-- only from PUBLIC. (Role-enumeration risk is negligible: needs a known UUID and
+-- returns only a role enum; RLS still yields zero rows for anon.)
+revoke execute on function public.get_user_role(uuid) from public;
 
 -- Admin RPCs stay callable by authenticated (they role-check internally);
 -- anon has no business with them.
