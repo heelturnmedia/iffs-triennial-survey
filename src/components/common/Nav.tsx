@@ -89,7 +89,7 @@ export function Nav() {
               marginTop: 2,
             }}
           >
-            2026 Triennial
+            2026 Biennial
           </span>
         </div>
       </Link>

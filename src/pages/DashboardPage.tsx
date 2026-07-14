@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import { useSurveyStore } from '@/stores/surveyStore'
 import { useUIStore } from '@/stores/uiStore'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { OverviewPanel } from '@/components/dashboard/panels/OverviewPanel'
@@ -36,6 +37,27 @@ export default function DashboardPage() {
       setActivePanel('overview')
     }
   }, [profile, activePanel, setActivePanel])
+
+  // Keep the URL in sync with the survey modal: /dashboard?survey=open while
+  // filling the survey. Landing on that URL directly re-opens the survey, and
+  // the browser Back button closes it (the param removal drops the modal).
+  const { isModalOpen, openModal, closeModal } = useSurveyStore()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const surveyParam = searchParams.get('survey') === 'open'
+  useEffect(() => {
+    if (isModalOpen && !surveyParam) {
+      setSearchParams({ survey: 'open' })
+    } else if (!isModalOpen && surveyParam) {
+      // Modal closed via its own X — reflect that in the URL.
+      setSearchParams({}, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen])
+  useEffect(() => {
+    if (surveyParam && !isModalOpen && !isPasswordRecovery) openModal()
+    if (!surveyParam && isModalOpen) closeModal()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surveyParam])
 
   // Password recovery: auto-navigate to the profile panel exactly once per
   // activation. The ref gate prevents a loop if something else later tries

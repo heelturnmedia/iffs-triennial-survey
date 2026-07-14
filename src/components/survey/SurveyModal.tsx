@@ -317,19 +317,12 @@ export function SurveyModal() {
         >
           {/* Left: logo + title + save status */}
           <div className="flex items-center gap-3.5">
-            <div
-              className="w-8 h-8 flex items-center justify-center text-white"
-              style={{
-                background: 'var(--g1)',
-                fontFamily: 'var(--font-display)',
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.06em',
-              }}
-              aria-hidden="true"
-            >
-              IFFS
-            </div>
+            <img
+              src="/iffs-logo.png"
+              alt="IFFS logo"
+              className="w-9 h-9 rounded-full flex-shrink-0 object-contain"
+              style={{ background: '#fff', padding: 2 }}
+            />
             <div>
               <div
                 className="uppercase"
@@ -341,7 +334,7 @@ export function SurveyModal() {
                   color: '#fff',
                 }}
               >
-                2026 Triennial Survey
+                2026 Biennial Survey
               </div>
               <div
                 style={{

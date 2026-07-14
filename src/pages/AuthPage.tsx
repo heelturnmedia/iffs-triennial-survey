@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// AuthPage — IFFS 2026 Triennial Survey · Split-panel authentication
+// AuthPage — IFFS 2026 Biennial Survey · Split-panel authentication
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate }          from 'react-router-dom'
@@ -549,7 +549,7 @@ export default function AuthPage() {
                 className="font-display text-[11px] font-bold tracking-[0.2em] uppercase mb-3"
                 style={{ color: '#7a8a96' }}
               >
-                IFFS 2026 Triennial Survey
+                IFFS 2026 Biennial Survey
               </div>
               <h2
                 className="font-display font-light"
