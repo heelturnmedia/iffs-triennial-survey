@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { listProfiles, updateUserRole, deleteUser } from '@/services/authService'
 import { getSubmissions, resetSubmission } from '@/services/surveyService'
+import { logActivity } from '@/services/auditService'
 import { supabase } from '@/lib/supabase'
 import { formatSavedAt } from '@/utils/formatDate'
 import { ROLES, STATUS_LABELS, SECTION_NAMES } from '@/constants'
@@ -606,7 +607,13 @@ export function UsersPanel() {
                           {submission && Object.keys(submission.data ?? {}).length > 0 && (
                             <button
                               type="button"
-                              onClick={() => setViewAnswersRow(row)}
+                              onClick={() => {
+                                setViewAnswersRow(row)
+                                void logActivity('view_answers', {
+                                  target_email: profile.email,
+                                  reference: submission?.reference_no,
+                                })
+                              }}
                               className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all"
                               aria-label={`View answers for ${name}`}
                             >

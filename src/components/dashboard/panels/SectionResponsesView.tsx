@@ -6,6 +6,7 @@ import { Download, FileText } from 'lucide-react'
 import { SECTION_NAMES, SECTION_DESCRIPTIONS } from '@/constants'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
 import { useSurveyStore } from '@/stores/surveyStore'
+import { logActivity } from '@/services/auditService'
 import {
   extractQuestionsFromPage,
   aggregateSection,
@@ -477,7 +478,10 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
           <button
             type="button"
             disabled={totalSubmitted === 0}
-            onClick={() => exportAllSectionsAsCsv(submissions, pages, SECTION_NAMES)}
+            onClick={() => {
+              exportAllSectionsAsCsv(submissions, pages, SECTION_NAMES)
+              void logActivity('export_all_responses', { format: 'csv', count: totalSubmitted })
+            }}
             className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               borderColor: '#afc7b4',
@@ -508,6 +512,7 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
               // Lazy-load jsPDF (~350 KB) only when an admin actually exports.
               const { exportAllSectionsAsPdf } = await import('@/utils/exportSectionsPdf')
               exportAllSectionsAsPdf(submissions, pages, SECTION_NAMES, SECTION_DESCRIPTIONS)
+              void logActivity('export_all_responses', { format: 'pdf', count: totalSubmitted })
             }}
             className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{

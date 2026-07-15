@@ -44,6 +44,7 @@ export interface SurveySubmission {
   submitted_at?: string | null
   reviewed_at?: string | null
   reference_no?: string | null
+  survey_year?: number
   created_at?: string
   updated_at?: string
 }
@@ -89,6 +90,7 @@ export type ActivePanel =
   | 'overview'
   | 'reports'
   | 'users'
+  | 'activity'
   | 'survey-mgmt'
   | 'wa-settings'
   | 'app-flow'

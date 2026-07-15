@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/dashboard/Sidebar'
 import { OverviewPanel } from '@/components/dashboard/panels/OverviewPanel'
 import { ReportsPanel } from '@/components/dashboard/panels/ReportsPanel'
 import { UsersPanel } from '@/components/dashboard/panels/UsersPanel'
+import { ActivityPanel } from '@/components/dashboard/panels/ActivityPanel'
 import { SurveyMgmtPanel } from '@/components/dashboard/panels/SurveyMgmtPanel'
 import { WASettingsPanel } from '@/components/dashboard/panels/WASettingsPanel'
 import { AppFlowPanel } from '@/components/dashboard/panels/AppFlowPanel'
@@ -32,7 +33,7 @@ export default function DashboardPage() {
   // window between an auth event clearing the profile and fetchProfile completing.
   useEffect(() => {
     if (profile) return // profile is loaded, nothing to do
-    const adminPanels = ['reports', 'users', 'survey-mgmt', 'wa-settings', 'app-flow']
+    const adminPanels = ['reports', 'users', 'activity', 'survey-mgmt', 'wa-settings', 'app-flow']
     if (adminPanels.includes(activePanel)) {
       setActivePanel('overview')
     }
@@ -84,6 +85,7 @@ export default function DashboardPage() {
           {activePanel === 'overview' && <OverviewPanel />}
           {activePanel === 'reports' && canViewReports() && <ReportsPanel />}
           {activePanel === 'users' && isAdmin() && <UsersPanel />}
+          {activePanel === 'activity' && isAdmin() && <ActivityPanel />}
           {activePanel === 'survey-mgmt' && isAdmin() && <SurveyMgmtPanel />}
           {activePanel === 'wa-settings' && isAdmin() && <WASettingsPanel />}
           {activePanel === 'app-flow'    && isAdmin() && <AppFlowPanel />}
