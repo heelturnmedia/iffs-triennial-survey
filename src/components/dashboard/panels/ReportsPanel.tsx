@@ -21,6 +21,7 @@ import { SECTION_NAMES, STATUS_LABELS } from '@/constants'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
 import { useSurveyStore } from '@/stores/surveyStore'
 import { exportIndividualCsv } from '@/utils/exportIndividualResponse'
+import { logActivity } from '@/services/auditService'
 import { SectionResponsesView } from './SectionResponsesView'
 import type { SubmissionRow, MapSubmission, SurveyStatus } from '@/types'
 
@@ -486,12 +487,18 @@ export function ReportsPanel() {
 
   const handleExportRowCsv = (row: SubmissionRow) => {
     exportIndividualCsv(row, definitionPages, SECTION_NAMES)
+    void logActivity('export_response', {
+      target_email: row.email ?? row.profile?.email, reference: row.reference_no, format: 'csv',
+    })
   }
 
   const handleExportRowPdf = async (row: SubmissionRow) => {
     // Lazy-load jsPDF (~140 KB gzip) only when an admin actually exports.
     const { exportIndividualPdf } = await import('@/utils/exportIndividualPdf')
     exportIndividualPdf(row, definitionPages, SECTION_NAMES)
+    void logActivity('export_response', {
+      target_email: row.email ?? row.profile?.email, reference: row.reference_no, format: 'pdf',
+    })
   }
 
   // ── Reset action ──────────────────────────────────────────────────────────
@@ -533,7 +540,10 @@ export function ReportsPanel() {
         {tab === 'overview' && (
           <button
             type="button"
-            onClick={() => exportCsv(filteredRows)}
+            onClick={() => {
+              exportCsv(filteredRows)
+              void logActivity('export_all_responses', { format: 'csv', count: filteredRows.length })
+            }}
             disabled={filteredRows.length === 0}
             className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Export CSV"
