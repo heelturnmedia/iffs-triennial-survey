@@ -13,6 +13,8 @@ import {
   medianCompletionMinutes,
   mostBlankQuestions,
   completedOnly,
+  crossTabulate,
+  CROSSTAB_TYPES,
 } from '@/utils/insightsAnalytics'
 import type { SubmissionRow } from '@/types'
 
@@ -208,6 +210,138 @@ function BlankQuestions({
   )
 }
 
+// ─── Cross-tabulation ───────────────────────────────────────────────────────────
+// Contingency table of two single-answer questions. Cells shade sequentially by
+// magnitude (count) or row share — a heatmap, per the data-viz method.
+function CrossTabCard({
+  questions, submissions,
+}: {
+  questions: Array<{ q: ExtractedQuestion; section: string }>
+  submissions: SubmissionRow[]
+}) {
+  const single = useMemo(() => questions.filter((c) => CROSSTAB_TYPES.has(c.q.type)), [questions])
+  const [rowName, setRowName] = useState(() => single[0]?.q.name ?? '')
+  const [colName, setColName] = useState(() => single[1]?.q.name ?? single[0]?.q.name ?? '')
+  const [mode, setMode] = useState<'count' | 'rowpct'>('count')
+
+  const qA = single.find((c) => c.q.name === rowName)?.q ?? single[0]?.q
+  const qB = single.find((c) => c.q.name === colName)?.q ?? single[0]?.q
+  const tab = useMemo(() => (qA && qB ? crossTabulate(submissions, qA, qB) : null), [submissions, qA, qB])
+
+  const selectCls =
+    'font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer'
+
+  const maxCell = tab ? Math.max(1, ...tab.counts.flat()) : 1
+
+  // Sequential white→green cell fill by intensity 0..1.
+  const cellFill = (intensity: number) => {
+    const t = Math.max(0, Math.min(1, intensity))
+    // interpolate #ffffff → #1d7733
+    const r = Math.round(255 + (29 - 255) * t)
+    const g = Math.round(255 + (119 - 255) * t)
+    const b = Math.round(255 + (51 - 255) * t)
+    return `rgb(${r},${g},${b})`
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-5" style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}>
+      <SectionTitle hint="Cross-tabulate two single-answer questions to answer “of those who said X, how many also said Y?”">
+        Cross-tabulation
+      </SectionTitle>
+
+      {single.length < 2 ? (
+        <p className="font-body" style={{ fontSize: 12, color: '#b0bec5' }}>
+          Need at least two single-answer questions to cross-tabulate.
+        </p>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="flex items-center gap-1.5">
+              <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Rows</span>
+              <select className={selectCls} value={qA?.name ?? ''} onChange={(e) => setRowName(e.target.value)}
+                aria-label="Cross-tab row question" style={{ maxWidth: 300 }}>
+                {single.map((c) => <option key={c.q.name} value={c.q.name}>{c.q.title || c.q.name}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Columns</span>
+              <select className={selectCls} value={qB?.name ?? ''} onChange={(e) => setColName(e.target.value)}
+                aria-label="Cross-tab column question" style={{ maxWidth: 300 }}>
+                {single.map((c) => <option key={c.q.name} value={c.q.name}>{c.q.title || c.q.name}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-1 ml-auto p-0.5 rounded-lg" style={{ background: '#f0f4f1', border: '1px solid var(--bd)' }}>
+              {(['count', 'rowpct'] as const).map((m) => (
+                <button key={m} type="button" onClick={() => setMode(m)}
+                  className="font-body font-semibold px-2.5 py-1 rounded-md transition-all"
+                  style={mode === m
+                    ? { fontSize: 11, background: '#fff', color: '#0e5921', boxShadow: 'var(--shadow-sm)' }
+                    : { fontSize: 11, background: 'transparent', color: '#7a8a96' }}>
+                  {m === 'count' ? 'Counts' : 'Row %'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!tab || tab.total === 0 ? (
+            <p className="font-body" style={{ fontSize: 12, color: '#b0bec5' }}>
+              No completed responses answered both questions.
+            </p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: MUTED, fontWeight: 600, fontSize: 11, borderBottom: '1px solid var(--bd)' }} />
+                    {tab.colLabels.map((cl, ci) => (
+                      <th key={ci} style={{ padding: '6px 10px', textAlign: 'center', color: INK, fontWeight: 700, fontSize: 11, borderBottom: '1px solid var(--bd)', whiteSpace: 'nowrap' }}>
+                        {cl}
+                      </th>
+                    ))}
+                    <th style={{ padding: '6px 10px', textAlign: 'right', color: MUTED, fontWeight: 700, fontSize: 11, borderBottom: '1px solid var(--bd)' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tab.rowLabels.map((rl, ri) => (
+                    <tr key={ri}>
+                      <td style={{ padding: '6px 10px', color: INK, fontWeight: 600, whiteSpace: 'nowrap', borderRight: '1px solid var(--bd)' }}>{rl}</td>
+                      {tab.counts[ri].map((n, ci) => {
+                        const intensity = mode === 'count'
+                          ? n / maxCell
+                          : (tab.rowTotals[ri] > 0 ? n / tab.rowTotals[ri] : 0)
+                        const display = mode === 'count' ? String(n) : (tab.rowTotals[ri] > 0 ? `${Math.round((n / tab.rowTotals[ri]) * 100)}%` : '—')
+                        return (
+                          <td key={ci} title={`${n} of ${tab.rowTotals[ri]}`}
+                            style={{
+                              padding: '6px 10px', textAlign: 'center', fontVariantNumeric: 'tabular-nums',
+                              background: cellFill(intensity),
+                              color: intensity > 0.55 ? '#fff' : INK,
+                              fontWeight: 600, border: '2px solid #fff',
+                            }}>
+                            {display}
+                          </td>
+                        )
+                      })}
+                      <td style={{ padding: '6px 10px', textAlign: 'right', color: MUTED, fontWeight: 700 }}>{tab.rowTotals[ri]}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td style={{ padding: '6px 10px', color: MUTED, fontWeight: 700, borderTop: '1px solid var(--bd)' }}>Total</td>
+                    {tab.colTotals.map((ct, ci) => (
+                      <td key={ci} style={{ padding: '6px 10px', textAlign: 'center', color: MUTED, fontWeight: 700, borderTop: '1px solid var(--bd)' }}>{ct}</td>
+                    ))}
+                    <td style={{ padding: '6px 10px', textAlign: 'right', color: INK, fontWeight: 700, borderTop: '1px solid var(--bd)' }}>{tab.total}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Main view ──────────────────────────────────────────────────────────────────
 
 export function InsightsView({
@@ -364,6 +498,9 @@ export function InsightsView({
           <BlankQuestions items={blanks} />
         </div>
       </div>
+
+      {/* ── Cross-tabulation ─────────────────────────────────────────────────── */}
+      <CrossTabCard questions={choiceQuestions} submissions={submissions} />
     </div>
   )
 }

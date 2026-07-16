@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// IFFS 2026 Triennial Survey — canonical definition
-// Source: iffs-triennial-survey-2026-FINAL.json (20 pages, 525 questions)
+// IFFS 2026 Biennial Survey — canonical definition
+// Source: survey-definition.json (20 pages, 525 questions)
 //
 // SURVEY_DEFINITION  → used by SurveyModal as the SurveyJS model fallback
 // SURVEY_PAGES_META  → used by SurveyTimeline + SurveySectionHeader for sidebar

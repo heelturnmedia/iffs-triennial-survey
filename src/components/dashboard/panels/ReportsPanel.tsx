@@ -24,9 +24,10 @@ import { exportIndividualCsv } from '@/utils/exportIndividualResponse'
 import { logActivity } from '@/services/auditService'
 import { SectionResponsesView } from './SectionResponsesView'
 import { InsightsView } from './InsightsView'
+import { DataQualityView } from './DataQualityView'
 import type { SubmissionRow, MapSubmission, SurveyStatus } from '@/types'
 
-type ReportsTab = 'overview' | 'responses' | 'insights'
+type ReportsTab = 'overview' | 'responses' | 'insights' | 'quality'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -502,6 +503,22 @@ export function ReportsPanel() {
     })
   }
 
+  // ── Templated surveillance report (all sections) ──────────────────────────
+  const [reportBusy, setReportBusy] = useState(false)
+  const handleGenerateReport = async () => {
+    setReportBusy(true)
+    try {
+      const { exportSurveyReport } = await import('@/utils/exportSurveyReport')
+      exportSurveyReport(rows, definitionPages, SECTION_NAMES)
+      void logActivity('export_all_responses', { format: 'report_pdf', count: rows.length })
+    } catch (err) {
+      console.error('Report generation failed:', err)
+      toast('Failed to generate report.', 'err')
+    } finally {
+      setReportBusy(false)
+    }
+  }
+
   // ── Reset action ──────────────────────────────────────────────────────────
   const handleReset = (row: SubmissionRow) => {
     const name = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() || 'this user'
@@ -526,6 +543,7 @@ export function ReportsPanel() {
     { id: 'overview',  label: 'Overview' },
     { id: 'responses', label: 'Section Responses' },
     { id: 'insights',  label: 'Insights' },
+    { id: 'quality',   label: 'Data Quality' },
   ]
 
   return (
@@ -539,23 +557,41 @@ export function ReportsPanel() {
           </p>
         </div>
 
-        {tab === 'overview' && (
-          <button
-            type="button"
-            onClick={() => {
-              exportCsv(filteredRows)
-              void logActivity('export_all_responses', { format: 'csv', count: filteredRows.length })
-            }}
-            disabled={filteredRows.length === 0}
-            className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            aria-label="Export CSV"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Export CSV
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin() && (
+            <button
+              type="button"
+              onClick={handleGenerateReport}
+              disabled={reportBusy || rows.length === 0}
+              className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#1d7733] text-white bg-[#1d7733] hover:bg-[#0e5921] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Generate surveillance report PDF"
+              title="Generate the templated Surveillance Report (PDF)"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M3 1h5l3 3v9H3zM8 1v3h3" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+              </svg>
+              {reportBusy ? 'Generating…' : 'Report (PDF)'}
+            </button>
+          )}
+
+          {tab === 'overview' && (
+            <button
+              type="button"
+              onClick={() => {
+                exportCsv(filteredRows)
+                void logActivity('export_all_responses', { format: 'csv', count: filteredRows.length })
+              }}
+              disabled={filteredRows.length === 0}
+              className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Export CSV"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Export CSV
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Tabs ───────────────────────────────────────────────────────────── */}
@@ -656,6 +692,10 @@ export function ReportsPanel() {
 
       {tab === 'insights' && (
         <InsightsView submissions={rows} pages={definitionPages} sectionNames={SECTION_NAMES} />
+      )}
+
+      {tab === 'quality' && (
+        <DataQualityView submissions={rows} pages={definitionPages} />
       )}
     </div>
   )
