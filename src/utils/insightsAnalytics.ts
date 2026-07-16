@@ -119,19 +119,31 @@ export function completionFunnel(
   return { steps, totalWithData: total }
 }
 
-// Median minutes from first save (created_at) to submitted_at, over submitted rows.
-export function medianCompletionMinutes(submissions: SubmissionRow[]): number | null {
-  const mins = completedOnly(submissions)
+// Completion durations (minutes) from first save (created_at) to submitted_at,
+// over submitted rows. Non-negative only.
+function completionMinutes(submissions: SubmissionRow[]): number[] {
+  return completedOnly(submissions)
     .map((s) =>
       s.submitted_at && s.created_at
         ? (new Date(s.submitted_at).getTime() - new Date(s.created_at).getTime()) / 60000
         : null
     )
     .filter((m): m is number => m !== null && m >= 0)
-    .sort((a, b) => a - b)
+}
+
+// Median minutes to complete.
+export function medianCompletionMinutes(submissions: SubmissionRow[]): number | null {
+  const mins = completionMinutes(submissions).sort((a, b) => a - b)
   if (mins.length === 0) return null
   const mid = Math.floor(mins.length / 2)
   return mins.length % 2 ? mins[mid] : (mins[mid - 1] + mins[mid]) / 2
+}
+
+// Mean minutes to complete.
+export function averageCompletionMinutes(submissions: SubmissionRow[]): number | null {
+  const mins = completionMinutes(submissions)
+  if (mins.length === 0) return null
+  return mins.reduce((s, m) => s + m, 0) / mins.length
 }
 
 export interface BlankQuestion {

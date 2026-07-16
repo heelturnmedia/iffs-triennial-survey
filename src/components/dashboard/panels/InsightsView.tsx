@@ -11,6 +11,7 @@ import {
   choicePrevalenceByCountry,
   completionFunnel,
   medianCompletionMinutes,
+  averageCompletionMinutes,
   mostBlankQuestions,
   completedOnly,
   crossTabulate,
@@ -214,18 +215,39 @@ function BlankQuestions({
 // Contingency table of two single-answer questions. Cells shade sequentially by
 // magnitude (count) or row share — a heatmap, per the data-viz method.
 function CrossTabCard({
-  questions, submissions,
+  questions, submissions, sectionNames,
 }: {
   questions: Array<{ q: ExtractedQuestion; section: string }>
   submissions: SubmissionRow[]
+  sectionNames: string[]
 }) {
   const single = useMemo(() => questions.filter((c) => CROSSTAB_TYPES.has(c.q.type)), [questions])
+
+  // Sections that contain single-answer questions, tagged with their true number.
+  const sectionOptions = useMemo(() => {
+    const seen = new Set<string>()
+    const out: Array<{ name: string; number: number }> = []
+    single.forEach((c) => {
+      if (seen.has(c.section)) return
+      seen.add(c.section)
+      const idx = sectionNames.indexOf(c.section)
+      out.push({ name: c.section, number: idx >= 0 ? idx + 1 : out.length + 1 })
+    })
+    return out
+  }, [single, sectionNames])
+
+  const [sectionFilter, setSectionFilter] = useState<string>('All')
+  const visible = useMemo(
+    () => (sectionFilter === 'All' ? single : single.filter((c) => c.section === sectionFilter)),
+    [single, sectionFilter],
+  )
+
   const [rowName, setRowName] = useState(() => single[0]?.q.name ?? '')
   const [colName, setColName] = useState(() => single[1]?.q.name ?? single[0]?.q.name ?? '')
   const [mode, setMode] = useState<'count' | 'rowpct'>('count')
 
-  const qA = single.find((c) => c.q.name === rowName)?.q ?? single[0]?.q
-  const qB = single.find((c) => c.q.name === colName)?.q ?? single[0]?.q
+  const qA = visible.find((c) => c.q.name === rowName)?.q ?? visible[0]?.q
+  const qB = visible.find((c) => c.q.name === colName)?.q ?? visible[1]?.q ?? visible[0]?.q
   const tab = useMemo(() => (qA && qB ? crossTabulate(submissions, qA, qB) : null), [submissions, qA, qB])
 
   const selectCls =
@@ -257,17 +279,32 @@ function CrossTabCard({
         <>
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <div className="flex items-center gap-1.5">
+              <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Section</span>
+              <select className={selectCls} value={sectionFilter}
+                onChange={(e) => {
+                  const sec = e.target.value
+                  setSectionFilter(sec)
+                  const list = sec === 'All' ? single : single.filter((c) => c.section === sec)
+                  setRowName(list[0]?.q.name ?? '')
+                  setColName(list[1]?.q.name ?? list[0]?.q.name ?? '')
+                }}
+                aria-label="Filter cross-tab questions by section" style={{ maxWidth: 240 }}>
+                <option value="All">All sections</option>
+                {sectionOptions.map((s) => <option key={s.name} value={s.name}>{s.number}. {s.name}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5">
               <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Rows</span>
               <select className={selectCls} value={qA?.name ?? ''} onChange={(e) => setRowName(e.target.value)}
-                aria-label="Cross-tab row question" style={{ maxWidth: 300 }}>
-                {single.map((c) => <option key={c.q.name} value={c.q.name}>{c.q.title || c.q.name}</option>)}
+                aria-label="Cross-tab row question" style={{ maxWidth: 280 }}>
+                {visible.map((c) => <option key={c.q.name} value={c.q.name}>{c.q.title || c.q.name}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Columns</span>
               <select className={selectCls} value={qB?.name ?? ''} onChange={(e) => setColName(e.target.value)}
-                aria-label="Cross-tab column question" style={{ maxWidth: 300 }}>
-                {single.map((c) => <option key={c.q.name} value={c.q.name}>{c.q.title || c.q.name}</option>)}
+                aria-label="Cross-tab column question" style={{ maxWidth: 280 }}>
+                {visible.map((c) => <option key={c.q.name} value={c.q.name}>{c.q.title || c.q.name}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-1 ml-auto p-0.5 rounded-lg" style={{ background: '#f0f4f1', border: '1px solid var(--bd)' }}>
@@ -283,7 +320,11 @@ function CrossTabCard({
             </div>
           </div>
 
-          {!tab || tab.total === 0 ? (
+          {visible.length < 2 ? (
+            <p className="font-body" style={{ fontSize: 12, color: '#b0bec5' }}>
+              This section has fewer than two single-answer questions — choose another section or “All sections”.
+            </p>
+          ) : !tab || tab.total === 0 ? (
             <p className="font-body" style={{ fontSize: 12, color: '#b0bec5' }}>
               No completed responses answered both questions.
             </p>
@@ -364,13 +405,33 @@ export function InsightsView({
     return out
   }, [pages, sectionNames])
 
+  // Sections that actually contain choice questions, in page order, tagged with
+  // their true survey section number.
+  const sectionOptions = useMemo(() => {
+    const seen = new Set<string>()
+    const out: Array<{ name: string; number: number }> = []
+    choiceQuestions.forEach((c) => {
+      if (seen.has(c.section)) return
+      seen.add(c.section)
+      const idx = sectionNames.indexOf(c.section)
+      out.push({ name: c.section, number: idx >= 0 ? idx + 1 : out.length + 1 })
+    })
+    return out
+  }, [choiceQuestions, sectionNames])
+
+  const [sectionFilter, setSectionFilter] = useState<string>('All')
+  const visibleQuestions = useMemo(
+    () => (sectionFilter === 'All' ? choiceQuestions : choiceQuestions.filter((c) => c.section === sectionFilter)),
+    [choiceQuestions, sectionFilter],
+  )
+
   const [qName, setQName] = useState<string>(() => choiceQuestions[0]?.q.name ?? '')
   const [answerValue, setAnswerValue] = useState<string>(() => {
     const first = choiceQuestions[0]
     return first ? (answerOptionsFor(first.q)[0]?.value ?? '') : ''
   })
 
-  const selected = choiceQuestions.find((c) => c.q.name === qName) ?? choiceQuestions[0]
+  const selected = visibleQuestions.find((c) => c.q.name === qName) ?? visibleQuestions[0]
   const options = selected ? answerOptionsFor(selected.q) : []
   const effectiveAnswer = options.some((o) => o.value === answerValue) ? answerValue : (options[0]?.value ?? '')
   const answerLabel = options.find((o) => o.value === effectiveAnswer)?.text ?? effectiveAnswer
@@ -388,6 +449,7 @@ export function InsightsView({
 
   const funnel = useMemo(() => completionFunnel(submissions, pages, sectionNames), [submissions, pages, sectionNames])
   const medianMin = useMemo(() => medianCompletionMinutes(submissions), [submissions])
+  const averageMin = useMemo(() => averageCompletionMinutes(submissions), [submissions])
   const blanks = useMemo(() => mostBlankQuestions(submissions, pages, sectionNames, 10), [submissions, pages, sectionNames])
   const completedCount = useMemo(() => completedOnly(submissions).length, [submissions])
 
@@ -414,19 +476,41 @@ export function InsightsView({
             {/* Selectors */}
             <div className="flex flex-wrap items-center gap-3 mb-4">
               <div className="flex items-center gap-1.5">
+                <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Section</span>
+                <select
+                  className={selectCls}
+                  value={sectionFilter}
+                  onChange={(e) => {
+                    const sec = e.target.value
+                    setSectionFilter(sec)
+                    const list = sec === 'All' ? choiceQuestions : choiceQuestions.filter((c) => c.section === sec)
+                    const next = list[0]
+                    setQName(next?.q.name ?? '')
+                    setAnswerValue(next ? (answerOptionsFor(next.q)[0]?.value ?? '') : '')
+                  }}
+                  aria-label="Filter questions by section"
+                  style={{ maxWidth: 260 }}
+                >
+                  <option value="All">All sections</option>
+                  {sectionOptions.map((s) => (
+                    <option key={s.name} value={s.name}>{s.number}. {s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Question</span>
                 <select
                   className={selectCls}
                   value={selected?.q.name ?? ''}
                   onChange={(e) => {
-                    const next = choiceQuestions.find((c) => c.q.name === e.target.value)
+                    const next = visibleQuestions.find((c) => c.q.name === e.target.value)
                     setQName(e.target.value)
                     setAnswerValue(next ? (answerOptionsFor(next.q)[0]?.value ?? '') : '')
                   }}
                   aria-label="Select question"
                   style={{ maxWidth: 460 }}
                 >
-                  {choiceQuestions.map((c) => (
+                  {visibleQuestions.map((c) => (
                     <option key={c.q.name} value={c.q.name}>
                       {c.q.title || c.q.name}
                     </option>
@@ -469,13 +553,18 @@ export function InsightsView({
       </div>
 
       {/* ── Completion & quality ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatTile value={String(funnel.totalWithData)} label="Responses started" />
         <StatTile value={String(completedCount)} label="Completed" />
         <StatTile
           value={medianMin === null ? '—' : `${Math.round(medianMin)}m`}
           label="Median time to complete"
           sub={medianMin === null ? 'Needs submitted responses' : undefined}
+        />
+        <StatTile
+          value={averageMin === null ? '—' : `${Math.round(averageMin)}m`}
+          label="Average time to complete"
+          sub={averageMin === null ? 'Needs submitted responses' : undefined}
         />
         <StatTile
           value={funnel.totalWithData > 0 ? pct(completedCount / funnel.totalWithData) : '—'}
@@ -500,7 +589,7 @@ export function InsightsView({
       </div>
 
       {/* ── Cross-tabulation ─────────────────────────────────────────────────── */}
-      <CrossTabCard questions={choiceQuestions} submissions={submissions} />
+      <CrossTabCard questions={choiceQuestions} submissions={submissions} sectionNames={sectionNames} />
     </div>
   )
 }
