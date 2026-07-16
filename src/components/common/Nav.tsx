@@ -73,11 +73,11 @@ export function Nav() {
               fontFamily: 'var(--font-display)',
               fontSize: 12,
               fontWeight: 700,
-              letterSpacing: '0.18em',
+              letterSpacing: '0.14em',
               color: 'var(--f1)',
             }}
           >
-            IFFS{' '}
+            IFFS BIENNIAL{' '}
             <em style={{ fontStyle: 'normal', color: 'var(--g1)' }}>SURVEY</em>
           </span>
           <span
@@ -85,11 +85,11 @@ export function Nav() {
               fontFamily: 'var(--font-body)',
               fontSize: 10,
               color: 'var(--f3)',
-              letterSpacing: '0.04em',
+              letterSpacing: '0.02em',
               marginTop: 2,
             }}
           >
-            2026 Biennial
+            (Previously known as IFFS Triennial Survey)
           </span>
         </div>
       </Link>
