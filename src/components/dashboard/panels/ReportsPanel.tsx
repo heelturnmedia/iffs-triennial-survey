@@ -23,9 +23,10 @@ import { useSurveyStore } from '@/stores/surveyStore'
 import { exportIndividualCsv } from '@/utils/exportIndividualResponse'
 import { logActivity } from '@/services/auditService'
 import { SectionResponsesView } from './SectionResponsesView'
+import { InsightsView } from './InsightsView'
 import type { SubmissionRow, MapSubmission, SurveyStatus } from '@/types'
 
-type ReportsTab = 'overview' | 'responses'
+type ReportsTab = 'overview' | 'responses' | 'insights'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -524,6 +525,7 @@ export function ReportsPanel() {
   const TABS: Array<{ id: ReportsTab; label: string }> = [
     { id: 'overview',  label: 'Overview' },
     { id: 'responses', label: 'Section Responses' },
+    { id: 'insights',  label: 'Insights' },
   ]
 
   return (
@@ -650,6 +652,10 @@ export function ReportsPanel() {
 
       {tab === 'responses' && (
         <SectionResponsesView submissions={rows} />
+      )}
+
+      {tab === 'insights' && (
+        <InsightsView submissions={rows} pages={definitionPages} sectionNames={SECTION_NAMES} />
       )}
     </div>
   )
