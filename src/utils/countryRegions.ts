@@ -115,6 +115,23 @@ export function countryNameToIso2(name: string): string {
   return ''
 }
 
+// Reverse map: ISO 3166-1 alpha-2 → canonical display name. Built once from
+// COUNTRY_NAME_TO_ISO2; first name wins so aliases (e.g. "Czechia") don't clobber
+// the canonical "Czech Republic".
+const ISO2_TO_COUNTRY_NAME: Record<string, string> = (() => {
+  const out: Record<string, string> = {}
+  for (const [name, iso2] of Object.entries(COUNTRY_NAME_TO_ISO2)) {
+    if (!out[iso2]) out[iso2] = name
+  }
+  return out
+})()
+
+/** Return a display country name for an ISO 3166-1 alpha-2 code (falls back to the code). */
+export function iso2ToCountryName(iso2: string): string {
+  if (!iso2) return ''
+  return ISO2_TO_COUNTRY_NAME[iso2.toUpperCase()] ?? iso2.toUpperCase()
+}
+
 /**
  * Resolve any country value to an ISO 3166-1 alpha-2 code.
  *
