@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate }          from 'react-router-dom'
 import { signIn, signUp, signInWithProvider } from '@/services/authService'
+import { logActivity }          from '@/services/auditService'
 import { useAuthStore }         from '@/stores/authStore'
 import { useUIStore }           from '@/stores/uiStore'
 import { useWildApricot }       from '@/hooks/useWildApricot'
@@ -279,6 +280,7 @@ export default function AuthPage() {
     setSiLoading(true)
     try {
       await signIn({ email: siEmail, password: siPassword })
+      void logActivity('sign_in')
       navigate('/dashboard')
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
@@ -325,6 +327,7 @@ export default function AuthPage() {
         firstName: suFirst,
         lastName:  suLast,
       })
+      void logActivity('sign_up') // no-ops if email confirmation is pending (no session yet)
       navigate('/dashboard')
     } catch (err) {
       setSuError(err instanceof Error ? err.message : 'Registration failed. Please try again.')

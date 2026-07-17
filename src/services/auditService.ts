@@ -26,9 +26,15 @@ export async function logActivity(
   action: string,
   metadata: Record<string, unknown> = {}
 ): Promise<void> {
-  const uid = useAuthStore.getState().user?.id
-  if (!uid) return
   try {
+    let uid = useAuthStore.getState().user?.id
+    if (!uid) {
+      // Right after sign-in the store may not have flushed yet — the persisted
+      // session is already available locally (no network call).
+      const { data } = await supabase.auth.getSession()
+      uid = data.session?.user?.id
+    }
+    if (!uid) return
     await supabase.from('activity_log').insert({ user_id: uid, action, metadata })
   } catch {
     /* non-fatal */

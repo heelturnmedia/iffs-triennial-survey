@@ -3,6 +3,7 @@ import { UserCircle2, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { updateProfile } from '@/services/authService'
+import { logActivity } from '@/services/auditService'
 import { ROLES } from '@/constants'
 
 export function ProfileDetailsCard() {
@@ -56,6 +57,7 @@ export function ProfileDetailsCard() {
       })
       setProfile(updated)
       setProfileFormDirty(false)
+      void logActivity('profile_updated')
       toast('Profile saved', 'ok')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not save profile'

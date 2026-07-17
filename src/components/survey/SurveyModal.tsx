@@ -6,6 +6,7 @@ import { useSurveyStore } from '@/stores/surveyStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { upsertSubmission, submitSurvey } from '@/services/surveyService'
+import { logActivity } from '@/services/auditService'
 import { persistSurvey, clearPersistedSurvey } from '@/lib/localStorage'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
 import { COUNTRY_CHOICES } from '@/data/countries'
@@ -71,6 +72,20 @@ export function SurveyModal() {
     }
     if (submission?.data && Object.keys(submission.data).length > 0) {
       model.data = submission.data
+    }
+
+    // Prefill known facts from the user's profile — never survey opinions.
+    // Only when the respondent hasn't answered yet (a deliberate choice is
+    // never overwritten), and only when the profile value exactly matches a
+    // survey option (WA-sourced profiles may use different country spellings).
+    // Runs before onValueChanged is attached, so the prefill alone never
+    // triggers an autosave. Country is a verifiable fact, so prefilling it is
+    // bias-free even though the question is mandatory.
+    if (
+      countryQ && countryQ.isEmpty() &&
+      profile?.country && (COUNTRY_CHOICES as readonly string[]).includes(profile.country)
+    ) {
+      countryQ.value = profile.country
     }
 
     setCurrentPage(model.currentPageNo)
@@ -207,6 +222,7 @@ export function SurveyModal() {
               console.log('[Survey] Calling submitSurvey — id:', submissionId)
               const updated = await submitSurvey(submissionId)
               console.log('[Survey] submitSurvey success — status:', updated.status)
+              void logActivity('survey_submitted', { reference: updated.reference_no })
               // Update the store so Overview immediately reflects submitted status
               useSurveyStore.getState().setSubmission(updated)
               // Clear localStorage draft so re-login merge cannot restore draft

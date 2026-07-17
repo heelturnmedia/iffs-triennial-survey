@@ -12,6 +12,7 @@ interface ActionMeta {
 }
 
 const ACTION_META: Record<string, ActionMeta> = {
+  // Admin actions
   delete_user:           { label: 'Deleted a user',              danger: true },
   reset_submission:      { label: 'Reset a survey' },
   reset_all_submissions: { label: 'Reset ALL surveys',          danger: true },
@@ -19,6 +20,27 @@ const ACTION_META: Record<string, ActionMeta> = {
   export_all_responses:  { label: 'Exported all section responses' },
   view_answers:          { label: "Viewed a participant's answers" },
   wa_full_sync:          { label: 'Ran a WildApricot member sync' },
+  // Actions recorded for every role
+  sign_in:               { label: 'Signed in' },
+  sign_up:               { label: 'Created an account' },
+  survey_submitted:      { label: 'Submitted their survey' },
+  profile_updated:       { label: 'Updated their profile' },
+  password_changed:      { label: 'Changed their password' },
+}
+
+const ROLE_FILTERS = [
+  { value: 'all',         label: 'All roles' },
+  { value: 'admin',       label: 'Admins' },
+  { value: 'supervisor',  label: 'Supervisors' },
+  { value: 'iffs-member', label: 'IFFS members' },
+  { value: 'user',        label: 'Users' },
+] as const
+
+const ROLE_CHIP: Record<string, { bg: string; text: string }> = {
+  admin:         { bg: '#faf5ff', text: '#7c3aed' },
+  supervisor:    { bg: '#eff6ff', text: '#2563eb' },
+  'iffs-member': { bg: '#f0fdf4', text: '#15803d' },
+  user:          { bg: '#f8fafc', text: '#64748b' },
 }
 
 function actionMeta(action: string): ActionMeta {
@@ -43,6 +65,7 @@ export function ActivityPanel() {
   const [rows, setRows] = useState<ActivityRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'sensitive'>('all')
+  const [roleFilter, setRoleFilter] = useState<string>('all')
 
   const fetchAll = useCallback(async () => {
     try {
@@ -71,7 +94,9 @@ export function ActivityPanel() {
   }, [fetchAll])
 
   const SENSITIVE = new Set(['delete_user', 'reset_submission', 'reset_all_submissions'])
-  const filtered = filter === 'all' ? rows : rows.filter((r) => SENSITIVE.has(r.action))
+  const filtered = rows
+    .filter((r) => filter === 'all' || SENSITIVE.has(r.action))
+    .filter((r) => roleFilter === 'all' || (r.actor?.role ?? 'user') === roleFilter)
 
   const deletionsCount = rows.filter((r) => r.action === 'delete_user').length
 
@@ -82,10 +107,20 @@ export function ActivityPanel() {
         <div>
           <h1 className="font-display text-[22px] font-bold text-[#0d1117]">Activity Log</h1>
           <p className="font-body text-[13px] text-[#7a8a96] mt-0.5">
-            Every administrative action — exports, views, resets, and deletions — with who and when.
+            Every recorded action across all roles — sign-ins, submissions, profile changes, exports, resets, and deletions.
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer"
+            aria-label="Filter by role"
+          >
+            {ROLE_FILTERS.map((r) => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
+          </select>
           {(['all', 'sensitive'] as const).map((f) => (
             <button
               key={f}
@@ -135,7 +170,7 @@ export function ActivityPanel() {
             <table className="w-full text-left border-collapse" style={{ minWidth: '760px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--bd)' }}>
-                  {['When', 'Admin', 'Action', 'Details'].map((h) => (
+                  {['When', 'User', 'Action', 'Details'].map((h) => (
                     <th
                       key={h}
                       className="font-display text-[10px] font-bold tracking-[0.12em] uppercase text-[#7a8a96] px-4 py-3"
@@ -166,9 +201,22 @@ export function ActivityPanel() {
                         </span>
                       </td>
                       <td className="px-4 py-3 align-top">
-                        <p className="font-body text-[13px] font-semibold text-[#0d1117] leading-snug">
-                          {actorName}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-body text-[13px] font-semibold text-[#0d1117] leading-snug">
+                            {actorName}
+                          </p>
+                          {r.actor?.role && (
+                            <span
+                              className="inline-flex font-body text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded"
+                              style={{
+                                background: (ROLE_CHIP[r.actor.role] ?? ROLE_CHIP['user']).bg,
+                                color: (ROLE_CHIP[r.actor.role] ?? ROLE_CHIP['user']).text,
+                              }}
+                            >
+                              {r.actor.role}
+                            </span>
+                          )}
+                        </div>
                         {r.actor?.email && (
                           <p className="font-body text-[11px] text-[#7a8a96]">{r.actor.email}</p>
                         )}

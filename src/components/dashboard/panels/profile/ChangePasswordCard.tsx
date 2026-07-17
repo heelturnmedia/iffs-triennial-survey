@@ -7,6 +7,7 @@ import {
   verifyAndUpdatePassword,
   WrongCurrentPasswordError,
 } from '@/services/authService'
+import { logActivity } from '@/services/auditService'
 
 interface FieldErrors {
   current?: string
@@ -92,6 +93,7 @@ export function ChangePasswordCard() {
       setConfirmPassword('')
       setFieldErrors({})
       if (isPasswordRecovery) setPasswordRecovery(false)
+      void logActivity('password_changed')
       toast('Password updated', 'ok')
     } catch (err) {
       if (err instanceof WrongCurrentPasswordError) {
