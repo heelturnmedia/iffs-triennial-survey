@@ -18,10 +18,11 @@ const DARK: [number, number, number] = [13, 17, 23]
 const WHITE: [number, number, number] = [255, 255, 255]
 const ALT_ROW: [number, number, number] = [247, 249, 247]
 
-const CHOICE_TYPES = new Set(['radiogroup', 'dropdown', 'boolean', 'checkbox', 'tagbox'])
-const REGION_ORDER: Region[] = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania', 'Unknown']
+// Shared with the XLS exporter so both report formats state identical numbers.
+export const CHOICE_TYPES = new Set(['radiogroup', 'dropdown', 'boolean', 'checkbox', 'tagbox'])
+export const REGION_ORDER: Region[] = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania', 'Unknown']
 
-function iso2Of(row: SubmissionRow): string {
+export function iso2Of(row: SubmissionRow): string {
   const c = (row.data?.['Country'] ?? row.country ?? row.profile?.country) as string | undefined
   return c ? (resolveCountryToIso2(c) ?? '').toUpperCase() : ''
 }
@@ -32,7 +33,7 @@ function labelFor(q: ExtractedQuestion, value: string): string {
 }
 
 // The most common answer to a choice question among completed responses.
-function leadingAnswer(
+export function leadingAnswer(
   q: ExtractedQuestion,
   done: SubmissionRow[],
 ): { label: string; pct: number; n: number; count: number } | null {
