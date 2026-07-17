@@ -519,6 +519,21 @@ export function ReportsPanel() {
     }
   }
 
+  const [reportXlsBusy, setReportXlsBusy] = useState(false)
+  const handleGenerateReportXls = async () => {
+    setReportXlsBusy(true)
+    try {
+      const { exportSurveyReportXls } = await import('@/utils/exportSurveyReportXls')
+      exportSurveyReportXls(rows, definitionPages, SECTION_NAMES)
+      void logActivity('export_all_responses', { format: 'report_xls', count: rows.length })
+    } catch (err) {
+      console.error('XLS report generation failed:', err)
+      toast('Failed to generate the Excel report.', 'err')
+    } finally {
+      setReportXlsBusy(false)
+    }
+  }
+
   // ── Reset action ──────────────────────────────────────────────────────────
   const handleReset = (row: SubmissionRow) => {
     const name = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() || 'this user'
@@ -571,6 +586,23 @@ export function ReportsPanel() {
                 <path d="M3 1h5l3 3v9H3zM8 1v3h3" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
               </svg>
               {reportBusy ? 'Generating…' : 'Report (PDF)'}
+            </button>
+          )}
+
+          {isAdmin() && (
+            <button
+              type="button"
+              onClick={handleGenerateReportXls}
+              disabled={reportXlsBusy || rows.length === 0}
+              className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#1d7733] text-[#1d7733] bg-white hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Generate surveillance report Excel"
+              title="Download the Surveillance Report as an Excel workbook (.xls)"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M3 1h5l3 3v9H3zM8 1v3h3" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                <path d="M5 8l4 4M9 8l-4 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+              {reportXlsBusy ? 'Generating…' : 'Report (XLS)'}
             </button>
           )}
 
