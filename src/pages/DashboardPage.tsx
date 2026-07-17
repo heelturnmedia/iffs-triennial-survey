@@ -16,6 +16,10 @@ import { SurveyModal } from '@/components/survey/SurveyModal'
 import { WelcomeOverlay } from '@/components/common/WelcomeOverlay'
 import { ConfirmModal } from '@/components/common/ConfirmModal'
 import { Nav } from '@/components/common/Nav'
+import type { ActivePanel } from '@/types'
+
+const ADMIN_PANELS: ActivePanel[] = ['users', 'activity', 'survey-mgmt', 'wa-settings', 'app-flow']
+const ALL_PANELS: ActivePanel[] = ['overview', 'reports', ...ADMIN_PANELS, 'profile']
 
 export default function DashboardPage() {
   const { session, profile, loading, isAdmin, canViewReports, isPasswordRecovery } = useAuthStore()
@@ -39,18 +43,29 @@ export default function DashboardPage() {
     }
   }, [profile, activePanel, setActivePanel])
 
+  // A panel is openable via URL only if the user's role allows it.
+  const canOpenPanel = (id: ActivePanel): boolean => {
+    if (ADMIN_PANELS.includes(id)) return isAdmin()
+    if (id === 'reports') return canViewReports()
+    return true
+  }
+
   // Keep the URL in sync with the survey modal: /dashboard?survey=open while
   // filling the survey. Landing on that URL directly re-opens the survey, and
   // the browser Back button closes it (the param removal drops the modal).
+  // Both effects preserve any other params (e.g. ?panel=…).
   const { isModalOpen, openModal, closeModal } = useSurveyStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const surveyParam = searchParams.get('survey') === 'open'
   useEffect(() => {
+    const params = new URLSearchParams(searchParams)
     if (isModalOpen && !surveyParam) {
-      setSearchParams({ survey: 'open' })
+      params.set('survey', 'open')
+      setSearchParams(params)
     } else if (!isModalOpen && surveyParam) {
       // Modal closed via its own X — reflect that in the URL.
-      setSearchParams({}, { replace: true })
+      params.delete('survey')
+      setSearchParams(params, { replace: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isModalOpen])
@@ -59,6 +74,39 @@ export default function DashboardPage() {
     if (!surveyParam && isModalOpen) closeModal()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveyParam])
+
+  // Panel deep-links for every user: /dashboard?panel=<id> always reflects the
+  // active panel, and landing on such a URL opens that panel directly (subject
+  // to the role guard). Back/forward walks through previously visited panels.
+  const panelParam = searchParams.get('panel')
+  useEffect(() => {
+    // URL → state. Ignore unknown ids; drop panels the role can't open.
+    if (!panelParam) {
+      if (activePanel !== 'overview') setActivePanel('overview')
+      return
+    }
+    if (!ALL_PANELS.includes(panelParam as ActivePanel)) return
+    const target = panelParam as ActivePanel
+    if (!profile) return // role unknown while profile loads — decide once it resolves
+    if (!canOpenPanel(target)) {
+      const params = new URLSearchParams(searchParams)
+      params.delete('panel')
+      setSearchParams(params, { replace: true })
+      return
+    }
+    if (target !== activePanel) setActivePanel(target)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelParam, profile])
+  useEffect(() => {
+    // State → URL. 'overview' is the default and keeps a clean /dashboard.
+    const params = new URLSearchParams(searchParams)
+    if (activePanel === 'overview') params.delete('panel')
+    else params.set('panel', activePanel)
+    if ((params.get('panel') ?? '') !== (searchParams.get('panel') ?? '')) {
+      setSearchParams(params)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePanel])
 
   // Password recovery: auto-navigate to the profile panel exactly once per
   // activation. The ref gate prevents a loop if something else later tries

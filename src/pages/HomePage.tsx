@@ -218,7 +218,7 @@ export default function HomePage() {
                   className="font-display text-[11px] font-semibold tracking-[0.06em]"
                   style={{ color: '#0e5921' }}
                 >
-                  Submissions close 31st March 2028
+                  Submissions close 31st August 2026
                 </span>
               </div>
             </div>
