@@ -15,8 +15,15 @@ import {
   mostBlankQuestions,
   completedOnly,
   crossTabulate,
+  crossTabStats,
   CROSSTAB_TYPES,
   CROSSTAB_MULTI_TYPES,
+  wilsonCI,
+  answerDistribution,
+  regionalPrevalence,
+  numericSummaries,
+  respondingCountryCount,
+  INVITED_COUNTRIES,
 } from '@/utils/insightsAnalytics'
 import type { SubmissionRow } from '@/types'
 
@@ -37,6 +44,13 @@ function answerOptionsFor(q: ExtractedQuestion): AnswerOption[] {
 }
 
 const pct = (v: number) => `${Math.round(v * 100)}%`
+
+// Journal-style formatting: p-values and Wilson CI ranges.
+const fmtP = (p: number) => (p < 0.001 ? 'p < 0.001' : `p = ${p.toFixed(3)}`)
+const ciText = (count: number, n: number) => {
+  const ci = wilsonCI(count, n)
+  return `${Math.round(ci.lo * 100)}–${Math.round(ci.hi * 100)}%`
+}
 
 // ─── Small building blocks ─────────────────────────────────────────────────────
 
@@ -65,10 +79,12 @@ function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: st
 // ─── Country-vs-global comparison ───────────────────────────────────────────────
 // Single-series horizontal bars (magnitude) with one dashed global reference line.
 function CountryComparison({
-  rows, globalPrevalence, answerLabel, topN = 12,
+  rows, globalPrevalence, globalCount, globalN, answerLabel, topN = 12,
 }: {
   rows: Array<{ iso2: string; name: string; n: number; count: number; prevalence: number }>
   globalPrevalence: number
+  globalCount: number
+  globalN: number
   answerLabel: string
   topN?: number
 }) {
@@ -80,14 +96,19 @@ function CountryComparison({
 
   return (
     <div>
-      {/* Global benchmark callout */}
-      <div className="flex items-baseline gap-2 mb-3">
+      {/* Global benchmark callout — journal style: % (n/N · 95% CI) */}
+      <div className="flex items-baseline gap-2 mb-3 flex-wrap">
         <span className="font-display font-bold tabular-nums" style={{ fontSize: 22, color: GREEN }}>
           {pct(globalPrevalence)}
         </span>
         <span className="font-body" style={{ fontSize: 12, color: MUTED }}>
           chose “{answerLabel}” globally
         </span>
+        {globalN > 0 && (
+          <span className="font-body tabular-nums" style={{ fontSize: 11, color: '#b0bec5' }}>
+            ({globalCount}/{globalN} · 95% CI {ciText(globalCount, globalN)})
+          </span>
+        )}
       </div>
 
       {/* Bars with a global reference line spanning the plot */}
@@ -107,7 +128,7 @@ function CountryComparison({
             const labelColor = inside ? (lowBase ? '#3d4a52' : '#fff') : MUTED
             const countColor = inside ? (lowBase ? '#8595a1' : 'rgba(255,255,255,0.8)') : '#b0bec5'
             return (
-              <div key={c.iso2} className="flex items-center gap-2" title={`${c.count} of ${c.n} respondents`}>
+              <div key={c.iso2} className="flex items-center gap-2" title={`${c.count} of ${c.n} respondents · 95% CI ${ciText(c.count, c.n)}`}>
                 <span className="font-body truncate text-right" style={{ width: 132, fontSize: 12, color: INK, flexShrink: 0 }}>
                   {c.name}
                 </span>
@@ -141,6 +162,78 @@ function CountryComparison({
         <p className="font-body mt-2" style={{ fontSize: 10, color: '#b0bec5' }}>
           Grey bars have fewer than 3 respondents — interpret with caution.
         </p>
+      )}
+    </div>
+  )
+}
+
+// ─── Answer distribution — the "pie replacement" ───────────────────────────────
+// One 100%-stacked bar for single-answer questions (the selected answer in green,
+// the rest de-emphasised in neutral shades); a per-option bar list for
+// multi-select (whose shares don't sum to 100%). The legend carries identity;
+// colour only emphasises the current selection.
+const NEUTRAL_RAMP = ['#cbd5e1', '#aebecb', '#94a3b8', '#7c8ea0', '#64748b', '#526078']
+
+function AnswerDistributionBar({
+  shares, n, multi, selectedValue,
+}: {
+  shares: Array<{ value: string; text: string; count: number; share: number }>
+  n: number
+  multi: boolean
+  selectedValue: string
+}) {
+  if (n === 0 || shares.length === 0) return null
+  const colorFor = (value: string, i: number) =>
+    value === selectedValue ? GREEN : NEUTRAL_RAMP[Math.min(i, NEUTRAL_RAMP.length - 1)]
+
+  return (
+    <div className="mb-4">
+      <p className="font-body mb-1.5" style={{ fontSize: 11, color: MUTED, fontWeight: 600 }}>
+        Global answer distribution{' '}
+        <span style={{ color: '#b0bec5', fontWeight: 400 }}>({n} respondent{n !== 1 ? 's' : ''})</span>
+      </p>
+      {multi ? (
+        <div className="flex flex-col gap-1">
+          {shares.map((s, i) => (
+            <div key={s.value} className="flex items-center gap-2" title={`${s.count} of ${n} selected`}>
+              <span className="font-body truncate text-right" style={{ width: 180, fontSize: 11, color: INK, flexShrink: 0 }}>
+                {s.text}
+              </span>
+              <div style={{ position: 'relative', flex: 1, height: 12 }}>
+                <div style={{ position: 'absolute', inset: 0, background: '#f0f4f1', borderRadius: 3 }} />
+                <div style={{
+                  position: 'absolute', left: 0, top: 0, bottom: 0,
+                  width: `${Math.max(1, s.share * 100)}%`,
+                  background: colorFor(s.value, i), borderRadius: 3,
+                }} />
+              </div>
+              <span className="font-body tabular-nums" style={{ width: 76, fontSize: 11, color: MUTED, flexShrink: 0 }}>
+                {pct(s.share)} ({s.count})
+              </span>
+            </div>
+          ))}
+          <p className="font-body mt-0.5" style={{ fontSize: 9, color: '#b0bec5' }}>
+            Multi-select — shares may total more than 100%.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', height: 14, borderRadius: 4, overflow: 'hidden', gap: 2 }}>
+            {shares.filter((s) => s.count > 0).map((s, i) => (
+              <div key={s.value} title={`${s.text}: ${pct(s.share)} (${s.count})`}
+                style={{ width: `${s.share * 100}%`, background: colorFor(s.value, i), minWidth: 2 }} />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+            {shares.filter((s) => s.count > 0).map((s, i) => (
+              <span key={s.value} className="font-body inline-flex items-center gap-1"
+                style={{ fontSize: 10, color: s.value === selectedValue ? INK : MUTED }}>
+                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: colorFor(s.value, i), display: 'inline-block' }} />
+                {s.text} <span className="tabular-nums" style={{ color: '#b0bec5' }}>{pct(s.share)} ({s.count})</span>
+              </span>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
@@ -428,6 +521,25 @@ function CrossTabCard({
                   </tr>
                 </tbody>
               </table>
+
+              {/* Association test — journal style */}
+              {(() => {
+                const stats = crossTabStats(tab)
+                if (!stats) return null
+                return (
+                  <p className="font-body mt-2.5 tabular-nums" style={{ fontSize: 11, color: MUTED }}>
+                    {stats.fisherUsed
+                      ? <>Fisher’s exact test: <span style={{ color: INK, fontWeight: 600 }}>{fmtP(stats.p)}</span></>
+                      : <>χ²({stats.df}) = {stats.chi2.toFixed(2)}, <span style={{ color: INK, fontWeight: 600 }}>{fmtP(stats.p)}</span></>}
+                    {' · '}Cramér’s V = {stats.cramersV.toFixed(2)} · n = {stats.n}
+                    {!stats.fisherUsed && stats.lowExpectedPct > 0.2 && (
+                      <span style={{ color: '#b45309' }}>
+                        {' '}· caution: {Math.round(stats.lowExpectedPct * 100)}% of cells have expected counts &lt; 5 — the χ² approximation is unreliable here
+                      </span>
+                    )}
+                  </p>
+                )
+              })()}
             </div>
           )}
         </>
@@ -530,8 +642,25 @@ export function InsightsView({
   const funnel = useMemo(() => completionFunnel(submissions, pages, sectionNames), [submissions, pages, sectionNames])
   const medianMin = useMemo(() => medianCompletionMinutes(submissions), [submissions])
   const averageMin = useMemo(() => averageCompletionMinutes(submissions), [submissions])
-  const blanks = useMemo(() => mostBlankQuestions(submissions, pages, sectionNames, 10), [submissions, pages, sectionNames])
   const completedCount = useMemo(() => completedOnly(submissions).length, [submissions])
+
+  // Journal-grade additions
+  const [showAllMissing, setShowAllMissing] = useState(false)
+  const blanks = useMemo(
+    () => mostBlankQuestions(submissions, pages, sectionNames, showAllMissing ? 10_000 : 10),
+    [submissions, pages, sectionNames, showAllMissing],
+  )
+  const respondingCountries = useMemo(() => respondingCountryCount(submissions), [submissions])
+  const distribution = useMemo(
+    () => (selected ? answerDistribution(submissions, selected.q) : null),
+    [submissions, selected],
+  )
+  const regional = useMemo(
+    () => (selected ? regionalPrevalence(submissions, selected.q, effectiveAnswer) : []),
+    [submissions, selected, effectiveAnswer],
+  )
+  const numerics = useMemo(() => numericSummaries(submissions, pages, sectionNames), [submissions, pages, sectionNames])
+  const [showAllNumerics, setShowAllNumerics] = useState(false)
 
   const selectCls =
     'font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer'
@@ -541,6 +670,21 @@ export function InsightsView({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ── Response-rate banner (sampling frame + snapshot) ─────────────────── */}
+      <div className="rounded-xl px-4 py-3 flex flex-wrap items-baseline gap-x-4 gap-y-1"
+        style={{ background: '#e8f5ec', border: '1px solid #c8d9cc' }}>
+        <span className="font-body tabular-nums" style={{ fontSize: 12, color: '#0e5921', fontWeight: 700 }}>
+          {respondingCountries} of {INVITED_COUNTRIES} invited countries responded
+          {' '}({Math.round((respondingCountries / INVITED_COUNTRIES) * 100)}%)
+        </span>
+        <span className="font-body tabular-nums" style={{ fontSize: 11, color: '#3d4a52' }}>
+          {completedCount} completed response{completedCount !== 1 ? 's' : ''}
+        </span>
+        <span className="font-body" style={{ fontSize: 10, color: MUTED }}>
+          Unweighted country-level analysis · 95% CIs are Wilson intervals · snapshot {new Date().toISOString().slice(0, 10)}
+        </span>
+      </div>
+
       {/* ── Answer prevalence by country ─────────────────────────────────────── */}
       <div className={cardCls} style={cardStyle}>
         <SectionTitle hint="Share of each country’s respondents who chose a given answer, versus the global average.">
@@ -618,6 +762,16 @@ export function InsightsView({
               {visibleQuestions.length} choice-based question{visibleQuestions.length !== 1 ? 's' : ''} listed. {omittedNote(sectionFilter)}
             </p>
 
+            {/* Global answer distribution — pie replacement */}
+            {distribution && (
+              <AnswerDistributionBar
+                shares={distribution.shares}
+                n={distribution.n}
+                multi={distribution.multi}
+                selectedValue={effectiveAnswer}
+              />
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <AnswerChoroplethMap
                 isoValue={prevalence?.isoValue ?? new Map()}
@@ -629,10 +783,45 @@ export function InsightsView({
                 <CountryComparison
                   rows={prevalence?.byCountry ?? []}
                   globalPrevalence={prevalence?.globalPrevalence ?? 0}
+                  globalCount={prevalence?.globalCount ?? 0}
+                  globalN={prevalence?.globalN ?? 0}
                   answerLabel={answerLabel}
                 />
               </div>
             </div>
+
+            {/* Regional stratification — journal table: region | n | % (95% CI) */}
+            {regional.length > 0 && (
+              <div className="mt-5">
+                <p className="font-body mb-1.5" style={{ fontSize: 11, color: MUTED, fontWeight: 600 }}>
+                  Regional breakdown — % choosing “{answerLabel}”
+                </p>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 12 }}>
+                    <thead>
+                      <tr>
+                        {['Region', 'n', '% (95% CI)'].map((h) => (
+                          <th key={h} style={{ padding: '5px 14px 5px 0', textAlign: h === 'Region' ? 'left' : 'right', color: MUTED, fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--bd)' }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {regional.map((r) => (
+                        <tr key={r.region}>
+                          <td style={{ padding: '5px 14px 5px 0', color: INK, fontWeight: 600 }}>{r.region}</td>
+                          <td className="tabular-nums" style={{ padding: '5px 14px 5px 0', textAlign: 'right', color: MUTED }}>{r.n}</td>
+                          <td className="tabular-nums" style={{ padding: '5px 0', textAlign: 'right', color: INK }}>
+                            {pct(r.prevalence)} <span style={{ color: '#b0bec5' }}>({r.count}/{r.n} · {Math.round(r.ci.lo * 100)}–{Math.round(r.ci.hi * 100)}%)</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -669,8 +858,65 @@ export function InsightsView({
           <SectionTitle hint="Questions most often left blank or “unknown” among completed responses.">
             Most-skipped questions
           </SectionTitle>
-          <BlankQuestions items={blanks} />
+          <div style={showAllMissing ? { maxHeight: 420, overflowY: 'auto', paddingRight: 4 } : undefined}>
+            <BlankQuestions items={blanks} />
+          </div>
+          <button type="button" onClick={() => setShowAllMissing((v) => !v)}
+            className="font-display mt-3 text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all">
+            {showAllMissing ? 'Show top 10 only' : 'Show full missingness appendix'}
+          </button>
         </div>
+      </div>
+
+      {/* ── Numeric summaries — median (IQR) for numeric questions ───────────── */}
+      <div className={cardCls} style={cardStyle}>
+        <SectionTitle hint="Median (IQR) and range for numeric questions with at least 3 parseable values, over completed responses.">
+          Numeric summaries
+        </SectionTitle>
+        {numerics.length === 0 ? (
+          <p className="font-body" style={{ fontSize: 12, color: '#b0bec5' }}>
+            No numeric questions have enough values yet (minimum 3).
+          </p>
+        ) : (
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="w-full border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 12, minWidth: 640 }}>
+                <thead>
+                  <tr>
+                    {['Question', 'Section', 'n', 'Median (IQR)', 'Range'].map((h, i) => (
+                      <th key={h} style={{ padding: '5px 14px 5px 0', textAlign: i >= 2 ? 'right' : 'left', color: MUTED, fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--bd)' }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(showAllNumerics ? numerics : numerics.slice(0, 10)).map((s, i) => (
+                    <tr key={i}>
+                      <td style={{ padding: '5px 14px 5px 0', color: INK, maxWidth: 380 }}>
+                        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.question}</span>
+                      </td>
+                      <td style={{ padding: '5px 14px 5px 0', color: MUTED, whiteSpace: 'nowrap' }}>{s.section}</td>
+                      <td className="tabular-nums" style={{ padding: '5px 14px 5px 0', textAlign: 'right', color: MUTED }}>{s.n}</td>
+                      <td className="tabular-nums" style={{ padding: '5px 14px 5px 0', textAlign: 'right', color: INK }}>
+                        {s.median.toLocaleString()} <span style={{ color: '#b0bec5' }}>({s.q1.toLocaleString()}–{s.q3.toLocaleString()})</span>
+                      </td>
+                      <td className="tabular-nums" style={{ padding: '5px 0', textAlign: 'right', color: MUTED }}>
+                        {s.min.toLocaleString()}–{s.max.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {numerics.length > 10 && (
+              <button type="button" onClick={() => setShowAllNumerics((v) => !v)}
+                className="font-display mt-3 text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all">
+                {showAllNumerics ? 'Show top 10 only' : `Show all ${numerics.length}`}
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       {/* ── Cross-tabulation ─────────────────────────────────────────────────── */}

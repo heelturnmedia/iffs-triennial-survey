@@ -7,7 +7,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { extractQuestionsFromPage, type ExtractedQuestion } from '@/utils/surveyAnalytics'
-import { completedOnly } from '@/utils/insightsAnalytics'
+import { completedOnly, wilsonCI, INVITED_COUNTRIES } from '@/utils/insightsAnalytics'
 import { getRegion, resolveCountryToIso2 } from '@/utils/countryRegions'
 import type { Region } from '@/utils/countryRegions'
 import type { SubmissionRow } from '@/types'
@@ -35,7 +35,7 @@ function labelFor(q: ExtractedQuestion, value: string): string {
 function leadingAnswer(
   q: ExtractedQuestion,
   done: SubmissionRow[],
-): { label: string; pct: number; n: number } | null {
+): { label: string; pct: number; n: number; count: number } | null {
   const counts = new Map<string, number>()
   let n = 0
   for (const r of done) {
@@ -58,7 +58,7 @@ function leadingAnswer(
   counts.forEach((c, val) => {
     if (c > topCount) { topCount = c; topVal = val }
   })
-  return { label: labelFor(q, topVal), pct: topCount / n, n }
+  return { label: labelFor(q, topVal), pct: topCount / n, n, count: topCount }
 }
 
 const pctStr = (v: number) => `${Math.round(v * 100)}%`
@@ -114,7 +114,7 @@ export function buildSurveyReportDoc(
     body: [
       ['Responses started', String(withData.length)],
       ['Responses completed', String(done.length)],
-      ['Countries represented', String(allCountries.size)],
+      ['Countries represented', `${allCountries.size} of ${INVITED_COUNTRIES} invited (${Math.round((allCountries.size / INVITED_COUNTRIES) * 100)}%)`],
       ['Regions represented', String([...regionResponses.keys()].filter((r) => r !== 'Unknown').length)],
     ],
     startY: y,
@@ -124,7 +124,30 @@ export function buildSurveyReportDoc(
     columnStyles: { 0: { fontStyle: 'bold', textColor: GRAY, cellWidth: 200 } },
     tableWidth: contentW,
   })
-  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14
+
+  // ── Methods paragraph — journal-style reporting disclosure ─────────────────
+  const timestamps = done
+    .flatMap((r) => [r.created_at, r.submitted_at])
+    .filter((t): t is string => !!t)
+    .map((t) => new Date(t).getTime())
+    .filter((t) => Number.isFinite(t))
+  const windowFrom = timestamps.length ? new Date(Math.min(...timestamps)).toUTCString().slice(5, 16) : '—'
+  const windowTo = timestamps.length ? new Date(Math.max(...timestamps)).toUTCString().slice(5, 16) : '—'
+  const methods =
+    `Methods: ${INVITED_COUNTRIES} countries were invited to participate in the IFFS 2026 Biennial Survey. ` +
+    `Completed responses were collected between ${windowFrom} and ${windowTo}. The unit of analysis is the ` +
+    `country; where a country submitted more than one completed response, all are included and duplicates are ` +
+    `flagged in the platform's data-quality review. Analyses are unweighted. Percentages are reported with ` +
+    `numerators, denominators, and 95% Wilson confidence intervals. Free-text responses are excluded from ` +
+    `tabulation. Data snapshot: ${new Date().toISOString().slice(0, 10)}.`
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8.5)
+  doc.setTextColor(...GRAY)
+  const methodsLines = doc.splitTextToSize(methods, contentW)
+  if (y + methodsLines.length * 11 > pageH - margin) { doc.addPage(); y = margin }
+  doc.text(methodsLines, margin, y)
+  y += methodsLines.length * 11 + 14
 
   // ── Participation by region ────────────────────────────────────────────────
   const regionBody = REGION_ORDER
@@ -162,7 +185,13 @@ export function buildSurveyReportDoc(
     for (const q of choiceQs) {
       const lead = leadingAnswer(q, done)
       if (!lead) continue
-      body.push([q.title || q.name, lead.label, pctStr(lead.pct), String(lead.n)])
+      const ci = wilsonCI(lead.count, lead.n)
+      body.push([
+        q.title || q.name,
+        lead.label,
+        `${pctStr(lead.pct)} (${Math.round(ci.lo * 100)}–${Math.round(ci.hi * 100)})`,
+        `${lead.count}/${lead.n}`,
+      ])
     }
     if (body.length === 0) return
 
@@ -177,7 +206,7 @@ export function buildSurveyReportDoc(
     y += 26
 
     autoTable(doc, {
-      head: [['Question', 'Leading answer', '%', 'n']],
+      head: [['Question', 'Leading answer', '% (95% CI)', 'n/N']],
       body,
       startY: y,
       margin: { left: margin, right: margin },
@@ -185,9 +214,9 @@ export function buildSurveyReportDoc(
       headStyles: { fillColor: GREEN, textColor: WHITE, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: ALT_ROW },
       columnStyles: {
-        0: { cellWidth: contentW * 0.5 },
-        2: { halign: 'right', cellWidth: 44 },
-        3: { halign: 'right', cellWidth: 36 },
+        0: { cellWidth: contentW * 0.44 },
+        2: { halign: 'right', cellWidth: 82 },
+        3: { halign: 'right', cellWidth: 48 },
       },
       tableWidth: contentW,
     })

@@ -76,16 +76,17 @@ export function SurveyModal() {
 
     // Prefill known facts from the user's profile — never survey opinions.
     // Only when the respondent hasn't answered yet (a deliberate choice is
-    // never overwritten), and only when the profile value exactly matches a
-    // survey option (WA-sourced profiles may use different country spellings).
-    // Runs before onValueChanged is attached, so the prefill alone never
-    // triggers an autosave. Country is a verifiable fact, so prefilling it is
-    // bias-free even though the question is mandatory.
-    if (
-      countryQ && countryQ.isEmpty() &&
-      profile?.country && (COUNTRY_CHOICES as readonly string[]).includes(profile.country)
-    ) {
-      countryQ.value = profile.country
+    // never overwritten). Uses the profile country when it exactly matches a
+    // survey option (WA-sourced profiles may use different spellings);
+    // otherwise defaults to United States per IFFS's request. Runs before
+    // onValueChanged is attached, so the prefill alone never triggers an
+    // autosave. The field stays fully editable on page 1.
+    if (countryQ && countryQ.isEmpty()) {
+      const profileCountry =
+        profile?.country && (COUNTRY_CHOICES as readonly string[]).includes(profile.country)
+          ? profile.country
+          : 'United States'
+      countryQ.value = profileCountry
     }
 
     setCurrentPage(model.currentPageNo)
