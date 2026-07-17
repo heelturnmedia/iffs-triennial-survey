@@ -16,6 +16,7 @@ import {
   completedOnly,
   crossTabulate,
   CROSSTAB_TYPES,
+  CROSSTAB_MULTI_TYPES,
 } from '@/utils/insightsAnalytics'
 import type { SubmissionRow } from '@/types'
 
@@ -212,43 +213,66 @@ function BlankQuestions({
 }
 
 // ─── Cross-tabulation ───────────────────────────────────────────────────────────
-// Contingency table of two single-answer questions. Cells shade sequentially by
-// magnitude (count) or row share — a heatmap, per the data-viz method.
+// Contingency table of two questions. Single-answer questions use their options
+// directly; multi-select questions are binarized on one chosen option ("Selected
+// X" vs "Not selected"), so every choice-based question in the survey is
+// cross-tabulatable. Cells shade sequentially — a heatmap, per the data-viz method.
 function CrossTabCard({
-  questions, submissions, sectionNames,
+  questions, submissions, sectionNames, omittedNote,
 }: {
   questions: Array<{ q: ExtractedQuestion; section: string }>
   submissions: SubmissionRow[]
   sectionNames: string[]
+  omittedNote: (section: string) => string
 }) {
-  const single = useMemo(() => questions.filter((c) => CROSSTAB_TYPES.has(c.q.type)), [questions])
+  const eligible = useMemo(
+    () => questions.filter((c) => CROSSTAB_TYPES.has(c.q.type) || CROSSTAB_MULTI_TYPES.has(c.q.type)),
+    [questions],
+  )
+  const isMulti = (q: ExtractedQuestion | undefined) => !!q && CROSSTAB_MULTI_TYPES.has(q.type)
 
-  // Sections that contain single-answer questions, tagged with their true number.
+  // Sections that contain cross-tabulatable questions, tagged with their true number.
   const sectionOptions = useMemo(() => {
     const seen = new Set<string>()
     const out: Array<{ name: string; number: number }> = []
-    single.forEach((c) => {
+    eligible.forEach((c) => {
       if (seen.has(c.section)) return
       seen.add(c.section)
       const idx = sectionNames.indexOf(c.section)
       out.push({ name: c.section, number: idx >= 0 ? idx + 1 : out.length + 1 })
     })
     return out
-  }, [single, sectionNames])
+  }, [eligible, sectionNames])
 
   const [sectionFilter, setSectionFilter] = useState<string>('All')
   const visible = useMemo(
-    () => (sectionFilter === 'All' ? single : single.filter((c) => c.section === sectionFilter)),
-    [single, sectionFilter],
+    () => (sectionFilter === 'All' ? eligible : eligible.filter((c) => c.section === sectionFilter)),
+    [eligible, sectionFilter],
   )
 
-  const [rowName, setRowName] = useState(() => single[0]?.q.name ?? '')
-  const [colName, setColName] = useState(() => single[1]?.q.name ?? single[0]?.q.name ?? '')
+  const [rowName, setRowName] = useState(() => eligible[0]?.q.name ?? '')
+  const [colName, setColName] = useState(() => eligible[1]?.q.name ?? eligible[0]?.q.name ?? '')
+  const [rowOption, setRowOption] = useState<string>('')
+  const [colOption, setColOption] = useState<string>('')
   const [mode, setMode] = useState<'count' | 'rowpct'>('count')
 
   const qA = visible.find((c) => c.q.name === rowName)?.q ?? visible[0]?.q
   const qB = visible.find((c) => c.q.name === colName)?.q ?? visible[1]?.q ?? visible[0]?.q
-  const tab = useMemo(() => (qA && qB ? crossTabulate(submissions, qA, qB) : null), [submissions, qA, qB])
+
+  // For multi-select sides, resolve the binarize option (fall back to the first choice).
+  const effRowOption = isMulti(qA)
+    ? (qA!.choices?.some((c) => c.value === rowOption) ? rowOption : (qA!.choices?.[0]?.value ?? ''))
+    : undefined
+  const effColOption = isMulti(qB)
+    ? (qB!.choices?.some((c) => c.value === colOption) ? colOption : (qB!.choices?.[0]?.value ?? ''))
+    : undefined
+
+  const tab = useMemo(
+    () => (qA && qB
+      ? crossTabulate(submissions, { q: qA, option: effRowOption }, { q: qB, option: effColOption })
+      : null),
+    [submissions, qA, qB, effRowOption, effColOption],
+  )
 
   const selectCls =
     'font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer'
@@ -267,26 +291,28 @@ function CrossTabCard({
 
   return (
     <div className="bg-white rounded-2xl p-5" style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}>
-      <SectionTitle hint="Cross-tabulate two single-answer questions to answer “of those who said X, how many also said Y?”">
+      <SectionTitle hint="Cross-tabulate any two choice-based questions to answer “of those who said X, how many also said Y?” Multi-select questions compare one chosen option (selected vs not).">
         Cross-tabulation
       </SectionTitle>
 
-      {single.length < 2 ? (
+      {eligible.length < 2 ? (
         <p className="font-body" style={{ fontSize: 12, color: '#b0bec5' }}>
-          Need at least two single-answer questions to cross-tabulate.
+          Need at least two choice-based questions to cross-tabulate.
         </p>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-1.5">
             <div className="flex items-center gap-1.5">
               <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Section</span>
               <select className={selectCls} value={sectionFilter}
                 onChange={(e) => {
                   const sec = e.target.value
                   setSectionFilter(sec)
-                  const list = sec === 'All' ? single : single.filter((c) => c.section === sec)
+                  const list = sec === 'All' ? eligible : eligible.filter((c) => c.section === sec)
                   setRowName(list[0]?.q.name ?? '')
                   setColName(list[1]?.q.name ?? list[0]?.q.name ?? '')
+                  setRowOption('')
+                  setColOption('')
                 }}
                 aria-label="Filter cross-tab questions by section" style={{ maxWidth: 240 }}>
                 <option value="All">All sections</option>
@@ -295,18 +321,40 @@ function CrossTabCard({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Rows</span>
-              <select className={selectCls} value={qA?.name ?? ''} onChange={(e) => setRowName(e.target.value)}
+              <select className={selectCls} value={qA?.name ?? ''}
+                onChange={(e) => { setRowName(e.target.value); setRowOption('') }}
                 aria-label="Cross-tab row question" style={{ maxWidth: 280 }}>
                 {visible.map((c) => <option key={c.q.name} value={c.q.name}>{c.q.title || c.q.name}</option>)}
               </select>
             </div>
+            {isMulti(qA) && (
+              <div className="flex items-center gap-1.5">
+                <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Row option</span>
+                <select className={selectCls} value={effRowOption ?? ''}
+                  onChange={(e) => setRowOption(e.target.value)}
+                  aria-label="Cross-tab row option" style={{ maxWidth: 220 }}>
+                  {qA!.choices?.map((o) => <option key={o.value} value={o.value}>{o.text}</option>)}
+                </select>
+              </div>
+            )}
             <div className="flex items-center gap-1.5">
               <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Columns</span>
-              <select className={selectCls} value={qB?.name ?? ''} onChange={(e) => setColName(e.target.value)}
+              <select className={selectCls} value={qB?.name ?? ''}
+                onChange={(e) => { setColName(e.target.value); setColOption('') }}
                 aria-label="Cross-tab column question" style={{ maxWidth: 280 }}>
                 {visible.map((c) => <option key={c.q.name} value={c.q.name}>{c.q.title || c.q.name}</option>)}
               </select>
             </div>
+            {isMulti(qB) && (
+              <div className="flex items-center gap-1.5">
+                <span className="font-body font-medium" style={{ fontSize: 11, color: MUTED }}>Column option</span>
+                <select className={selectCls} value={effColOption ?? ''}
+                  onChange={(e) => setColOption(e.target.value)}
+                  aria-label="Cross-tab column option" style={{ maxWidth: 220 }}>
+                  {qB!.choices?.map((o) => <option key={o.value} value={o.value}>{o.text}</option>)}
+                </select>
+              </div>
+            )}
             <div className="flex items-center gap-1 ml-auto p-0.5 rounded-lg" style={{ background: '#f0f4f1', border: '1px solid var(--bd)' }}>
               {(['count', 'rowpct'] as const).map((m) => (
                 <button key={m} type="button" onClick={() => setMode(m)}
@@ -320,9 +368,14 @@ function CrossTabCard({
             </div>
           </div>
 
+          {/* Coverage note — why some questions aren't listed */}
+          <p className="font-body mb-4" style={{ fontSize: 10, color: '#b0bec5' }}>
+            {omittedNote(sectionFilter)}
+          </p>
+
           {visible.length < 2 ? (
             <p className="font-body" style={{ fontSize: 12, color: '#b0bec5' }}>
-              This section has fewer than two single-answer questions — choose another section or “All sections”.
+              This section has fewer than two choice-based questions — choose another section or “All sections”.
             </p>
           ) : !tab || tab.total === 0 ? (
             <p className="font-body" style={{ fontSize: 12, color: '#b0bec5' }}>
@@ -404,6 +457,33 @@ export function InsightsView({
     })
     return out
   }, [pages, sectionNames])
+
+  // Per-section count of questions that can't be charted (free-text, comments,
+  // multi-part text) — surfaced so admins know the selectors aren't missing data.
+  const omittedCounts = useMemo(() => {
+    const bySection = new Map<string, number>()
+    let total = 0
+    let chartableTotal = 0
+    pages.forEach((p, i) => {
+      const sec = sectionNames[i] ?? `Section ${i + 1}`
+      const all = extractQuestionsFromPage(p)
+      const chartable = all.filter(
+        (q) => q.name && CHOICE_TYPES.has(q.type) && answerOptionsFor(q).length > 0
+      ).length
+      bySection.set(sec, all.length - chartable)
+      total += all.length - chartable
+      chartableTotal += chartable
+    })
+    return { bySection, total, chartableTotal }
+  }, [pages, sectionNames])
+
+  const omittedNote = useMemo(() => (section: string): string => {
+    const omitted = section === 'All'
+      ? omittedCounts.total
+      : (omittedCounts.bySection.get(section) ?? 0)
+    if (omitted === 0) return 'All questions in this selection are choice-based and listed above.'
+    return `${omitted} free-text question${omitted !== 1 ? 's' : ''} in this selection ${omitted !== 1 ? 'are' : 'is'} not listed — typed answers have no options to chart as shares.`
+  }, [omittedCounts])
 
   // Sections that actually contain choice questions, in page order, tagged with
   // their true survey section number.
@@ -533,6 +613,11 @@ export function InsightsView({
               </div>
             </div>
 
+            {/* Coverage note — why some questions aren't listed */}
+            <p className="font-body -mt-2 mb-4" style={{ fontSize: 10, color: '#b0bec5' }}>
+              {visibleQuestions.length} choice-based question{visibleQuestions.length !== 1 ? 's' : ''} listed. {omittedNote(sectionFilter)}
+            </p>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <AnswerChoroplethMap
                 isoValue={prevalence?.isoValue ?? new Map()}
@@ -589,7 +674,12 @@ export function InsightsView({
       </div>
 
       {/* ── Cross-tabulation ─────────────────────────────────────────────────── */}
-      <CrossTabCard questions={choiceQuestions} submissions={submissions} sectionNames={sectionNames} />
+      <CrossTabCard
+        questions={choiceQuestions}
+        submissions={submissions}
+        sectionNames={sectionNames}
+        omittedNote={omittedNote}
+      />
     </div>
   )
 }

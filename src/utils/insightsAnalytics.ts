@@ -187,11 +187,19 @@ export function mostBlankQuestions(
 }
 
 // ─── Cross-tabulation ───────────────────────────────────────────────────────────
-// Contingency table of one single-answer question against another, over completed
-// responses. Multi-select questions are excluded so each respondent lands in exactly
-// one cell (a proper contingency).
+// Contingency table of two questions over completed responses. Single-answer
+// questions use their options directly. Multi-select questions (checkbox/tagbox)
+// are binarized on one chosen option — "Selected X" vs "Did not select X" — so
+// each respondent still lands in exactly one cell (a proper contingency).
 
 export const CROSSTAB_TYPES = new Set(['radiogroup', 'dropdown', 'boolean'])
+export const CROSSTAB_MULTI_TYPES = new Set(['checkbox', 'tagbox'])
+
+export interface CrossTabSide {
+  q: ExtractedQuestion
+  // Required for multi-select questions: the option value to binarize on.
+  option?: string
+}
 
 // The single answer value a respondent gave, as a comparable string ('' = none).
 function singleAnswerValue(q: ExtractedQuestion, value: unknown): string {
@@ -226,10 +234,35 @@ export interface CrossTab {
   total: number
 }
 
+// The comparable cell value for one side of the cross-tab ('' = not counted).
+function sideValue(side: CrossTabSide, data: Record<string, unknown> | undefined): string {
+  const raw = data?.[side.q.name]
+  if (side.option !== undefined) {
+    // Binarized multi-select: only respondents who answered the question count.
+    if (raw === undefined || raw === null || raw === '') return ''
+    if (!Array.isArray(raw)) return ''
+    return (raw as unknown[]).map(String).includes(side.option) ? 'selected' : 'not_selected'
+  }
+  return singleAnswerValue(side.q, raw)
+}
+
+function sideLabel(side: CrossTabSide, value: string): string {
+  if (side.option !== undefined) {
+    const optText = side.q.choices?.find((c) => c.value === side.option)?.text ?? side.option
+    return value === 'selected' ? `Selected “${optText}”` : 'Not selected'
+  }
+  return labelFor(side.q, value)
+}
+
+function sideOrder(side: CrossTabSide, seen: Set<string>): string[] {
+  if (side.option !== undefined) return ['selected', 'not_selected'].filter((v) => seen.has(v))
+  return orderValues(side.q, seen)
+}
+
 export function crossTabulate(
   submissions: SubmissionRow[],
-  qA: ExtractedQuestion,
-  qB: ExtractedQuestion,
+  sideA: CrossTabSide,
+  sideB: CrossTabSide,
 ): CrossTab {
   const done = completedOnly(submissions)
   const cells = new Map<string, Map<string, number>>()
@@ -238,8 +271,8 @@ export function crossTabulate(
   let total = 0
 
   for (const row of done) {
-    const a = singleAnswerValue(qA, row.data?.[qA.name])
-    const b = singleAnswerValue(qB, row.data?.[qB.name])
+    const a = sideValue(sideA, row.data)
+    const b = sideValue(sideB, row.data)
     if (!a || !b) continue
     rowSeen.add(a)
     colSeen.add(b)
@@ -249,15 +282,15 @@ export function crossTabulate(
     total += 1
   }
 
-  const rowValues = orderValues(qA, rowSeen)
-  const colValues = orderValues(qB, colSeen)
+  const rowValues = sideOrder(sideA, rowSeen)
+  const colValues = sideOrder(sideB, colSeen)
   const counts = rowValues.map((rv) => colValues.map((cv) => cells.get(rv)?.get(cv) ?? 0))
   const rowTotals = counts.map((r) => r.reduce((s, x) => s + x, 0))
   const colTotals = colValues.map((_, ci) => counts.reduce((s, r) => s + r[ci], 0))
 
   return {
-    rowLabels: rowValues.map((v) => labelFor(qA, v)),
-    colLabels: colValues.map((v) => labelFor(qB, v)),
+    rowLabels: rowValues.map((v) => sideLabel(sideA, v)),
+    colLabels: colValues.map((v) => sideLabel(sideB, v)),
     counts,
     rowTotals,
     colTotals,
