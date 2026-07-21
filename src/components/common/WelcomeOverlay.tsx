@@ -1,6 +1,6 @@
 // Shown after login — reads from uiStore.welcomeOverlayOpen
 // Dark overlay + centered card
-// Card top (dark): "IFFS Biennial Survey" label + "Welcome, [LastName]"
+// Card top (dark): "IFFS Biannual Survey" label + "Welcome, [LastName]"
 // Card body:
 //   - Description text (shows resume hint if draft in progress: "Section N of 20 saved on [date]")
 //   - "Begin Survey →" green button → openModal(), setWelcomeOverlayOpen(false)
@@ -97,7 +97,7 @@ export function WelcomeOverlay() {
                   color: 'var(--f3)',
                 }}
               >
-                2026 Biennial Survey
+                2027 Biannual Survey
               </div>
               <div
                 style={{
@@ -138,7 +138,7 @@ export function WelcomeOverlay() {
               marginBottom: 12,
             }}
           >
-            You are about to complete the IFFS 2026 Biennial Survey on Assisted
+            You are about to complete the IFFS 2027 Biannual Survey on Assisted
             Reproductive Technology. The survey covers 20 sections and takes
             approximately 30–45 minutes.
           </p>

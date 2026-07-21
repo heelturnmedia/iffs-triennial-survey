@@ -39,7 +39,7 @@ export default function TermsOfUsePage() {
                 1. Acceptance of Terms
               </h2>
               <p>
-                By accessing or using the IFFS 2026 Biennial Survey platform ("the Platform"), you
+                By accessing or using the IFFS 2027 Biannual Survey platform ("the Platform"), you
                 agree to be bound by these Terms of Use. If you do not agree to these terms, you may
                 not access or use the Platform. These terms apply to all users, including registered
                 survey participants, administrators, and visitors.
@@ -69,7 +69,7 @@ export default function TermsOfUsePage() {
               >
                 3. Permitted Use
               </h2>
-              <p className="mb-3">You agree to use the Platform solely for its intended purpose of completing the IFFS 2026 Biennial Survey. You must not:</p>
+              <p className="mb-3">You agree to use the Platform solely for its intended purpose of completing the IFFS 2027 Biannual Survey. You must not:</p>
               <ul className="list-disc list-inside space-y-1 pl-2">
                 <li>Submit false, misleading, or fabricated data</li>
                 <li>Attempt to access accounts or data belonging to other users</li>

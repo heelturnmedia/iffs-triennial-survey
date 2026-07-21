@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// IFFS 2026 Biennial Survey — canonical definition
+// IFFS 2027 Biannual Survey — canonical definition
 // Source: survey-definition.json (20 pages, 525 questions)
 //
 // SURVEY_DEFINITION  → used by SurveyModal as the SurveyJS model fallback

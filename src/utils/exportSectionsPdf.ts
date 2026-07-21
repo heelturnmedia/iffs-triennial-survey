@@ -98,7 +98,7 @@ export function buildSectionsPdfDoc(
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
   doc.setTextColor(...DARK)
-  doc.text('IFFS 2026 Biennial Survey', margin, y)
+  doc.text('IFFS 2027 Biannual Survey', margin, y)
   y += 22
   doc.setFontSize(13)
   doc.setTextColor(...GREEN)
@@ -257,7 +257,7 @@ export function buildSectionsPdfDoc(
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...GRAY)
-    doc.text('IFFS 2026 Biennial Survey — Confidential', margin, pageH - 20)
+    doc.text('IFFS 2027 Biannual Survey — Confidential', margin, pageH - 20)
     doc.text(`Page ${p} of ${pageCount}`, pageW - margin, pageH - 20, { align: 'right' })
   }
 

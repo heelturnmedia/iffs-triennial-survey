@@ -43,7 +43,7 @@ export default function PrivacyPolicyPage() {
               </h2>
               <p className="mb-3">
                 The International Federation of Fertility Societies ("IFFS", "we", "us", or "our") operates
-                the IFFS 2026 Biennial Survey on Assisted Reproductive Technology. This Privacy Policy
+                the IFFS 2027 Biannual Survey on Assisted Reproductive Technology. This Privacy Policy
                 explains how we collect, use, disclose, and safeguard your information when you use our
                 survey platform.
               </p>
@@ -103,7 +103,7 @@ export default function PrivacyPolicyPage() {
               <p className="mb-3">We use the information we collect to:</p>
               <ul className="list-disc list-inside space-y-1 pl-2">
                 <li>Operate and maintain the survey platform</li>
-                <li>Compile and publish the IFFS Biennial Surveillance Report</li>
+                <li>Compile and publish the IFFS Biannual Surveillance Report</li>
                 <li>Verify your identity and professional credentials</li>
                 <li>Send administrative communications related to the survey</li>
                 <li>Improve the platform and ensure its security</li>
@@ -192,7 +192,7 @@ export default function PrivacyPolicyPage() {
               </h2>
               <p>
                 We retain account information (such as your name and email address) only for as long as
-                your account is active and it is needed to operate the survey. After each biennial survey
+                your account is active and it is needed to operate the survey. After each biannual survey
                 report is published, we remove or irreversibly anonymise the direct identifiers associated
                 with survey responses. Anonymised and aggregated response data — which can no longer be
                 linked to an individual — may be retained indefinitely for longitudinal research and
