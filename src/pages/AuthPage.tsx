@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// AuthPage — IFFS 2026 Biennial Survey · Split-panel authentication
+// AuthPage — IFFS 2027 Biannual Survey · Split-panel authentication
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate }          from 'react-router-dom'
@@ -44,7 +44,7 @@ const CHECKLIST_ITEMS: { icon: string; text: string }[] = [
 ]
 
 const LEFT_STATS: { value: string; label: string }[] = [
-  { value: '2026', label: 'SURVEY YEAR' },
+  { value: '2027', label: 'SURVEY YEAR' },
   { value: '20',   label: 'SECTIONS' },
   { value: '147',  label: 'COUNTRIES' },
 ]
@@ -451,7 +451,7 @@ export default function AuthPage() {
                 className="font-display text-[11px] font-bold tracking-[0.28em] uppercase mb-8"
                 style={{ color: 'rgba(166,206,57,0.85)' }}
               >
-                — IFFS · 2026 SURVEY
+                — IFFS · 2027 SURVEY
               </p>
 
               <h1
@@ -552,7 +552,7 @@ export default function AuthPage() {
                 className="font-display text-[11px] font-bold tracking-[0.2em] uppercase mb-3"
                 style={{ color: '#7a8a96' }}
               >
-                IFFS 2026 Biennial Survey
+                IFFS 2027 Biannual Survey
               </div>
               <h2
                 className="font-display font-light"
@@ -566,7 +566,7 @@ export default function AuthPage() {
               >
                 {tab === 'signin'
                   ? 'Sign in to access your survey dashboard.'
-                  : 'Register to participate in the 2026 global survey.'}
+                  : 'Register to participate in the 2027 global survey.'}
               </p>
             </div>
 

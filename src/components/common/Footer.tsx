@@ -61,7 +61,7 @@ export function Footer() {
                 marginTop: 2,
               }}
             >
-              2026 Biennial on ART
+              2027 Biannual on ART
             </span>
           </div>
         </div>

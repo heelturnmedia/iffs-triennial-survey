@@ -27,7 +27,7 @@ export default function ContactPage() {
               Contact Us
             </h1>
             <p className="font-body text-[15px] leading-relaxed" style={{ color: '#3d4a52' }}>
-              Have a question about the 2026 IFFS Biennial Survey? Need assistance with your
+              Have a question about the 2027 IFFS Biannual Survey? Need assistance with your
               submission? Our secretariat team is here to help.
             </p>
           </div>

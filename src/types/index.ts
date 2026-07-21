@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// IFFS 2026 Biennial Survey — shared TypeScript types
+// IFFS 2027 Biannual Survey — shared TypeScript types
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { User } from '@supabase/supabase-js'
