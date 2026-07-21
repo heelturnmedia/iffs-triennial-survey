@@ -97,7 +97,7 @@ export function buildSurveyReportDoc(
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(22)
   doc.setTextColor(...DARK)
-  doc.text('IFFS 2027 Biannual Survey', margin, y + 6)
+  doc.text('IFFS 2027 Biennial Survey', margin, y + 6)
   y += 30
   doc.setFontSize(15)
   doc.setTextColor(...GREEN)
@@ -136,7 +136,7 @@ export function buildSurveyReportDoc(
   const windowFrom = timestamps.length ? new Date(Math.min(...timestamps)).toUTCString().slice(5, 16) : '—'
   const windowTo = timestamps.length ? new Date(Math.max(...timestamps)).toUTCString().slice(5, 16) : '—'
   const methods =
-    `Methods: ${INVITED_COUNTRIES} countries were invited to participate in the IFFS 2027 Biannual Survey. ` +
+    `Methods: ${INVITED_COUNTRIES} countries were invited to participate in the IFFS 2027 Biennial Survey. ` +
     `Completed responses were collected between ${windowFrom} and ${windowTo}. The unit of analysis is the ` +
     `country; where a country submitted more than one completed response, all are included and duplicates are ` +
     `flagged in the platform's data-quality review. Analyses are unweighted. Percentages are reported with ` +
@@ -231,7 +231,7 @@ export function buildSurveyReportDoc(
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...GRAY)
-    doc.text('IFFS 2027 Biannual Survey — Surveillance Report — Confidential', margin, pageH - 20)
+    doc.text('IFFS 2027 Biennial Survey — Surveillance Report — Confidential', margin, pageH - 20)
     doc.text(`Page ${p} of ${pageCount}`, pageW - margin, pageH - 20, { align: 'right' })
   }
 

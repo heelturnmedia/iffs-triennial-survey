@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// HomePage — IFFS 2027 Biannual Survey · Marketing Landing Page
+// HomePage — IFFS 2027 Biennial Survey · Marketing Landing Page
 // ─────────────────────────────────────────────────────────────────────────────
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
@@ -115,7 +115,7 @@ export default function HomePage() {
                 className="font-display text-[11px] font-bold tracking-[0.18em] uppercase"
                 style={{ color: '#0e5921' }}
               >
-                IFFS · Biannual Survey · 2027
+                IFFS · Biennial Survey · 2027
               </span>
             </div>
 
@@ -155,7 +155,7 @@ export default function HomePage() {
                 animationDelay: '0.22s',
               }}
             >
-              The International Federation of Fertility Societies 2027 Biannual
+              The International Federation of Fertility Societies 2027 Biennial
               Survey collects global data on ART infrastructure, regulation,
               financing, and clinical practice.
             </p>

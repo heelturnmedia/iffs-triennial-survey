@@ -77,7 +77,7 @@ export function Nav() {
               color: 'var(--f1)',
             }}
           >
-            IFFS BIANNUAL{' '}
+            IFFS BIENNIAL{' '}
             <em style={{ fontStyle: 'normal', color: 'var(--g1)' }}>SURVEY</em>
           </span>
           <span

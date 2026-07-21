@@ -74,7 +74,7 @@ export function buildSurveyReportXml(
 
   // ── Sheet 1: Summary ────────────────────────────────────────────────────────
   const summaryRows = [
-    rowXml([{ v: 'IFFS 2027 Biannual Survey — Surveillance Report', style: 'title' }]),
+    rowXml([{ v: 'IFFS 2027 Biennial Survey — Surveillance Report', style: 'title' }]),
     rowXml([{ v: `Generated ${new Date().toUTCString()}`, style: 'label' }]),
     rowXml([]),
     rowXml([{ v: 'Summary', style: 'head' }, { v: '', style: 'head' }]),
@@ -90,7 +90,7 @@ export function buildSurveyReportXml(
     rowXml([{ v: 'Methods', style: 'head' }]),
     rowXml([{
       v:
-        `${INVITED_COUNTRIES} countries were invited to participate in the IFFS 2027 Biannual Survey. ` +
+        `${INVITED_COUNTRIES} countries were invited to participate in the IFFS 2027 Biennial Survey. ` +
         `Completed responses were collected between ${windowFrom} and ${windowTo}. The unit of analysis is ` +
         `the country; where a country submitted more than one completed response, all are included and ` +
         `duplicates are flagged in the platform's data-quality review. Analyses are unweighted. Percentages ` +

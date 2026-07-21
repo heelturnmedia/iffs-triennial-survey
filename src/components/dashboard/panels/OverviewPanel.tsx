@@ -86,7 +86,7 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
         </div>
 
         <p className="font-body text-[14px] text-[#3d4a52] leading-relaxed">
-          Thank you for completing the 2027 IFFS Biannual Survey. Your responses have been
+          Thank you for completing the 2027 IFFS Biennial Survey. Your responses have been
           recorded and will contribute to the global ART landscape report.
         </p>
 
@@ -128,7 +128,7 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
             Action Required
           </p>
           <h2 className="font-display text-[20px] font-bold text-[#0d1117] leading-snug">
-            Complete Your 2027 Biannual Survey
+            Complete Your 2027 Biennial Survey
           </h2>
         </div>
 
