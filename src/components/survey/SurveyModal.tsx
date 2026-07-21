@@ -351,7 +351,7 @@ export function SurveyModal() {
                   color: '#fff',
                 }}
               >
-                2027 Biannual Survey
+                2027 Biennial Survey
               </div>
               <div
                 style={{
