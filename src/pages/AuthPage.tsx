@@ -36,6 +36,11 @@ interface DemoAccount {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+// IFFS secretariat — manual-activation fallback for users whose corporate mail
+// gateway silently quarantines the confirmation email (Resend reports it as
+// "Delivered", but it never reaches their inbox). Matches ContactPage.tsx.
+const SECRETARIAT_EMAIL = 'secretariat@iffsreproduction.org'
+
 const CHECKLIST_ITEMS: { icon: string; text: string }[] = [
   { icon: '🔒', text: 'Secure encrypted data transmission' },
   { icon: '🌍', text: 'Global registry of 147+ countries' },
@@ -233,6 +238,9 @@ export default function AuthPage() {
   const [emailNotConfirmed,  setEmailNotConfirmed]  = useState(false)
   const [resending,          setResending]          = useState(false)
   const [confirmationResent, setConfirmationResent] = useState(false)
+  // Count successful resends so we can surface the manual-activation fallback
+  // once repeated re-sends still aren't arriving (deliverability dead-end).
+  const [resendCount,        setResendCount]        = useState(0)
 
   // Sign-up form
   const [suFirst,    setSuFirst]    = useState('')
@@ -303,6 +311,7 @@ export default function AuthPage() {
       })
       if (resendError) throw resendError
       setConfirmationResent(true)
+      setResendCount((n) => n + 1)
       setSiError(null)
       setEmailNotConfirmed(false)
       toast('Confirmation email re-sent.', 'ok')
@@ -687,6 +696,43 @@ export default function AuthPage() {
                     >
                       Confirmation email re-sent. Check your inbox (and spam folder), then
                       sign in after clicking the link.
+                    </div>
+                  )}
+
+                  {/* Manual-activation fallback — after 2+ resends the email
+                      still isn't arriving (typically a corporate mail gateway
+                      quarantining it). Give the user a path that doesn't depend
+                      on email delivery at all. */}
+                  {resendCount >= 2 && (
+                    <div
+                      className="rounded-xl px-4 py-3 font-body text-sm"
+                      style={{
+                        backgroundColor: '#fffbeb',
+                        border:          '1px solid #fde68a',
+                        color:           '#92400e',
+                      }}
+                      role="status"
+                    >
+                      Still not receiving it?{' '}
+                      <a
+                        href={
+                          `mailto:${SECRETARIAT_EMAIL}` +
+                          `?subject=${encodeURIComponent('Account activation help — IFFS 2027 Survey')}` +
+                          `&body=${encodeURIComponent(
+                            'Hello IFFS Secretariat,\n\n' +
+                            "I'm not receiving the confirmation email for my survey account and " +
+                            'cannot sign in. My organization’s email system may be blocking it. ' +
+                            'Please activate my account manually.\n\n' +
+                            `Account email: ${siEmail || '(enter your email above)'}\n\n` +
+                            'Thank you.'
+                          )}`
+                        }
+                        className="font-semibold underline"
+                        style={{ color: '#92400e' }}
+                      >
+                        Email the secretariat
+                      </a>{' '}
+                      and we&rsquo;ll activate your account.
                     </div>
                   )}
 
