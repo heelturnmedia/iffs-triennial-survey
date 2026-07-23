@@ -241,6 +241,9 @@ export default function AuthPage() {
   // Count successful resends so we can surface the manual-activation fallback
   // once repeated re-sends still aren't arriving (deliverability dead-end).
   const [resendCount,        setResendCount]        = useState(0)
+  // Set after a signup that needs email confirmation (no session yet): holds the
+  // address so the Sign In tab can tell the user to click the link first.
+  const [pendingConfirmEmail, setPendingConfirmEmail] = useState<string | null>(null)
 
   // Sign-up form
   const [suFirst,    setSuFirst]    = useState('')
@@ -285,6 +288,7 @@ export default function AuthPage() {
     setForgotSent(false)
     setEmailNotConfirmed(false)
     setConfirmationResent(false)
+    setPendingConfirmEmail(null)
     setSiLoading(true)
     try {
       await signIn({ email: siEmail, password: siPassword })
@@ -330,13 +334,26 @@ export default function AuthPage() {
     setSuError(null)
     setSuLoading(true)
     try {
-      await signUp({
+      const data = await signUp({
         email:     suEmail,
         password:  suPassword,
         firstName: suFirst,
         lastName:  suLast,
       })
       void logActivity('sign_up') // no-ops if email confirmation is pending (no session yet)
+
+      // With email confirmation enabled, signUp returns no session — the account
+      // can't sign in until the link in the inbox is clicked. Navigating to
+      // /dashboard here just bounces off AuthGuard back to /login with no context
+      // (exactly what left new users stuck). Instead, drop them on the Sign In tab
+      // with a clear "check your email first" notice and their email prefilled.
+      if (!data.session) {
+        setPendingConfirmEmail(suEmail)
+        setSiEmail(suEmail)
+        setTab('signin')
+        return
+      }
+
       navigate('/dashboard')
     } catch (err) {
       setSuError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
@@ -599,6 +616,7 @@ export default function AuthPage() {
                     setForgotSent(false)
                     setEmailNotConfirmed(false)
                     setConfirmationResent(false)
+                    setPendingConfirmEmail(null)
                   }}
                   className="flex-1 py-3 font-display text-[12px] font-bold tracking-[0.1em] uppercase transition-all duration-200 focus-visible:outline-none"
                   style={{
@@ -618,6 +636,26 @@ export default function AuthPage() {
             {tab === 'signin' && (
               <form onSubmit={handleSignIn} noValidate>
                 <div className="space-y-5">
+                  {/* Post-signup notice — explain that the email must be
+                      confirmed before signing in (prevents the "signed up but
+                      can't get in" loop). */}
+                  {pendingConfirmEmail && (
+                    <div
+                      className="rounded-xl px-4 py-3 font-body text-sm"
+                      style={{
+                        backgroundColor: '#e8f5ec',
+                        border:          '1px solid #afc7b4',
+                        color:           '#0e5921',
+                      }}
+                      role="status"
+                    >
+                      <strong className="font-semibold">Account created.</strong> We&rsquo;ve
+                      emailed a confirmation link to{' '}
+                      <strong className="font-semibold">{pendingConfirmEmail}</strong>. Click the
+                      link in your inbox (check spam too) <strong className="font-semibold">before
+                      signing in</strong>.
+                    </div>
+                  )}
                   <InputField
                     id="si-email"
                     label="Email address"
