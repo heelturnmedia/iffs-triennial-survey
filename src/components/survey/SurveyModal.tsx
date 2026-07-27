@@ -10,6 +10,8 @@ import { logActivity } from '@/services/auditService'
 import { persistSurvey, clearPersistedSurvey } from '@/lib/localStorage'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
 import { COUNTRY_CHOICES } from '@/data/countries'
+import { SECTION_NAMES } from '@/constants'
+import type { SubmissionRow } from '@/types'
 import { SurveyTimeline } from './SurveyTimeline'
 import { SurveySectionHeader } from './SurveySectionHeader'
 import { formatSavedAt } from '@/utils/formatDate'
@@ -55,6 +57,13 @@ export function SurveyModal() {
       textUpdateMode:              'onBlur',
       focusFirstQuestionAutomatic: false,
       firstPageIsStartPage:        false,
+      // Pre-submission review: on the last page the primary button becomes
+      // "Review answers", which shows every response grouped by section (with
+      // inline Edit) before the final "Submit Survey" button fires onCompleting.
+      showPreviewBeforeComplete:   true,
+      previewMode:                 'allQuestions',
+      previewText:                 'Review answers',
+      completeText:                'Submit Survey',
     })
 
     // Patch the Country question to use inline choices. The DB-stored
@@ -285,6 +294,62 @@ export function SurveyModal() {
     toast('Progress saved.', 'ok')
   }
 
+  // ── Download / Print the response as a branded PDF ────────────────────────
+  // Reuses the same per-respondent exporter admins use, so a respondent can
+  // review the whole survey, print it, or share it with local experts before
+  // final submission. jsPDF is lazy-imported on click to stay out of the bundle.
+  const definitionPages =
+    ((activeDefinition?.definition ?? SURVEY_DEFINITION) as Record<string, unknown>)['pages'] as unknown[] ?? []
+
+  const hasAnswers = !!surveyModel && Object.keys(surveyModel.data ?? {}).length > 0
+
+  const buildResponseRow = (): SubmissionRow => ({
+    id:           submission?.id,
+    user_id:      user?.id ?? '',
+    status:       submission?.status ?? 'draft',
+    page_no:      surveyModel?.currentPageNo ?? 0,
+    data:         surveyModel?.data ?? {},
+    saved_at:     submission?.saved_at ?? null,
+    submitted_at: submission?.submitted_at ?? null,
+    reference_no: submission?.reference_no ?? null,
+    first_name:   profile?.first_name,
+    last_name:    profile?.last_name,
+    email:        profile?.email,
+    institution:  profile?.institution,
+    country:      profile?.country,
+    profile:      profile ?? undefined,
+  })
+
+  const handleDownloadPdf = async () => {
+    if (!hasAnswers) return
+    try {
+      const { exportIndividualPdf } = await import('@/utils/exportIndividualPdf')
+      exportIndividualPdf(buildResponseRow(), definitionPages, SECTION_NAMES)
+      void logActivity('export_response', { format: 'pdf', self: true, reference: submission?.reference_no ?? null })
+    } catch {
+      toast('Could not generate the PDF. Please try again.', 'err')
+    }
+  }
+
+  const handlePrintPdf = async () => {
+    if (!hasAnswers) return
+    // Open the tab inside the click gesture (before the await) so it isn't
+    // blocked as a popup; point it at the PDF once the doc is built.
+    const printWin = window.open('', '_blank')
+    try {
+      const { buildIndividualPdfDoc } = await import('@/utils/exportIndividualPdf')
+      const doc = buildIndividualPdfDoc(buildResponseRow(), definitionPages, SECTION_NAMES)
+      doc.autoPrint()
+      const url = String(doc.output('bloburl'))
+      if (printWin) printWin.location.href = url
+      else window.open(url, '_blank')
+      void logActivity('export_response', { format: 'print', self: true, reference: submission?.reference_no ?? null })
+    } catch {
+      printWin?.close()
+      toast('Could not open the print view. Please try again.', 'err')
+    }
+  }
+
   const saveStatusText =
     autoSaveStatus === 'saving'                     ? '⏳ Saving…' :
     autoSaveStatus === 'saved' && lastSavedAt       ? `✓ Saved ${formatSavedAt(lastSavedAt)}` :
@@ -367,9 +432,52 @@ export function SurveyModal() {
             </div>
           </div>
 
-          {/* Right: user name + close button */}
-          <div className="flex items-center gap-4">
+          {/* Right: export actions + user name + close button */}
+          <div className="flex items-center gap-3">
+            {/* Download / Print — available throughout so a respondent can review,
+                print, or share their answers before final submission. */}
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={!hasAnswers}
+              title="Download your responses as a PDF"
+              aria-label="Download your responses as a PDF"
+              className="flex items-center gap-1.5 px-3 h-8 rounded-lg transition-all hover:brightness-125 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.85)',
+                fontFamily: 'var(--font-display)',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+              }}
+            >
+              <span aria-hidden="true">⬇</span>
+              <span className="hidden sm:inline">Download PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePrintPdf}
+              disabled={!hasAnswers}
+              title="Print your responses"
+              aria-label="Print your responses"
+              className="flex items-center gap-1.5 px-3 h-8 rounded-lg transition-all hover:brightness-125 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.85)',
+                fontFamily: 'var(--font-display)',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+              }}
+            >
+              <span aria-hidden="true">🖨</span>
+              <span className="hidden sm:inline">Print</span>
+            </button>
             <span
+              className="hidden md:inline"
               style={{
                 fontFamily: 'var(--font-body)',
                 fontSize: 11,

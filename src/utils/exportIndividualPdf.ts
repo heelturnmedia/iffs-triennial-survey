@@ -16,6 +16,7 @@ const GRAY: [number, number, number] = [122, 138, 150]
 const DARK: [number, number, number] = [13, 17, 23]
 const WHITE: [number, number, number] = [255, 255, 255]
 const ALT_ROW: [number, number, number] = [247, 249, 247]
+const DRAFT_RED: [number, number, number] = [176, 58, 46]
 
 export function buildIndividualPdfDoc(
   row: SubmissionRow,
@@ -42,6 +43,18 @@ export function buildIndividualPdfDoc(
   doc.setTextColor(...GREEN)
   doc.text('Individual Survey Response', margin, y)
   y += 20
+
+  // ── DRAFT marker ─────────────────────────────────────────────────────────
+  // Only stamped on not-yet-submitted copies (the respondent's own
+  // pre-submission review PDF). Submitted/reviewed rows — i.e. the admin export
+  // path — get no stamp, so the official record is never mislabeled as a draft.
+  if (meta.status !== 'submitted' && meta.status !== 'reviewed') {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(...DRAFT_RED)
+    doc.text('DRAFT — not yet submitted', margin, y)
+    y += 16
+  }
 
   // ── Participant meta table ───────────────────────────────────────────────
   autoTable(doc, {
