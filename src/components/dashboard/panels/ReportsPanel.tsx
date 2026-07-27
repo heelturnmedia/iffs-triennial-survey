@@ -537,18 +537,33 @@ export function ReportsPanel() {
   // ── Cumulative responses (every question × every user) ────────────────────
   // Wide CSV matrix of all answers from all users — the raw analysable dataset,
   // distinct from the roster CSV (meta only) and the aggregated report above.
-  const [cumulativeBusy, setCumulativeBusy] = useState(false)
-  const handleExportCumulative = async () => {
-    setCumulativeBusy(true)
+  const [cumulativeCsvBusy, setCumulativeCsvBusy] = useState(false)
+  const handleExportCumulativeCsv = async () => {
+    setCumulativeCsvBusy(true)
     try {
       const { exportCumulativeCsv } = await import('@/utils/exportCumulativeResponses')
       exportCumulativeCsv(rows, definitionPages, SECTION_NAMES)
       void logActivity('export_all_responses', { format: 'cumulative_csv', count: rows.length })
     } catch (err) {
-      console.error('Cumulative export failed:', err)
+      console.error('Cumulative CSV export failed:', err)
       toast('Failed to generate the cumulative report.', 'err')
     } finally {
-      setCumulativeBusy(false)
+      setCumulativeCsvBusy(false)
+    }
+  }
+
+  const [cumulativeXlsBusy, setCumulativeXlsBusy] = useState(false)
+  const handleExportCumulativeXls = async () => {
+    setCumulativeXlsBusy(true)
+    try {
+      const { exportCumulativeXls } = await import('@/utils/exportCumulativeResponses')
+      exportCumulativeXls(rows, definitionPages, SECTION_NAMES)
+      void logActivity('export_all_responses', { format: 'cumulative_xls', count: rows.length })
+    } catch (err) {
+      console.error('Cumulative XLS export failed:', err)
+      toast('Failed to generate the cumulative Excel report.', 'err')
+    } finally {
+      setCumulativeXlsBusy(false)
     }
   }
 
@@ -590,7 +605,7 @@ export function ReportsPanel() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {isAdmin() && (
             <button
               type="button"
@@ -646,16 +661,33 @@ export function ReportsPanel() {
               {isAdmin() && (
                 <button
                   type="button"
-                  onClick={handleExportCumulative}
-                  disabled={cumulativeBusy || rows.length === 0}
+                  onClick={handleExportCumulativeCsv}
+                  disabled={cumulativeCsvBusy || rows.length === 0}
                   className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#1d7733] text-[#1d7733] bg-white hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  aria-label="Download cumulative report: every question and answer from all users, as CSV"
-                  title="Download every question and every answer from all users as one CSV matrix (opens in Excel)"
+                  aria-label="Download cumulative report — every question and answer from all users — as CSV"
+                  title="Every question and every answer from all users as one CSV matrix (opens in Excel)"
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                     <path d="M2 2h10v10H2zM2 6h10M2 9h10M6 2v10" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
                   </svg>
-                  {cumulativeBusy ? 'Generating…' : 'Cumulative Report'}
+                  {cumulativeCsvBusy ? 'Generating…' : 'Cumulative Report (CSV)'}
+                </button>
+              )}
+
+              {isAdmin() && (
+                <button
+                  type="button"
+                  onClick={handleExportCumulativeXls}
+                  disabled={cumulativeXlsBusy || rows.length === 0}
+                  className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#1d7733] text-[#1d7733] bg-white hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Download cumulative report — every question and answer from all users — as Excel"
+                  title="Every question and every answer from all users as one Excel (.xls) matrix"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M2 2h10v10H2zM2 6h10M2 9h10M6 2v10" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+                    <path d="M4.5 4.5l5 5M9.5 4.5l-5 5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+                  </svg>
+                  {cumulativeXlsBusy ? 'Generating…' : 'Cumulative Report (XLS)'}
                 </button>
               )}
             </>
