@@ -46,7 +46,10 @@ export async function upsertSubmission(
   return data as SurveySubmission
 }
 
-export async function submitSurvey(submissionId: string): Promise<SurveySubmission> {
+export async function submitSurvey(
+  submissionId: string,
+  activeSeconds?: number,
+): Promise<SurveySubmission> {
   // Hard 20-second timeout via Promise.race — same reasoning as upsertSubmission.
   // A simple UPDATE should complete in <500 ms; 20 s is the absolute ceiling
   // before we give up and let the catch block show an error toast.
@@ -59,6 +62,8 @@ export async function submitSurvey(submissionId: string): Promise<SurveySubmissi
       status:       'submitted',
       submitted_at: new Date().toISOString(),
       updated_at:   new Date().toISOString(),
+      // Final flush of active time captured at submit.
+      ...(activeSeconds != null ? { active_seconds: activeSeconds } : {}),
     })
     .eq('id', submissionId)
     .select()

@@ -89,6 +89,17 @@ export function formatDateTime(iso: string | null | undefined): string {
  * bound is missing or the range is invalid/negative.
  * Examples: "< 1m", "42m", "2h 15m", "3d 4h".
  */
+// Compact "Nd Nh" / "Nh Nm" / "Nm" / "< 1m" rendering from a whole-minute count.
+function compactDuration(totalMin: number): string {
+  if (totalMin < 1) return '< 1m'
+  const days = Math.floor(totalMin / 1440)
+  const hours = Math.floor((totalMin % 1440) / 60)
+  const mins = totalMin % 60
+  if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`
+  if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+  return `${mins}m`
+}
+
 export function formatDuration(
   fromIso: string | null | undefined,
   toIso: string | null | undefined,
@@ -97,15 +108,18 @@ export function formatDuration(
   try {
     const ms = new Date(toIso).getTime() - new Date(fromIso).getTime()
     if (!Number.isFinite(ms) || ms < 0) return '—'
-    const totalMin = Math.floor(ms / 60000)
-    if (totalMin < 1) return '< 1m'
-    const days = Math.floor(totalMin / 1440)
-    const hours = Math.floor((totalMin % 1440) / 60)
-    const mins = totalMin % 60
-    if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`
-    if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
-    return `${mins}m`
+    return compactDuration(Math.floor(ms / 60000))
   } catch {
     return '—'
   }
+}
+
+/**
+ * Compact rendering of a duration given in seconds (e.g. accumulated active
+ * time). Returns "—" for missing/zero/invalid values. Examples: "38m",
+ * "1h 12m", "2d 3h".
+ */
+export function formatSeconds(totalSeconds: number | null | undefined): string {
+  if (totalSeconds == null || !Number.isFinite(totalSeconds) || totalSeconds <= 0) return '—'
+  return compactDuration(Math.floor(totalSeconds / 60))
 }
