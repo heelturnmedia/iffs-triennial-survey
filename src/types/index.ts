@@ -32,6 +32,7 @@ export interface SurveyProgress {
   page_no: number
   data: Record<string, unknown>
   saved_at: string
+  active_seconds?: number
 }
 
 export interface SurveySubmission {
@@ -45,6 +46,7 @@ export interface SurveySubmission {
   reviewed_at?: string | null
   reference_no?: string | null
   survey_year?: number
+  active_seconds?: number
   created_at?: string
   updated_at?: string
 }

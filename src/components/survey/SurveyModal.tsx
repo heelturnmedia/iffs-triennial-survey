@@ -7,7 +7,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { upsertSubmission, submitSurvey } from '@/services/surveyService'
 import { logActivity } from '@/services/auditService'
-import { persistSurvey, clearPersistedSurvey } from '@/lib/localStorage'
+import { persistSurvey, loadPersistedSurvey, clearPersistedSurvey } from '@/lib/localStorage'
+import { createActiveTimeTracker, type ActiveTimeTracker } from '@/utils/activeTimeTracker'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
 import { COUNTRY_CHOICES } from '@/data/countries'
 import { SECTION_NAMES } from '@/constants'
@@ -38,6 +39,7 @@ export function SurveyModal() {
   const contentAreaRef    = useRef<HTMLDivElement>(null)
   const autoSaveTimerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const saveWatchdogRef   = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const activeTrackerRef  = useRef<ActiveTimeTracker | null>(null)
 
   // Build SurveyJS model when modal opens
   useEffect(() => {
@@ -101,6 +103,17 @@ export function SurveyModal() {
     setCurrentPage(model.currentPageNo)
     setTotalPages(model.pageCount)
 
+    // ── Active-time tracker ────────────────────────────────────────────────
+    // Resume from the highest known total (DB row or a possibly-newer local
+    // draft), then accumulate this session's focused, non-idle time.
+    const persistedDraft = user?.email ? loadPersistedSurvey(user.email) : null
+    const baseSeconds = Math.max(
+      useSurveyStore.getState().submission?.active_seconds ?? 0,
+      persistedDraft?.active_seconds ?? 0,
+    )
+    const tracker = createActiveTimeTracker(baseSeconds)
+    activeTrackerRef.current = tracker
+
     // ── Auto-save on value changed (debounced 800 ms) ──────────────────────
     // FIX: do NOT set status to 'saving' immediately on input — the debounce
     // hasn't fired yet, nothing is being saved. The indicator was lying to
@@ -117,6 +130,7 @@ export function SurveyModal() {
         try {
           const now  = new Date().toISOString()
           const data = { ...sender.data }
+          const activeSeconds = tracker.totalSeconds()
           // Write to localStorage first (sync, instant) — DB is the secondary backup
           updateSubmissionData(sender.currentPageNo, data, now)
           persistSurvey(user.email!, {
@@ -124,6 +138,7 @@ export function SurveyModal() {
             page_no: sender.currentPageNo,
             data,
             saved_at: now,
+            active_seconds: activeSeconds,
           })
           // Only NOW show 'saving' — the actual network write is about to start
           setAutoSaveStatus('saving')
@@ -140,6 +155,7 @@ export function SurveyModal() {
             data,
             saved_at: now,
             status: 'draft',
+            active_seconds: activeSeconds,
           })
           clearTimeout(saveWatchdogRef.current)
           if (!useSurveyStore.getState().submission?.id) {
@@ -167,18 +183,21 @@ export function SurveyModal() {
         try {
           const now  = new Date().toISOString()
           const data = { ...sender.data }
+          const activeSeconds = tracker.totalSeconds()
           updateSubmissionData(pageNo, data, now)
           persistSurvey(user.email!, {
             status: 'draft',
             page_no: pageNo,
             data,
             saved_at: now,
+            active_seconds: activeSeconds,
           })
           const saved = await upsertSubmission(user.id, {
             page_no: pageNo,
             data,
             saved_at: now,
             status: 'draft',
+            active_seconds: activeSeconds,
           })
           if (!useSurveyStore.getState().submission?.id) {
             useSurveyStore.getState().setSubmission(saved)
@@ -222,6 +241,7 @@ export function SurveyModal() {
                 data,
                 saved_at: now,
                 status: 'draft',
+                active_seconds: tracker.totalSeconds(),
               })
               useSurveyStore.getState().setSubmission(saved)
               submissionId = saved.id
@@ -230,7 +250,7 @@ export function SurveyModal() {
 
             if (submissionId) {
               console.log('[Survey] Calling submitSurvey — id:', submissionId)
-              const updated = await submitSurvey(submissionId)
+              const updated = await submitSurvey(submissionId, tracker.totalSeconds())
               console.log('[Survey] submitSurvey success — status:', updated.status)
               void logActivity('survey_submitted', { reference: updated.reference_no })
               // Update the store so Overview immediately reflects submitted status
@@ -255,6 +275,8 @@ export function SurveyModal() {
     return () => {
       clearTimeout(autoSaveTimerRef.current)
       clearTimeout(saveWatchdogRef.current)
+      activeTrackerRef.current?.stop()
+      activeTrackerRef.current = null
     }
   }, [isModalOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -273,6 +295,7 @@ export function SurveyModal() {
     if (surveyModel && user) {
       const now  = new Date().toISOString()
       const data = { ...surveyModel.data }
+      const activeSeconds = activeTrackerRef.current?.totalSeconds()
       // Synchronous — instant, no network needed
       updateSubmissionData(surveyModel.currentPageNo, data, now)
       persistSurvey(user.email!, {
@@ -280,6 +303,7 @@ export function SurveyModal() {
         page_no: surveyModel.currentPageNo,
         data,
         saved_at: now,
+        active_seconds: activeSeconds,
       })
       // Fire-and-forget — don't block close on DB latency
       upsertSubmission(user.id, {
@@ -287,6 +311,7 @@ export function SurveyModal() {
         data,
         saved_at: now,
         status: 'draft',
+        ...(activeSeconds != null ? { active_seconds: activeSeconds } : {}),
       }).catch(() => { /* localStorage already has it */ })
     }
 
