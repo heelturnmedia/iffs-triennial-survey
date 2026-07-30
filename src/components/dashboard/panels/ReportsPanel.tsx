@@ -15,7 +15,7 @@ const ChoroplethMap = lazy(() =>
     })
 )
 import { getRegion, resolveCountryToIso2, resolveCountryName } from '@/utils/countryRegions'
-import { formatDateTime } from '@/utils/formatDate'
+import { formatDateTime, formatDuration } from '@/utils/formatDate'
 import { supabase } from '@/lib/supabase'
 import { SECTION_NAMES, STATUS_LABELS } from '@/constants'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
@@ -221,7 +221,7 @@ function SubmissionsTable({
         <table className="w-full text-left border-collapse" style={{ minWidth: '720px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--bd)' }}>
-              {['Name', 'Country', 'Status', 'Progress', 'Submitted', isAdmin ? 'Actions' : ''].filter(Boolean).map((h) => (
+              {['Name', 'Country', 'Status', 'Progress', 'Submitted', 'Time Taken', isAdmin ? 'Actions' : ''].filter(Boolean).map((h) => (
                 <th
                   key={h}
                   className="font-display text-[10px] font-bold tracking-[0.12em] uppercase text-[#7a8a96] px-4 py-3"
@@ -332,6 +332,17 @@ function SubmissionsTable({
                   <td className="px-4 py-3">
                     <span className="font-body text-[12px] text-[#7a8a96]">
                       {row.submitted_at ? formatDateTime(row.submitted_at) : '—'}
+                    </span>
+                  </td>
+
+                  {/* Time taken — start (created_at) → submission. Only meaningful
+                      once submitted; blank while still in progress. */}
+                  <td className="px-4 py-3">
+                    <span
+                      className="font-body text-[12px] text-[#3d4a52] tabular-nums"
+                      title={isSubmitted ? 'Elapsed time from first saved answer to submission' : undefined}
+                    >
+                      {isSubmitted ? formatDuration(row.created_at, row.submitted_at) : '—'}
                     </span>
                   </td>
 

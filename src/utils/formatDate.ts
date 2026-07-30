@@ -82,3 +82,30 @@ export function formatDateTime(iso: string | null | undefined): string {
     return '—'
   }
 }
+
+/**
+ * Human-readable elapsed time between two ISO timestamps — e.g. a survey's
+ * start (created_at) and submission (submitted_at). Returns "—" when either
+ * bound is missing or the range is invalid/negative.
+ * Examples: "< 1m", "42m", "2h 15m", "3d 4h".
+ */
+export function formatDuration(
+  fromIso: string | null | undefined,
+  toIso: string | null | undefined,
+): string {
+  if (!fromIso || !toIso) return '—'
+  try {
+    const ms = new Date(toIso).getTime() - new Date(fromIso).getTime()
+    if (!Number.isFinite(ms) || ms < 0) return '—'
+    const totalMin = Math.floor(ms / 60000)
+    if (totalMin < 1) return '< 1m'
+    const days = Math.floor(totalMin / 1440)
+    const hours = Math.floor((totalMin % 1440) / 60)
+    const mins = totalMin % 60
+    if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`
+    if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+    return `${mins}m`
+  } catch {
+    return '—'
+  }
+}
