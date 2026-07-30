@@ -54,4 +54,11 @@ coverage/
 # Claude Code — contains session data and local credentials (never commit)
 .claude/
 .agents/
+.superpowers/
 skills-lock.json
+
+# Local export artifacts — survey CSV/XLS/PDF downloads accidentally saved into
+# the repo root (all named iffs-*). Generated at runtime, never source.
+/iffs-*.pdf
+/iffs-*.csv
+/iffs-*.xls
