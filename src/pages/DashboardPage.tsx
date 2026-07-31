@@ -153,7 +153,7 @@ function PageLoader() {
       className="min-h-screen flex items-center justify-center"
       style={{ background: 'var(--s1)' }}
     >
-      <div className="w-10 h-10 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
+      <div className="w-10 h-10 rounded-full border-2 border-g1 border-t-transparent animate-spin" />
     </div>
   )
 }

@@ -26,24 +26,24 @@ export function ConfirmModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[99000] flex items-center justify-center p-4"
+      className="fixed inset-0 z-99000 flex items-center justify-center p-4"
       aria-modal="true"
       role="dialog"
       aria-labelledby="confirm-modal-title"
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
         onClick={closeConfirmModal}
       />
 
       {/* Card */}
-      <div className="relative z-10 bg-white rounded-2xl shadow-2xl border border-[#e2ebe4] w-full max-w-md animate-[fadeSlideUp_0.25s_ease-out]">
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl border border-bd w-full max-w-md animate-[fadeSlideUp_0.25s_ease-out]">
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-[#eef2ef]">
           <h2
             id="confirm-modal-title"
-            className="font-display text-lg font-bold text-[#0d1117]"
+            className="font-display text-lg font-bold text-f1"
           >
             {confirmModal.title}
           </h2>
@@ -51,7 +51,7 @@ export function ConfirmModal() {
 
         {/* Body */}
         <div className="px-6 py-5">
-          <p className="font-body text-[15px] text-[#3d4a52] leading-relaxed">
+          <p className="font-body text-[15px] text-f2 leading-relaxed">
             {confirmModal.message}
           </p>
         </div>
@@ -62,7 +62,7 @@ export function ConfirmModal() {
             type="button"
             onClick={closeConfirmModal}
             disabled={isSubmitting}
-            className="font-display text-[11px] font-bold tracking-[0.12em] uppercase px-5 py-2.5 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="font-display text-[11px] font-bold tracking-[0.12em] uppercase px-5 py-2.5 rounded-full border-[1.5px] border-bd2 text-f2 hover:border-g1 hover:text-g1 hover:bg-g3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
@@ -76,7 +76,7 @@ export function ConfirmModal() {
                 ? 'bg-red-600 hover:bg-red-700 shadow-[0_4px_12px_rgba(220,38,38,0.3)]'
                 : isWarning
                 ? 'bg-amber-500 hover:bg-amber-600 shadow-[0_4px_12px_rgba(245,158,11,0.3)]'
-                : 'bg-[#1d7733] hover:bg-[#0e5921] shadow-[0_4px_12px_rgba(29,119,51,0.25)]',
+                : 'bg-g1 hover:bg-g2 shadow-[0_4px_12px_rgba(29,119,51,0.25)]',
             ].join(' ')}
           >
             {isSubmitting && (

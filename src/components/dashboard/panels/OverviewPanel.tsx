@@ -26,22 +26,22 @@ function StatusTag({ status }: { status: 'draft' | 'submitted' | 'reviewed' | nu
   if (!status || status === 'draft') {
     return (
       <span className="inline-flex items-center gap-1.5 font-body text-[11px] font-semibold px-2.5 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200 tracking-[0.04em]">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
         Draft
       </span>
     )
   }
   if (status === 'submitted') {
     return (
-      <span className="inline-flex items-center gap-1.5 font-body text-[11px] font-semibold px-2.5 py-1 rounded-full border bg-[#e8f5ec] text-[#0e5921] border-[#afc7b4] tracking-[0.04em]">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#1d7733] flex-shrink-0" />
+      <span className="inline-flex items-center gap-1.5 font-body text-[11px] font-semibold px-2.5 py-1 rounded-full border bg-g3 text-g2 border-[#afc7b4] tracking-[0.04em]">
+        <span className="w-1.5 h-1.5 rounded-full bg-g1 shrink-0" />
         Submitted
       </span>
     )
   }
   return (
     <span className="inline-flex items-center gap-1.5 font-body text-[11px] font-semibold px-2.5 py-1 rounded-full border bg-blue-50 text-blue-700 border-blue-200 tracking-[0.04em]">
-      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
       Reviewed
     </span>
   )
@@ -70,22 +70,22 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
       >
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'var(--g3)' }}
           >
             <CheckCircle2 size={20} color="var(--g1)" strokeWidth={2} />
           </div>
           <div>
-            <p className="font-body text-[11px] font-semibold tracking-[0.08em] uppercase text-[#1d7733] mb-0.5">
+            <p className="font-body text-[11px] font-semibold tracking-[0.08em] uppercase text-g1 mb-0.5">
               Completed
             </p>
-            <h2 className="font-display text-[18px] font-bold text-[#0d1117] leading-snug">
+            <h2 className="font-display text-[18px] font-bold text-f1 leading-snug">
               Survey Submitted Successfully
             </h2>
           </div>
         </div>
 
-        <p className="font-body text-[14px] text-[#3d4a52] leading-relaxed">
+        <p className="font-body text-[14px] text-f2 leading-relaxed">
           Thank you for completing the 2027 IFFS Biennial Survey. Your responses have been
           recorded and will contribute to the global ART landscape report.
         </p>
@@ -94,13 +94,13 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
           className="flex items-start gap-3 rounded-xl px-4 py-3"
           style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}
         >
-          <svg className="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <svg className="shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M2.5 5.5A1.5 1.5 0 014 4h12a1.5 1.5 0 011.5 1.5v.379l-7.5 5-7.5-5V5.5z" fill="#1d7733" opacity="0.3"/>
             <path d="M2.5 7.621V14.5A1.5 1.5 0 004 16h12a1.5 1.5 0 001.5-1.5V7.621l-7.5 5-7.5-5z" fill="#1d7733" opacity="0.3"/>
             <rect x="2.5" y="4" width="15" height="12" rx="1.5" stroke="#1d7733" strokeWidth="1.4"/>
             <path d="M2.5 6.5l7.5 5 7.5-5" stroke="#1d7733" strokeWidth="1.4" strokeLinecap="round"/>
           </svg>
-          <p className="font-body text-[13px] text-[#0e5921] leading-snug">
+          <p className="font-body text-[13px] text-g2 leading-snug">
             You will receive a confirmation email from us shortly. Please check your inbox.
           </p>
         </div>
@@ -108,7 +108,7 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
         <div className="flex items-center gap-2 w-fit px-4 py-2 rounded-full opacity-60"
           style={{ background: 'var(--g3)', border: '1.5px solid var(--bd2)' }}>
           <CheckCircle2 size={13} color="var(--g1)" strokeWidth={2.2} />
-          <span className="font-display text-[11px] font-bold tracking-[0.1em] uppercase" style={{ color: 'var(--g1)' }}>
+          <span className="font-display text-[11px] font-bold tracking-widest uppercase" style={{ color: 'var(--g1)' }}>
             Submitted
           </span>
         </div>
@@ -127,12 +127,12 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
           <p className="font-body text-[11px] font-semibold tracking-[0.08em] uppercase text-amber-600 mb-1.5">
             Action Required
           </p>
-          <h2 className="font-display text-[20px] font-bold text-[#0d1117] leading-snug">
+          <h2 className="font-display text-[20px] font-bold text-f1 leading-snug">
             Complete Your 2027 Biennial Survey
           </h2>
         </div>
 
-        <p className="font-body text-[14px] text-[#3d4a52] leading-relaxed">
+        <p className="font-body text-[14px] text-f2 leading-relaxed">
           20 sections covering ART infrastructure, regulation, financing, and clinical practice.
         </p>
 
@@ -167,20 +167,20 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
       style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}
     >
       <div>
-        <p className="font-body text-[11px] font-semibold tracking-[0.08em] uppercase text-[#1d7733] mb-1.5">
+        <p className="font-body text-[11px] font-semibold tracking-[0.08em] uppercase text-g1 mb-1.5">
           {pct}% Complete
         </p>
-        <h2 className="font-display text-[20px] font-bold text-[#0d1117] leading-snug">
+        <h2 className="font-display text-[20px] font-bold text-f1 leading-snug">
           Continue Your Survey
         </h2>
       </div>
 
-      <p className="font-body text-[14px] text-[#3d4a52] leading-relaxed">
+      <p className="font-body text-[14px] text-f2 leading-relaxed">
         {pageNo} of {TOTAL} sections completed. Resume where you left off.
       </p>
 
       {savedAt && (
-        <p className="font-body text-[12px] text-[#7a8a96]">
+        <p className="font-body text-[12px] text-f3">
           Last saved: {formatSavedAt(savedAt)}
         </p>
       )}
@@ -250,7 +250,7 @@ function ProgressTracker({ pageNo, status }: { pageNo: number; status: string | 
       style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}
     >
       <div>
-        <h3 className="font-display text-[14px] font-bold text-[#0d1117] mb-3">
+        <h3 className="font-display text-[14px] font-bold text-f1 mb-3">
           Progress Tracker
         </h3>
 
@@ -273,11 +273,11 @@ function ProgressTracker({ pageNo, status }: { pageNo: number; status: string | 
               }}
             />
           </div>
-          <span className="font-display text-[12px] font-bold text-[#1d7733] flex-shrink-0 tabular-nums">
+          <span className="font-display text-[12px] font-bold text-g1 shrink-0 tabular-nums">
             {isSubmitted ? 100 : pct}%
           </span>
         </div>
-        <p className="font-body text-[11px] text-[#7a8a96]">
+        <p className="font-body text-[11px] text-f3">
           {isSubmitted ? TOTAL : Math.min(pageNo, TOTAL)} of {TOTAL} sections
         </p>
       </div>
@@ -291,7 +291,7 @@ function ProgressTracker({ pageNo, status }: { pageNo: number; status: string | 
           return (
             <div key={i} className="flex items-center gap-2.5">
               <span
-                className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
+                className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
                 style={{
                   background: isDone ? 'var(--g3)' : isCurrent ? 'rgba(29,119,51,0.08)' : 'var(--bd)',
                   border: isCurrent ? '1.5px solid var(--g1)' : 'none',
@@ -318,7 +318,7 @@ function ProgressTracker({ pageNo, status }: { pageNo: number; status: string | 
                   size={12}
                   color="var(--g1)"
                   strokeWidth={2.5}
-                  className="flex-shrink-0"
+                  className="shrink-0"
                   aria-hidden="true"
                 />
               )}
@@ -398,7 +398,7 @@ function StatsRow({ stats }: { stats: AdminStats }) {
                 {card.value}
               </span>
               <span
-                className="flex items-center justify-center rounded-lg flex-shrink-0"
+                className="flex items-center justify-center rounded-lg shrink-0"
                 style={{ width: 32, height: 32, background: card.iconBg }}
               >
                 <Icon size={15} color={card.iconColor} strokeWidth={2} />
@@ -446,10 +446,10 @@ export function OverviewPanel() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-7">
         <div>
-          <h1 className="font-display text-[24px] font-bold text-[#0d1117] leading-snug">
+          <h1 className="font-display text-[24px] font-bold text-f1 leading-snug">
             Welcome, {firstName}
           </h1>
-          <p className="font-body text-[13px] text-[#7a8a96] mt-0.5">{today}</p>
+          <p className="font-body text-[13px] text-f3 mt-0.5">{today}</p>
         </div>
         <StatusTag status={status as 'draft' | 'submitted' | 'reviewed' | null} />
       </div>
@@ -470,11 +470,11 @@ export function OverviewPanel() {
 
       {/* Admin note */}
       {isAdmin() && (
-        <p className="mt-5 font-body text-[12px] text-[#7a8a96] bg-[#f7f9f7] border border-[#e2ebe4] rounded-lg px-4 py-2.5">
+        <p className="mt-5 font-body text-[12px] text-f3 bg-s1 border border-bd rounded-lg px-4 py-2.5">
           As an administrator, visit the{' '}
           <button
             type="button"
-            className="text-[#1d7733] font-semibold hover:underline"
+            className="text-g1 font-semibold hover:underline"
             onClick={() => useUIStore.getState().setActivePanel('reports')}
           >
             Reports

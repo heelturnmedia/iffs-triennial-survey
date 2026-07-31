@@ -368,7 +368,7 @@ function CrossTabCard({
   )
 
   const selectCls =
-    'font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer'
+    'font-body text-[12px] font-medium text-f2 border border-bd rounded-lg px-3 py-1.5 bg-white hover:border-g1 focus:outline-hidden focus:border-g1 transition-colors cursor-pointer'
 
   const maxCell = tab ? Math.max(1, ...tab.counts.flat()) : 1
 
@@ -663,7 +663,7 @@ export function InsightsView({
   const [showAllNumerics, setShowAllNumerics] = useState(false)
 
   const selectCls =
-    'font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer'
+    'font-body text-[12px] font-medium text-f2 border border-bd rounded-lg px-3 py-1.5 bg-white hover:border-g1 focus:outline-hidden focus:border-g1 transition-colors cursor-pointer'
 
   const cardCls = 'bg-white rounded-2xl p-5'
   const cardStyle = { border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' } as const
@@ -862,7 +862,7 @@ export function InsightsView({
             <BlankQuestions items={blanks} />
           </div>
           <button type="button" onClick={() => setShowAllMissing((v) => !v)}
-            className="font-display mt-3 text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all">
+            className="font-display mt-3 text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-g1 border-[#afc7b4] hover:bg-g3 transition-all">
             {showAllMissing ? 'Show top 10 only' : 'Show full missingness appendix'}
           </button>
         </div>
@@ -911,7 +911,7 @@ export function InsightsView({
             </div>
             {numerics.length > 10 && (
               <button type="button" onClick={() => setShowAllNumerics((v) => !v)}
-                className="font-display mt-3 text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all">
+                className="font-display mt-3 text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-g1 border-[#afc7b4] hover:bg-g3 transition-all">
                 {showAllNumerics ? 'Show top 10 only' : `Show all ${numerics.length}`}
               </button>
             )}

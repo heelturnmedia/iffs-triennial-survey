@@ -95,7 +95,7 @@ export function DataQualityView({
             </div>
             {items.length > 6 && !showAll && (
               <button type="button" onClick={() => setShowAll(true)}
-                className="font-display mt-3 text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all">
+                className="font-display mt-3 text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-g1 border-[#afc7b4] hover:bg-g3 transition-all">
                 Show all {items.length}
               </button>
             )}

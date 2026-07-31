@@ -124,11 +124,11 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
         className="flex flex-col items-center justify-center gap-3 rounded-2xl p-10 text-center"
         style={{ height, background: 'var(--s2)', border: '1.5px dashed var(--bd2)' }}
       >
-        <p className="font-display text-[14px] font-bold text-[#3d4a52]">
+        <p className="font-display text-[14px] font-bold text-f2">
           Mapbox token not configured
         </p>
-        <p className="font-body text-[12px] text-[#7a8a96] max-w-sm">
-          Add <code className="bg-[#f0f4f1] px-1.5 py-0.5 rounded text-[11px]">VITE_MAPBOX_TOKEN</code> to
+        <p className="font-body text-[12px] text-f3 max-w-sm">
+          Add <code className="bg-s2 px-1.5 py-0.5 rounded-sm text-[11px]">VITE_MAPBOX_TOKEN</code> to
           your Dokploy environment variables and redeploy.
         </p>
       </div>
@@ -142,17 +142,17 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
         className="flex flex-col items-center justify-center gap-3 rounded-2xl p-10 text-center"
         style={{ height, background: 'var(--s2)', border: '1.5px dashed var(--bd2)' }}
       >
-        <p className="font-display text-[14px] font-bold text-[#3d4a52]">
+        <p className="font-display text-[14px] font-bold text-f2">
           Map has no data to display
         </p>
-        <p className="font-body text-[12px] text-[#7a8a96] max-w-sm">
+        <p className="font-body text-[12px] text-f3 max-w-sm">
           {submissions.length} submission{submissions.length !== 1 ? 's' : ''} found but no country values
           could be resolved.
           {unresolvedSamples.length > 0 && (
             <> Unresolved values: <em>{unresolvedSamples.join(', ')}</em></>
           )}
         </p>
-        <p className="font-body text-[10px] text-[#b0bec5]">
+        <p className="font-body text-[10px] text-f4">
           Check browser console for details. Verify country values in{' '}
           <code>survey_submissions.data[&apos;Country&apos;]</code> match ISO-2 codes or recognised names.
         </p>

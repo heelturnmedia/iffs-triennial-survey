@@ -144,7 +144,7 @@ function SocialButton({ provider, onToast }: SocialButtonProps) {
       title={`Sign in with ${provider.label}`}
       aria-label={`Sign in with ${provider.label}`}
       onClick={handleClick}
-      className="flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-150 hover:scale-[1.06] active:scale-[0.96] focus-visible:outline-none"
+      className="flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-150 hover:scale-[1.06] active:scale-[0.96] focus-visible:outline-hidden"
       style={{
         borderColor:     '#e2ebe4',
         backgroundColor: '#f7f9f7',
@@ -202,7 +202,7 @@ function InputField({
         required={required}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className="w-full font-body text-sm rounded-xl px-4 py-3 transition-all duration-150 outline-none"
+        className="w-full font-body text-sm rounded-xl px-4 py-3 transition-all duration-150 outline-hidden"
         style={{
           border:          `1.5px solid ${focused ? '#1d7733' : '#e2ebe4'}`,
           backgroundColor: focused ? '#ffffff' : '#f7f9f7',
@@ -514,7 +514,7 @@ export default function AuthPage() {
                 {CHECKLIST_ITEMS.map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <span
-                      className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm"
+                      className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm"
                       style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
                       aria-hidden="true"
                     >
@@ -618,7 +618,7 @@ export default function AuthPage() {
                     setConfirmationResent(false)
                     setPendingConfirmEmail(null)
                   }}
-                  className="flex-1 py-3 font-display text-[12px] font-bold tracking-[0.1em] uppercase transition-all duration-200 focus-visible:outline-none"
+                  className="flex-1 py-3 font-display text-[12px] font-bold tracking-widest uppercase transition-all duration-200 focus-visible:outline-hidden"
                   style={{
                     backgroundColor: tab === t ? '#1d7733' : 'transparent',
                     color:           tab === t ? '#ffffff' : '#7a8a96',
@@ -681,7 +681,7 @@ export default function AuthPage() {
                       <button
                         type="button"
                         onClick={handleForgotPassword}
-                        className="font-body text-xs transition-colors duration-150 focus-visible:outline-none"
+                        className="font-body text-xs transition-colors duration-150 focus-visible:outline-hidden"
                         style={{ color: '#1d7733' }}
                         onMouseEnter={(e) => {
                           (e.currentTarget as HTMLButtonElement).style.color = '#0e5921'
@@ -794,7 +794,7 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={siLoading}
-                    className="w-full py-3.5 rounded-xl font-display text-[13px] font-bold tracking-[0.1em] uppercase text-white transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+                    className="w-full py-3.5 rounded-xl font-display text-[13px] font-bold tracking-widest uppercase text-white transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-hidden disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
                     style={{
                       backgroundColor: '#1d7733',
                       boxShadow:       '0 4px 16px rgba(29,119,51,0.3)',
@@ -910,7 +910,7 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={suLoading}
-                    className="w-full py-3.5 rounded-xl font-display text-[13px] font-bold tracking-[0.1em] uppercase text-white transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+                    className="w-full py-3.5 rounded-xl font-display text-[13px] font-bold tracking-widest uppercase text-white transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-hidden disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
                     style={{
                       backgroundColor: '#1d7733',
                       boxShadow:       '0 4px 16px rgba(29,119,51,0.3)',
@@ -971,7 +971,7 @@ export default function AuthPage() {
                       key={acc.email}
                       type="button"
                       onClick={() => fillDemo(acc)}
-                      className="text-left px-3 py-2.5 rounded-xl transition-all duration-150 focus-visible:outline-none"
+                      className="text-left px-3 py-2.5 rounded-xl transition-all duration-150 focus-visible:outline-hidden"
                       style={{
                         backgroundColor: '#ffffff',
                         border:          '1px solid #e2ebe4',
@@ -1014,7 +1014,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => setTab(tab === 'signin' ? 'signup' : 'signin')}
-                className="font-semibold transition-colors duration-150 focus-visible:outline-none"
+                className="font-semibold transition-colors duration-150 focus-visible:outline-hidden"
                 style={{ color: '#1d7733' }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.color = '#0e5921'

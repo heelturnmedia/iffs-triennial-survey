@@ -104,21 +104,21 @@ export function SignUpForm() {
       )
     if (waBadge.status === 'member')
       return (
-        <span className="flex items-center gap-1.5 font-body text-[11px] text-[#1d7733] font-semibold mt-1.5">
+        <span className="flex items-center gap-1.5 font-body text-[11px] text-g1 font-semibold mt-1.5">
           ✓ IFFS member verified
           {waBadge.level && (
-            <span className="text-[#7a8a96] font-normal">— {waBadge.level}</span>
+            <span className="text-f3 font-normal">— {waBadge.level}</span>
           )}
         </span>
       )
     if (waBadge.status === 'not-found')
       return (
-        <span className="flex items-center gap-1.5 font-body text-[11px] text-[#7a8a96] mt-1.5">
+        <span className="flex items-center gap-1.5 font-body text-[11px] text-f3 mt-1.5">
           ℹ Not found in WildApricot — you can still register
         </span>
       )
     return (
-      <span className="flex items-center gap-1.5 font-body text-[11px] text-[#b0bec5] mt-1.5">
+      <span className="flex items-center gap-1.5 font-body text-[11px] text-f4 mt-1.5">
         WA check unavailable
       </span>
     )
@@ -140,7 +140,7 @@ export function SignUpForm() {
     <div className="space-y-5">
       {error && (
         <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-          <span className="text-red-500 text-base flex-shrink-0 mt-0.5">✕</span>
+          <span className="text-red-500 text-base shrink-0 mt-0.5">✕</span>
           <p className="font-body text-[13px] text-red-700">{error}</p>
         </div>
       )}
@@ -151,7 +151,7 @@ export function SignUpForm() {
           <div>
             <label
               htmlFor="signup-first"
-              className="block font-body text-[12px] font-semibold text-[#3d4a52] uppercase tracking-[0.08em] mb-1.5"
+              className="block font-body text-[12px] font-semibold text-f2 uppercase tracking-[0.08em] mb-1.5"
             >
               First name
             </label>
@@ -163,13 +163,13 @@ export function SignUpForm() {
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="Jane"
               required
-              className="w-full font-body text-[14px] text-[#0d1117] bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-[#b0bec5] outline-none transition-all focus:border-[#1d7733] focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
+              className="w-full font-body text-[14px] text-f1 bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-f4 outline-hidden transition-all focus:border-g1 focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
             />
           </div>
           <div>
             <label
               htmlFor="signup-last"
-              className="block font-body text-[12px] font-semibold text-[#3d4a52] uppercase tracking-[0.08em] mb-1.5"
+              className="block font-body text-[12px] font-semibold text-f2 uppercase tracking-[0.08em] mb-1.5"
             >
               Last name
             </label>
@@ -181,7 +181,7 @@ export function SignUpForm() {
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Smith"
               required
-              className="w-full font-body text-[14px] text-[#0d1117] bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-[#b0bec5] outline-none transition-all focus:border-[#1d7733] focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
+              className="w-full font-body text-[14px] text-f1 bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-f4 outline-hidden transition-all focus:border-g1 focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
             />
           </div>
         </div>
@@ -190,7 +190,7 @@ export function SignUpForm() {
         <div>
           <label
             htmlFor="signup-email"
-            className="block font-body text-[12px] font-semibold text-[#3d4a52] uppercase tracking-[0.08em] mb-1.5"
+            className="block font-body text-[12px] font-semibold text-f2 uppercase tracking-[0.08em] mb-1.5"
           >
             Institutional email
           </label>
@@ -202,7 +202,7 @@ export function SignUpForm() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@institution.org"
             required
-            className="w-full font-body text-[14px] text-[#0d1117] bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-[#b0bec5] outline-none transition-all focus:border-[#1d7733] focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
+            className="w-full font-body text-[14px] text-f1 bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-f4 outline-hidden transition-all focus:border-g1 focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
           />
           {renderWABadge()}
         </div>
@@ -211,7 +211,7 @@ export function SignUpForm() {
         <div>
           <label
             htmlFor="signup-password"
-            className="block font-body text-[12px] font-semibold text-[#3d4a52] uppercase tracking-[0.08em] mb-1.5"
+            className="block font-body text-[12px] font-semibold text-f2 uppercase tracking-[0.08em] mb-1.5"
           >
             Password
           </label>
@@ -224,10 +224,10 @@ export function SignUpForm() {
             placeholder="Min. 8 characters"
             required
             minLength={8}
-            className="w-full font-body text-[14px] text-[#0d1117] bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-[#b0bec5] outline-none transition-all focus:border-[#1d7733] focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
+            className="w-full font-body text-[14px] text-f1 bg-white border-[1.5px] border-[#c4d1c7] rounded-lg px-3.5 py-2.5 placeholder-f4 outline-hidden transition-all focus:border-g1 focus:shadow-[0_0_0_3px_rgba(29,119,51,0.10)]"
           />
           {/* Strength bar */}
-          <div className="h-1 w-full bg-[#e2ebe4] rounded-full mt-2 overflow-hidden">
+          <div className="h-1 w-full bg-bd rounded-full mt-2 overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-300"
               style={{
@@ -241,7 +241,7 @@ export function SignUpForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 font-display text-[11px] font-bold tracking-[0.14em] uppercase px-6 py-3.5 rounded-full bg-[#1d7733] text-white hover:bg-[#0e5921] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+          className="w-full flex items-center justify-center gap-2 font-display text-[11px] font-bold tracking-[0.14em] uppercase px-6 py-3.5 rounded-full bg-g1 text-white hover:bg-g2 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
           style={{ boxShadow: '0 4px 16px rgba(29,119,51,0.25)' }}
         >
           {isLoading ? (
@@ -255,7 +255,7 @@ export function SignUpForm() {
         </button>
       </form>
 
-      <p className="font-body text-[11px] text-[#b0bec5] text-center leading-relaxed">
+      <p className="font-body text-[11px] text-f4 text-center leading-relaxed">
         By creating an account you agree to the IFFS Terms of Use and Privacy Policy.
         Your data is processed in accordance with GDPR.
       </p>

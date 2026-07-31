@@ -383,7 +383,7 @@ export function SurveyModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[9000] flex items-stretch justify-center"
+      className="fixed inset-0 z-9000 flex items-stretch justify-center"
       style={{ animation: 'modalSlideIn 0.38s cubic-bezier(0.16,1,0.3,1)' }}
     >
       <style>{`
@@ -410,7 +410,7 @@ export function SurveyModal() {
         }
       `}</style>
       {/* Blurred overlay */}
-      <div className="absolute inset-0 bg-black/[0.72] backdrop-blur-[10px]" />
+      <div className="absolute inset-0 bg-black/72 backdrop-blur-[10px]" />
 
       {/* Full-screen panel */}
       <div
@@ -419,7 +419,7 @@ export function SurveyModal() {
       >
         {/* ── TOP BAR ───────────────────────────────────────────────────── */}
         <div
-          className="flex-shrink-0 flex items-center justify-between px-8 border-b"
+          className="shrink-0 flex items-center justify-between px-8 border-b"
           style={{ height: 62, background: '#000', borderColor: 'rgba(255,255,255,0.06)' }}
         >
           {/* Left: logo + title + save status */}
@@ -427,7 +427,7 @@ export function SurveyModal() {
             <img
               src="/iffs-logo.png"
               alt="IFFS logo"
-              className="w-9 h-9 rounded-full flex-shrink-0 object-contain"
+              className="w-9 h-9 rounded-full shrink-0 object-contain"
               style={{ background: '#fff', padding: 2 }}
             />
             <div>

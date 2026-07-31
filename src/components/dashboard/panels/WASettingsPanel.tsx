@@ -10,14 +10,14 @@ function StatusDot({ ok }: { ok: boolean }) {
       className={[
         'inline-flex items-center gap-1.5 font-body text-[11px] font-semibold px-2.5 py-1 rounded-full border tracking-[0.04em]',
         ok
-          ? 'bg-[#e8f5ec] text-[#0e5921] border-[#afc7b4]'
+          ? 'bg-g3 text-g2 border-[#afc7b4]'
           : 'bg-amber-50 text-amber-700 border-amber-200',
       ].join(' ')}
     >
       <span
         className={[
-          'w-1.5 h-1.5 rounded-full flex-shrink-0',
-          ok ? 'bg-[#1d7733]' : 'bg-amber-400',
+          'w-1.5 h-1.5 rounded-full shrink-0',
+          ok ? 'bg-g1' : 'bg-amber-400',
         ].join(' ')}
       />
       {ok ? 'Connected' : 'Not configured'}
@@ -62,7 +62,7 @@ function CredentialsForm({ onSaved }: CredFormProps) {
       <div>
         <label
           htmlFor="wa-api-key"
-          className="block font-body text-[12px] font-semibold text-[#3d4a52] mb-1.5"
+          className="block font-body text-[12px] font-semibold text-f2 mb-1.5"
         >
           API Key
         </label>
@@ -73,7 +73,7 @@ function CredentialsForm({ onSaved }: CredFormProps) {
           onChange={(e) => setApiKey(e.target.value)}
           placeholder="Enter WildApricot API key"
           autoComplete="new-password"
-          className="w-full font-body text-[13px] px-4 py-2.5 rounded-lg border outline-none transition-all bg-white"
+          className="w-full font-body text-[13px] px-4 py-2.5 rounded-lg border outline-hidden transition-all bg-white"
           style={{ borderColor: 'var(--bd)', color: 'var(--f1)' }}
           onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--g1)')}
           onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--bd)')}
@@ -84,7 +84,7 @@ function CredentialsForm({ onSaved }: CredFormProps) {
       <div>
         <label
           htmlFor="wa-account-id"
-          className="block font-body text-[12px] font-semibold text-[#3d4a52] mb-1.5"
+          className="block font-body text-[12px] font-semibold text-f2 mb-1.5"
         >
           Account ID
         </label>
@@ -94,13 +94,13 @@ function CredentialsForm({ onSaved }: CredFormProps) {
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
           placeholder="123456"
-          className="w-full font-body text-[13px] px-4 py-2.5 rounded-lg border outline-none transition-all bg-white"
+          className="w-full font-body text-[13px] px-4 py-2.5 rounded-lg border outline-hidden transition-all bg-white"
           style={{ borderColor: 'var(--bd)', color: 'var(--f1)' }}
           onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--g1)')}
           onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--bd)')}
           required
         />
-        <p className="font-body text-[11px] text-[#7a8a96] mt-1">
+        <p className="font-body text-[11px] text-f3 mt-1">
           Find your Account ID in WildApricot admin portal under Account settings.
         </p>
       </div>
@@ -212,10 +212,10 @@ export function WASettingsPanel() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-7">
         <div>
-          <h1 className="font-display text-[22px] font-bold text-[#0d1117] leading-snug">
+          <h1 className="font-display text-[22px] font-bold text-f1 leading-snug">
             WildApricot Settings
           </h1>
-          <p className="font-body text-[13px] text-[#7a8a96] mt-0.5">
+          <p className="font-body text-[13px] text-f3 mt-0.5">
             Connect your WildApricot account to verify IFFS membership on sign-up.
           </p>
         </div>
@@ -227,7 +227,7 @@ export function WASettingsPanel() {
         className="bg-white rounded-2xl p-6 mb-6"
         style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}
       >
-        <h2 className="font-display text-[14px] font-bold text-[#0d1117] mb-4">
+        <h2 className="font-display text-[14px] font-bold text-f1 mb-4">
           Connection Status
         </h2>
 
@@ -238,8 +238,8 @@ export function WASettingsPanel() {
                 className="flex items-center justify-between py-2.5 border-b"
                 style={{ borderColor: 'var(--bd)' }}
               >
-                <span className="font-body text-[12px] text-[#7a8a96]">Account</span>
-                <span className="font-body text-[13px] font-semibold text-[#0d1117]">
+                <span className="font-body text-[12px] text-f3">Account</span>
+                <span className="font-body text-[13px] font-semibold text-f1">
                   {accountName}
                 </span>
               </div>
@@ -249,14 +249,14 @@ export function WASettingsPanel() {
               className="flex items-center justify-between py-2.5 border-b"
               style={{ borderColor: 'var(--bd)' }}
             >
-              <span className="font-body text-[12px] text-[#7a8a96]">API Key</span>
-              <span className="font-mono text-[12px] text-[#3d4a52]">Stored server-side</span>
+              <span className="font-body text-[12px] text-f3">API Key</span>
+              <span className="font-mono text-[12px] text-f2">Stored server-side</span>
             </div>
 
             {accountId && (
               <div className="flex items-center justify-between py-2.5">
-                <span className="font-body text-[12px] text-[#7a8a96]">Account ID</span>
-                <span className="font-mono text-[12px] text-[#3d4a52]">{accountId}</span>
+                <span className="font-body text-[12px] text-f3">Account ID</span>
+                <span className="font-mono text-[12px] text-f2">{accountId}</span>
               </div>
             )}
 
@@ -298,14 +298,14 @@ export function WASettingsPanel() {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <p className="font-body text-[12px] font-semibold text-[#0e5921]">
+                <p className="font-body text-[12px] font-semibold text-g2">
                   Last sync: {syncResult.synced} members updated at {syncResult.at}
                 </p>
               </div>
             )}
           </div>
         ) : (
-          <p className="font-body text-[13px] text-[#7a8a96]">
+          <p className="font-body text-[13px] text-f3">
             No credentials stored. Enter your WildApricot API key and account ID below to enable
             automatic membership verification.
           </p>
@@ -317,10 +317,10 @@ export function WASettingsPanel() {
         className="bg-white rounded-2xl p-6 mb-6"
         style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}
       >
-        <h2 className="font-display text-[14px] font-bold text-[#0d1117] mb-1">
+        <h2 className="font-display text-[14px] font-bold text-f1 mb-1">
           {configured ? 'Update Credentials' : 'Enter Credentials'}
         </h2>
-        <p className="font-body text-[12px] text-[#7a8a96] mb-5">
+        <p className="font-body text-[12px] text-f3 mb-5">
           Credentials are verified against WildApricot and then stored server-side, where only
           the wa-sync Edge Function can use them. They are never kept in your browser.
         </p>
@@ -332,7 +332,7 @@ export function WASettingsPanel() {
         className="rounded-xl p-5"
         style={{ background: 'var(--s2)', border: '1px solid var(--bd)' }}
       >
-        <h3 className="font-display text-[13px] font-bold text-[#0d1117] mb-3">How it works</h3>
+        <h3 className="font-display text-[13px] font-bold text-f1 mb-3">How it works</h3>
         <ol className="space-y-2">
           {[
             'New users sign up with their email address.',
@@ -342,12 +342,12 @@ export function WASettingsPanel() {
           ].map((step, i) => (
             <li key={i} className="flex items-start gap-2.5">
               <span
-                className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center font-display text-[10px] font-bold text-white mt-0.5"
+                className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center font-display text-[10px] font-bold text-white mt-0.5"
                 style={{ background: 'var(--g1)' }}
               >
                 {i + 1}
               </span>
-              <span className="font-body text-[12px] text-[#3d4a52] leading-relaxed">{step}</span>
+              <span className="font-body text-[12px] text-f2 leading-relaxed">{step}</span>
             </li>
           ))}
         </ol>

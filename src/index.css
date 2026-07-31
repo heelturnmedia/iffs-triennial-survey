@@ -1,16 +1,181 @@
 /* ── Self-hosted fonts (bundled via Vite, no external CDN) ────────────────── */
-@import '@fontsource-variable/raleway';
-@import '@fontsource-variable/raleway/wght-italic.css';
-@import '@fontsource-variable/source-sans-3';
-@import '@fontsource-variable/source-sans-3/wght-italic.css';
+@import '@fontsource-variable/raleway' layer(base);
+@import '@fontsource-variable/raleway/wght-italic.css' layer(base);
+@import '@fontsource-variable/source-sans-3' layer(base);
+@import '@fontsource-variable/source-sans-3/wght-italic.css' layer(base);
 
 /* ── SurveyJS overrides ───────────────────────────────────────────────────── */
-@import './styles/surveyjs-overrides.css';
+@import './styles/surveyjs-overrides.css' layer(base);
 
 /* ── Tailwind layers ──────────────────────────────────────────────────────── */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-g1: #1d7733;
+  --color-g2: #0e5921;
+  --color-g3: #e8f5ec;
+  --color-g4: #d1ebd8;
+  --color-g5: #2a9444;
+  --color-bk: #000000;
+  --color-f1: #0d1117;
+  --color-f2: #3d4a52;
+  --color-f3: #7a8a96;
+  --color-f4: #b0bec5;
+  --color-s1: #f7f9f7;
+  --color-s2: #f0f4f1;
+  --color-bd: #e2ebe4;
+  --color-bd2: #c8d9cc;
+
+  --font-display: Raleway, sans-serif;
+  --font-body: Source Sans 3, system-ui, sans-serif;
+
+  /* Shadow tokens live in :root (below), not here: they are only ever used
+     inline as var(--shadow-*) / var(--shadow-green-*) — there are no
+     shadow-* utility classes in the app, so they don't belong in @theme. */
+
+  --animate-fade-slide-up: fadeSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+  --animate-pulse-green: pulse 2s ease-in-out infinite;
+  --animate-expand-ring: expandRing 1.5s ease-out infinite;
+  --animate-float-card: floatCard 6s ease-in-out infinite;
+  --animate-modal-slide-in: modalSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+  --animate-auth-fade-up: authFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+  --animate-auth-fade-in: authFadeIn 0.5s ease forwards;
+  --animate-float-dot: floatDot 2s ease-in-out infinite;
+  --animate-slide-in: slideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  --animate-s-header-in: sHeaderIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+  @keyframes fadeSlideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+  }
+  @keyframes expandRing {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  @keyframes floatCard {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    33% {
+      transform: translateY(-8px) rotate(0.5deg);
+    }
+    66% {
+      transform: translateY(-4px) rotate(-0.3deg);
+    }
+  }
+  @keyframes modalSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-24px) scale(0.97);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes authFadeUp {
+    0% {
+      opacity: 0;
+      transform: translateY(32px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes authFadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes gridDraw {
+    0% {
+      opacity: 0;
+      stroke-dashoffset: 1000;
+    }
+    100% {
+      opacity: 1;
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes floatDot {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+  @keyframes slideIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes sHeaderIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 /* ── Design tokens ────────────────────────────────────────────────────────── */
 :root {

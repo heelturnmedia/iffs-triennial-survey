@@ -130,7 +130,7 @@ export function SurveySectionHeader({ survey, totalPages, currentPage }: Props) 
         </div>
 
         {/* Right: question count badge + autosave status */}
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+        <div className="flex flex-col items-end gap-2 shrink-0">
           {/* Question count badge */}
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 border"
