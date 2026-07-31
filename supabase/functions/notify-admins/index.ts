@@ -11,7 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Not browser-facing — secured by a shared secret (Vault: notify_admins_secret)
 // sent in the x-notify-secret header.
 
-const LOGO_URL = 'https://iffssurvey.com/iffs-logo.png'
+const LOGO_URL = 'https://www.iffssurvey.com/iffs-logo.png'
 const FROM = 'IFFS Survey <info@iffssurvey.com>'
 
 interface Payload {
