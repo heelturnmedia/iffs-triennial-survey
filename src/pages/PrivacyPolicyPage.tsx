@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
               Privacy Policy
             </h1>
             <p className="font-body text-sm" style={{ color: '#7a8a96' }}>
-              Last updated: 16 July 2026
+              Last updated: 31 July 2026
             </p>
           </div>
 
@@ -296,6 +296,14 @@ export default function PrivacyPolicyPage() {
                 We use essential cookies to maintain your session and ensure the platform functions
                 correctly. We do not use tracking or advertising cookies. You can disable cookies in
                 your browser settings, though this may affect platform functionality.
+              </p>
+              <p className="mt-3">
+                For usage analytics we run a privacy-friendly, <strong>cookieless</strong> analytics tool
+                (Umami) that we self-host on our own infrastructure. It helps us understand aggregate
+                traffic — such as page views, referring sites, approximate country, and browser type — but
+                it does <strong>not</strong> set cookies, does not collect personal data, and does not track
+                you across other websites. Because it runs on our own servers, this analytics data is not
+                shared with any third-party analytics provider.
               </p>
             </section>
 
