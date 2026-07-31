@@ -50,7 +50,7 @@ function LibraryTab({
   if (loading) {
     return (
       <div className="flex justify-center py-16">
-        <div className="w-8 h-8 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-g1 border-t-transparent animate-spin" />
       </div>
     )
   }
@@ -58,7 +58,7 @@ function LibraryTab({
   if (definitions.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-10 text-center" style={{ border: '1px solid var(--bd)' }}>
-        <p className="font-body text-[14px] text-[#b0bec5]">
+        <p className="font-body text-[14px] text-f4">
           No survey definitions yet. Use the Creator tab to build one.
         </p>
       </div>
@@ -79,34 +79,34 @@ function LibraryTab({
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h3 className="font-display text-[14px] font-bold text-[#0d1117] truncate">
+              <h3 className="font-display text-[14px] font-bold text-f1 truncate">
                 {def.name}
               </h3>
               {def.is_active && (
-                <span className="inline-flex items-center gap-1 font-body text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#e8f5ec] text-[#0e5921] border-[#afc7b4] tracking-[0.04em]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#1d7733]" />
+                <span className="inline-flex items-center gap-1 font-body text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-g3 text-g2 border-[#afc7b4] tracking-[0.04em]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-g1" />
                   Active
                 </span>
               )}
             </div>
-            <p className="font-body text-[11px] text-[#7a8a96] mt-0.5">
+            <p className="font-body text-[11px] text-f3 mt-0.5">
               Created {formatDateTime(def.created_at)}
             </p>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => onEdit(def)}
-              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#7c3aed] hover:text-[#7c3aed] hover:bg-[#f5f3ff] transition-all"
+              className="font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-bd2 text-f2 hover:border-[#7c3aed] hover:text-[#7c3aed] hover:bg-[#f5f3ff] transition-all"
             >
               Edit
             </button>
             <button
               type="button"
               onClick={() => onPreview(def)}
-              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all"
+              className="font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] border-bd2 text-f2 hover:border-g1 hover:text-g1 hover:bg-g3 transition-all"
             >
               Preview
             </button>
@@ -115,7 +115,7 @@ function LibraryTab({
                 type="button"
                 onClick={() => onSetActive(def.id)}
                 disabled={settingActiveId === def.id}
-                className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg text-white transition-all disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg text-white transition-all disabled:opacity-60"
                 style={{ background: 'var(--g1)' }}
                 onMouseEnter={(e) => {
                   if (settingActiveId !== def.id)
@@ -186,7 +186,7 @@ function CreatorTab({ definitionToEdit, onSave }: CreatorTabProps) {
           <p className="font-body text-[12px] font-semibold text-[#5b21b6]">
             Editing: <span className="font-normal">{definitionToEdit.name}</span>
             {definitionToEdit.is_active && (
-              <span className="ml-2 text-[#0e5921] bg-[#e8f5ec] border border-[#afc7b4] rounded-full px-2 py-0.5 text-[10px]">Active</span>
+              <span className="ml-2 text-g2 bg-g3 border border-[#afc7b4] rounded-full px-2 py-0.5 text-[10px]">Active</span>
             )}
           </p>
         </div>
@@ -212,7 +212,7 @@ function PreviewTab({ definition, previewOverride }: PreviewTabProps) {
   if (!def) {
     return (
       <div className="bg-white rounded-2xl p-10 text-center" style={{ border: '1px solid var(--bd)' }}>
-        <p className="font-body text-[14px] text-[#b0bec5]">
+        <p className="font-body text-[14px] text-f4">
           No active survey definition to preview.
         </p>
       </div>
@@ -229,7 +229,7 @@ function PreviewTab({ definition, previewOverride }: PreviewTabProps) {
           <circle cx="7" cy="7" r="6" stroke="#1d7733" strokeWidth="1.4" />
           <path d="M7 5v2.5M7 9.5v.1" stroke="#1d7733" strokeWidth="1.4" strokeLinecap="round" />
         </svg>
-        <p className="font-body text-[12px] font-semibold text-[#0e5921]">
+        <p className="font-body text-[12px] font-semibold text-g2">
           This is a preview — no data will be saved.
         </p>
       </div>
@@ -328,8 +328,8 @@ export function SurveyMgmtPanel() {
     <div className="p-6 md:p-8 max-w-[1200px]">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="mb-6">
-        <h1 className="font-display text-[22px] font-bold text-[#0d1117]">Survey Management</h1>
-        <p className="font-body text-[13px] text-[#7a8a96] mt-0.5">
+        <h1 className="font-display text-[22px] font-bold text-f1">Survey Management</h1>
+        <p className="font-body text-[13px] text-f3 mt-0.5">
           Manage survey definitions, build new versions, and preview forms
         </p>
       </div>
@@ -352,7 +352,7 @@ export function SurveyMgmtPanel() {
               if (t.id !== 'preview') setPreviewDef(null)
               setTab(t.id)
             }}
-            className="font-display text-[11px] font-bold tracking-[0.10em] uppercase px-4 py-2 rounded-lg transition-all max-w-[200px] truncate"
+            className="font-display text-[11px] font-bold tracking-widest uppercase px-4 py-2 rounded-lg transition-all max-w-[200px] truncate"
             style={{
               background: tab === t.id ? '#ffffff' : 'transparent',
               color: tab === t.id ? (t.id === 'creator' && editingDef ? '#7c3aed' : 'var(--g1)') : 'var(--f3)',

@@ -169,7 +169,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handlePrimaryCTA}
-                className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none"
+                className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-hidden"
                 style={{
                   backgroundColor: '#1d7733',
                   boxShadow:       '0 8px 32px rgba(29,119,51,0.35)',
@@ -190,7 +190,7 @@ export default function HomePage() {
                   type="button"
                   aria-label="Learn more about the survey features"
                   onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none"
+                  className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-hidden"
                   style={{ border: '1px solid rgba(29,119,51,0.45)', color: '#1d7733', backgroundColor: 'transparent' }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(29,119,51,0.06)' }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent' }}

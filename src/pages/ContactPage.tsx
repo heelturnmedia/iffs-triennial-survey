@@ -55,7 +55,7 @@ export default function ContactPage() {
                 {/* Email */}
                 <div className="flex items-start gap-4">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                     style={{ background: '#e8f5ec' }}
                   >
                     <Mail size={18} color="#1d7733" strokeWidth={1.8} />
@@ -92,7 +92,7 @@ export default function ContactPage() {
                 {/* Website */}
                 <div className="flex items-start gap-4">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                     style={{ background: '#e8f5ec' }}
                   >
                     <Globe size={18} color="#1d7733" strokeWidth={1.8} />
@@ -128,7 +128,7 @@ export default function ContactPage() {
                 {/* Organisation */}
                 <div className="flex items-start gap-4">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                     style={{ background: '#e8f5ec' }}
                   >
                     <MapPin size={18} color="#1d7733" strokeWidth={1.8} />
@@ -184,7 +184,7 @@ export default function ContactPage() {
             style={{ background: '#f7f9f7', border: '1px solid #e2ebe4' }}
           >
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
               style={{ background: '#e8f5ec' }}
             >
               <span

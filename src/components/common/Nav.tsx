@@ -60,11 +60,11 @@ export function Nav() {
       }}
     >
       {/* ── Brand ─────────────────────────────────────────────────────── */}
-      <Link to="/" className="flex items-center gap-3 no-underline flex-shrink-0">
+      <Link to="/" className="flex items-center gap-3 no-underline shrink-0">
         <img
           src="/iffs-logo.png"
           alt="IFFS"
-          className="w-9 h-9 object-contain flex-shrink-0"
+          className="w-9 h-9 object-contain shrink-0"
         />
         <div className="flex flex-col leading-none">
           <span

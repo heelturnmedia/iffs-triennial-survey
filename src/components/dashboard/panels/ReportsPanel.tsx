@@ -47,7 +47,7 @@ const STATUS_OPTIONS: StatusFilter[] = ['All', 'draft', 'submitted', 'reviewed']
 
 const STATUS_CHIP_STYLES: Record<SurveyStatus, string> = {
   draft:     'bg-amber-50 text-amber-700 border-amber-200',
-  submitted: 'bg-[#e8f5ec] text-[#0e5921] border-[#afc7b4]',
+  submitted: 'bg-g3 text-g2 border-[#afc7b4]',
   reviewed:  'bg-blue-50 text-blue-700 border-blue-200',
 }
 
@@ -94,13 +94,13 @@ function FilterBar({
   onChange: (f: Partial<ReportFilters>) => void
 }) {
   const selectCls =
-    'font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer'
+    'font-body text-[12px] font-medium text-f2 border border-bd rounded-lg px-3 py-1.5 bg-white hover:border-g1 focus:outline-hidden focus:border-g1 transition-colors cursor-pointer'
 
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* Status */}
       <div className="flex items-center gap-1.5">
-        <span className="font-body text-[11px] text-[#7a8a96] font-medium">Status</span>
+        <span className="font-body text-[11px] text-f3 font-medium">Status</span>
         <select
           value={filters.status}
           onChange={(e) => onChange({ status: e.target.value as StatusFilter })}
@@ -117,7 +117,7 @@ function FilterBar({
 
       {/* Region */}
       <div className="flex items-center gap-1.5">
-        <span className="font-body text-[11px] text-[#7a8a96] font-medium">Region</span>
+        <span className="font-body text-[11px] text-f3 font-medium">Region</span>
         <select
           value={filters.region}
           onChange={(e) => onChange({ region: e.target.value as RegionFilter })}
@@ -132,7 +132,7 @@ function FilterBar({
 
       {/* Section */}
       <div className="flex items-center gap-1.5">
-        <span className="font-body text-[11px] text-[#7a8a96] font-medium">Section</span>
+        <span className="font-body text-[11px] text-f3 font-medium">Section</span>
         <select
           value={filters.section}
           onChange={(e) =>
@@ -182,7 +182,7 @@ function StatsCards({ rows }: { rows: SubmissionRow[] }) {
           >
             {c.value}
           </span>
-          <span className="font-body text-[11px] text-[#7a8a96] font-medium">{c.label}</span>
+          <span className="font-body text-[11px] text-f3 font-medium">{c.label}</span>
         </div>
       ))}
     </div>
@@ -206,8 +206,8 @@ function SubmissionsTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-[#e2ebe4] p-10 text-center">
-        <p className="font-body text-[14px] text-[#b0bec5]">No submissions match your filters.</p>
+      <div className="bg-white rounded-2xl border border-bd p-10 text-center">
+        <p className="font-body text-[14px] text-f4">No submissions match your filters.</p>
       </div>
     )
   }
@@ -224,7 +224,7 @@ function SubmissionsTable({
               {['Name', 'Country', 'Status', 'Progress', 'Submitted', 'Time Taken', 'Active Time', isAdmin ? 'Actions' : ''].filter(Boolean).map((h) => (
                 <th
                   key={h}
-                  className="font-display text-[10px] font-bold tracking-[0.12em] uppercase text-[#7a8a96] px-4 py-3"
+                  className="font-display text-[10px] font-bold tracking-[0.12em] uppercase text-f3 px-4 py-3"
                 >
                   {h}
                 </th>
@@ -260,23 +260,23 @@ function SubmissionsTable({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
                         style={{ background: 'var(--g3)' }}
                         aria-hidden="true"
                       >
-                        <span className="font-display text-[10px] font-bold text-[#0e5921]">
+                        <span className="font-display text-[10px] font-bold text-g2">
                           {initials}
                         </span>
                       </div>
                       <div>
-                        <p className="font-body text-[13px] font-semibold text-[#0d1117] leading-snug">
+                        <p className="font-body text-[13px] font-semibold text-f1 leading-snug">
                           {name}
                         </p>
                         {row.email && (
-                          <p className="font-body text-[11px] text-[#7a8a96]">{row.email}</p>
+                          <p className="font-body text-[11px] text-f3">{row.email}</p>
                         )}
                         {row.reference_no && (
-                          <p className="font-mono text-[10px] text-[#1d7733] tracking-tight mt-0.5">
+                          <p className="font-mono text-[10px] text-g1 tracking-tight mt-0.5">
                             {row.reference_no}
                           </p>
                         )}
@@ -286,7 +286,7 @@ function SubmissionsTable({
 
                   {/* Country */}
                   <td className="px-4 py-3">
-                    <span className="font-body text-[13px] text-[#3d4a52]">{country}</span>
+                    <span className="font-body text-[13px] text-f2">{country}</span>
                   </td>
 
                   {/* Status */}
@@ -322,7 +322,7 @@ function SubmissionsTable({
                           }}
                         />
                       </div>
-                      <span className="font-body text-[11px] text-[#7a8a96] tabular-nums">
+                      <span className="font-body text-[11px] text-f3 tabular-nums">
                         {pct}%
                       </span>
                     </div>
@@ -330,7 +330,7 @@ function SubmissionsTable({
 
                   {/* Submitted at */}
                   <td className="px-4 py-3">
-                    <span className="font-body text-[12px] text-[#7a8a96]">
+                    <span className="font-body text-[12px] text-f3">
                       {row.submitted_at ? formatDateTime(row.submitted_at) : '—'}
                     </span>
                   </td>
@@ -339,7 +339,7 @@ function SubmissionsTable({
                       once submitted; blank while still in progress. */}
                   <td className="px-4 py-3">
                     <span
-                      className="font-body text-[12px] text-[#3d4a52] tabular-nums"
+                      className="font-body text-[12px] text-f2 tabular-nums"
                       title={isSubmitted ? 'Elapsed time from first saved answer to submission' : undefined}
                     >
                       {isSubmitted ? formatDuration(row.created_at, row.submitted_at) : '—'}
@@ -350,7 +350,7 @@ function SubmissionsTable({
                       "—" for rows created before tracking existed. */}
                   <td className="px-4 py-3">
                     <span
-                      className="font-body text-[12px] text-[#3d4a52] tabular-nums"
+                      className="font-body text-[12px] text-f2 tabular-nums"
                       title="Active time spent in the survey (tab focused, non-idle)"
                     >
                       {formatSeconds(row.active_seconds)}
@@ -367,7 +367,7 @@ function SubmissionsTable({
                               type="button"
                               onClick={() => onExportCsv(row)}
                               title={`Download ${name}'s answers as CSV`}
-                              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all"
+                              className="font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-g1 border-[#afc7b4] hover:bg-g3 transition-all"
                             >
                               CSV
                             </button>
@@ -375,7 +375,7 @@ function SubmissionsTable({
                               type="button"
                               onClick={() => onExportPdf(row)}
                               title={`Download ${name}'s answers as PDF`}
-                              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all"
+                              className="font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-g1 border-[#afc7b4] hover:bg-g3 transition-all"
                             >
                               PDF
                             </button>
@@ -385,7 +385,7 @@ function SubmissionsTable({
                           <button
                             type="button"
                             onClick={() => onReset(row)}
-                            className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-red-600 border-red-200 hover:bg-red-50 transition-all"
+                            className="font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-red-600 border-red-200 hover:bg-red-50 transition-all"
                           >
                             Reset
                           </button>
@@ -621,8 +621,8 @@ export function ReportsPanel() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
         <div>
-          <h1 className="font-display text-[22px] font-bold text-[#0d1117]">Reports</h1>
-          <p className="font-body text-[13px] text-[#7a8a96] mt-0.5">
+          <h1 className="font-display text-[22px] font-bold text-f1">Reports</h1>
+          <p className="font-body text-[13px] text-f3 mt-0.5">
             Survey submissions across all participants
           </p>
         </div>
@@ -633,7 +633,7 @@ export function ReportsPanel() {
               type="button"
               onClick={handleGenerateReport}
               disabled={reportBusy || rows.length === 0}
-              className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#1d7733] text-white bg-[#1d7733] hover:bg-[#0e5921] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-g1 text-white bg-g1 hover:bg-g2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Generate surveillance report PDF"
               title="Generate the templated Surveillance Report (PDF)"
             >
@@ -649,7 +649,7 @@ export function ReportsPanel() {
               type="button"
               onClick={handleGenerateReportXls}
               disabled={reportXlsBusy || rows.length === 0}
-              className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#1d7733] text-[#1d7733] bg-white hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-g1 text-g1 bg-white hover:bg-g3 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Generate surveillance report Excel"
               title="Download the Surveillance Report as an Excel workbook (.xls)"
             >
@@ -670,7 +670,7 @@ export function ReportsPanel() {
                   void logActivity('export_all_responses', { format: 'csv', count: filteredRows.length })
                 }}
                 disabled={filteredRows.length === 0}
-                className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#c8d9cc] text-[#3d4a52] hover:border-[#1d7733] hover:text-[#1d7733] hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-bd2 text-f2 hover:border-g1 hover:text-g1 hover:bg-g3 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label="Export user submissions CSV"
                 title="Download the list of user submissions (name, email, country, status) as CSV"
               >
@@ -685,7 +685,7 @@ export function ReportsPanel() {
                   type="button"
                   onClick={handleExportCumulativeCsv}
                   disabled={cumulativeCsvBusy || rows.length === 0}
-                  className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#1d7733] text-[#1d7733] bg-white hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-g1 text-g1 bg-white hover:bg-g3 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label="Download cumulative report — every question and answer from all users — as CSV"
                   title="Every question and every answer from all users as one CSV matrix (opens in Excel)"
                 >
@@ -701,7 +701,7 @@ export function ReportsPanel() {
                   type="button"
                   onClick={handleExportCumulativeXls}
                   disabled={cumulativeXlsBusy || rows.length === 0}
-                  className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-[#1d7733] text-[#1d7733] bg-white hover:bg-[#e8f5ec] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-4 py-2 rounded-full border-[1.5px] border-g1 text-g1 bg-white hover:bg-g3 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label="Download cumulative report — every question and answer from all users — as Excel"
                   title="Every question and every answer from all users as one Excel (.xls) matrix"
                 >
@@ -751,8 +751,8 @@ export function ReportsPanel() {
 
           {/* ── Search + filter bar ──────────────────────────────────────────── */}
           <div className="mb-5 flex flex-wrap items-center gap-4">
-            <div className="relative max-w-xs flex-shrink-0">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0bec5]" aria-hidden="true">
+            <div className="relative max-w-xs shrink-0">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-f4" aria-hidden="true">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" />
                   <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -763,7 +763,7 @@ export function ReportsPanel() {
                 placeholder="Search name, email, or reference…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 font-body text-[13px] border border-[#e2ebe4] rounded-lg bg-white placeholder-[#b0bec5] text-[#0d1117] focus:outline-none focus:border-[#1d7733] transition-colors"
+                className="w-full pl-9 pr-3 py-2 font-body text-[13px] border border-bd rounded-lg bg-white placeholder-f4 text-f1 focus:outline-hidden focus:border-g1 transition-colors"
                 aria-label="Search submissions"
               />
             </div>
@@ -788,7 +788,7 @@ export function ReportsPanel() {
           {/* ── Table ────────────────────────────────────────────────────────── */}
           {loading ? (
             <div className="flex justify-center py-16">
-              <div className="w-8 h-8 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
+              <div className="w-8 h-8 rounded-full border-2 border-g1 border-t-transparent animate-spin" />
             </div>
           ) : (
             <SubmissionsTable
@@ -802,7 +802,7 @@ export function ReportsPanel() {
 
           {/* Row count */}
           {!loading && (
-            <p className="font-body text-[11px] text-[#b0bec5] mt-3 text-right">
+            <p className="font-body text-[11px] text-f4 mt-3 text-right">
               Showing {filteredRows.length} of {rows.length} submissions
             </p>
           )}

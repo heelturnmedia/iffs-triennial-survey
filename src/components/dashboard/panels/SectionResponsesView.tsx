@@ -160,21 +160,21 @@ function ChoiceBar({
   const outOf = total > 0 ? Math.round((count / total) * 100) : 0
   return (
     <div className="flex items-center gap-3 py-1">
-      <div className="w-36 flex-shrink-0 font-body text-[12px] text-[#3d4a52] text-right leading-snug">
+      <div className="w-36 shrink-0 font-body text-[12px] text-f2 text-right leading-snug">
         {label}
       </div>
       <div className="flex-1 flex items-center gap-2">
         <div
-          className="h-5 rounded-sm overflow-hidden"
+          className="h-5 rounded-xs overflow-hidden"
           style={{ width: '100%', background: '#e8f5ec' }}
         >
           <div
-            className="h-full rounded-sm transition-all"
+            className="h-full rounded-xs transition-all"
             style={{ width: `${pct}%`, background: '#1d7733' }}
           />
         </div>
         <span
-          className="w-20 flex-shrink-0 font-body text-[11px] text-[#7a8a96] tabular-nums"
+          className="w-20 shrink-0 font-body text-[11px] text-f3 tabular-nums"
           style={{ minWidth: 72 }}
         >
           {count} ({outOf}%)
@@ -222,10 +222,10 @@ function QuestionCard({
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
-        <p className="font-body text-[13px] font-semibold text-[#0d1117] leading-snug flex-1">
+        <p className="font-body text-[13px] font-semibold text-f1 leading-snug flex-1">
           {question.title || question.name}
         </p>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <span
             className="font-body text-[10px] px-2 py-0.5 rounded-full border"
             style={{
@@ -236,14 +236,14 @@ function QuestionCard({
           >
             {typeLabel}
           </span>
-          <span className="font-body text-[10px] text-[#b0bec5]">
+          <span className="font-body text-[10px] text-f4">
             {totalAnswered}/{totalSubmitted} responded
           </span>
         </div>
       </div>
 
       {noData && (
-        <p className="font-body text-[12px] text-[#b0bec5] italic">No responses yet.</p>
+        <p className="font-body text-[12px] text-f4 italic">No responses yet.</p>
       )}
 
       {/* Choice questions */}
@@ -279,7 +279,7 @@ function QuestionCard({
               {displayed.map((r, i) => (
                 <li
                   key={i}
-                  className="font-body text-[12px] text-[#3d4a52] pl-3 border-l-2 border-[#c8d9cc]"
+                  className="font-body text-[12px] text-f2 pl-3 border-l-2 border-bd2"
                 >
                   {r}
                 </li>
@@ -289,7 +289,7 @@ function QuestionCard({
               <button
                 type="button"
                 onClick={() => setShowAll((v) => !v)}
-                className="mt-2 font-body text-[11px] text-[#1d7733] hover:underline"
+                className="mt-2 font-body text-[11px] text-g1 hover:underline"
               >
                 {showAll ? 'Show less' : `Show all ${textResponses.length} responses`}
               </button>
@@ -318,7 +318,7 @@ function QuestionCard({
             <table className="w-full text-left border-collapse" style={{ minWidth: 400 }}>
               <thead>
                 <tr>
-                  <th className="font-body text-[10px] text-[#7a8a96] py-1.5 pr-3 font-semibold w-40">
+                  <th className="font-body text-[10px] text-f3 py-1.5 pr-3 font-semibold w-40">
                     Row
                   </th>
                   {colKeys.map((ck) => {
@@ -326,7 +326,7 @@ function QuestionCard({
                     return (
                       <th
                         key={ck}
-                        className="font-body text-[10px] text-[#7a8a96] py-1.5 px-2 font-semibold text-center"
+                        className="font-body text-[10px] text-f3 py-1.5 px-2 font-semibold text-center"
                       >
                         {colDef?.text || ck}
                       </th>
@@ -340,7 +340,7 @@ function QuestionCard({
                   const rowData = matrixCounts[rk] ?? {}
                   return (
                     <tr key={rk} style={{ borderTop: '1px solid #f0f4f1' }}>
-                      <td className="font-body text-[11px] text-[#3d4a52] py-1.5 pr-3 leading-snug">
+                      <td className="font-body text-[11px] text-f2 py-1.5 pr-3 leading-snug">
                         {rowDef?.text || rk}
                       </td>
                       {colKeys.map((ck) => {
@@ -348,7 +348,7 @@ function QuestionCard({
                         return (
                           <td
                             key={ck}
-                            className="font-body text-[11px] text-[#3d4a52] py-1.5 px-2 text-center tabular-nums"
+                            className="font-body text-[11px] text-f2 py-1.5 px-2 text-center tabular-nums"
                           >
                             {count > 0 ? count : '—'}
                           </td>
@@ -376,13 +376,13 @@ function QuestionCard({
                     {item.title || item.name}
                   </p>
                   {vals.length === 0 ? (
-                    <p className="font-body text-[11px] text-[#b0bec5] italic pl-3">No responses.</p>
+                    <p className="font-body text-[11px] text-f4 italic pl-3">No responses.</p>
                   ) : (
                     <ul className="space-y-1">
                       {vals.map((v, i) => (
                         <li
                           key={i}
-                          className="font-body text-[11px] text-[#3d4a52] pl-3 border-l-2 border-[#c8d9cc]"
+                          className="font-body text-[11px] text-f2 pl-3 border-l-2 border-bd2"
                         >
                           {v}
                         </li>
@@ -427,7 +427,7 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
   if (pages.length === 0) {
     return (
       <div className="py-16 text-center">
-        <p className="font-body text-[14px] text-[#b0bec5]">No survey definition loaded.</p>
+        <p className="font-body text-[14px] text-f4">No survey definition loaded.</p>
       </div>
     )
   }
@@ -440,13 +440,13 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
       {/* Section selector */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <span className="font-body text-[11px] text-[#7a8a96] font-medium flex-shrink-0">
+          <span className="font-body text-[11px] text-f3 font-medium shrink-0">
             Section
           </span>
           <select
             value={selectedSection}
             onChange={(e) => setSelectedSection(Number(e.target.value))}
-            className="font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer"
+            className="font-body text-[12px] font-medium text-f2 border border-bd rounded-lg px-3 py-1.5 bg-white hover:border-g1 focus:outline-hidden focus:border-g1 transition-colors cursor-pointer"
             aria-label="Select section"
           >
             {SECTION_NAMES.map((name, i) => (
@@ -461,7 +461,7 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
             style={{ background: '#e8f5ec', border: '1px solid #c8d9cc' }}
           >
-            <span className="font-body text-[11px] text-[#1d7733] font-semibold">
+            <span className="font-body text-[11px] text-g1 font-semibold">
               {totalSubmitted} submitted
             </span>
           </div>
@@ -482,7 +482,7 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
               exportAllSectionsAsCsv(submissions, pages, SECTION_NAMES)
               void logActivity('export_all_responses', { format: 'csv', count: totalSubmitted })
             }}
-            className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               borderColor: '#afc7b4',
               color: '#1d7733',
@@ -514,7 +514,7 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
               exportAllSectionsAsPdf(submissions, pages, SECTION_NAMES, SECTION_DESCRIPTIONS)
               void logActivity('export_all_responses', { format: 'pdf', count: totalSubmitted })
             }}
-            className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               borderColor: '#afc7b4',
               color: '#1d7733',
@@ -545,13 +545,13 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
         className="rounded-xl p-4 mb-6"
         style={{ background: '#f7f9f7', border: '1px solid var(--bd)' }}
       >
-        <p className="font-display text-[13px] font-bold text-[#0d1117] mb-1">
+        <p className="font-display text-[13px] font-bold text-f1 mb-1">
           {selectedSection + 1}. {sectionName}
         </p>
         {sectionDesc && (
-          <p className="font-body text-[12px] text-[#7a8a96] leading-relaxed">{sectionDesc}</p>
+          <p className="font-body text-[12px] text-f3 leading-relaxed">{sectionDesc}</p>
         )}
-        <p className="font-body text-[11px] text-[#b0bec5] mt-2">
+        <p className="font-body text-[11px] text-f4 mt-2">
           {aggregated.length} question{aggregated.length !== 1 ? 's' : ''} in this section
         </p>
       </div>
@@ -559,7 +559,7 @@ export function SectionResponsesView({ submissions }: { submissions: SubmissionR
       {/* Question cards */}
       {aggregated.length === 0 ? (
         <div className="py-10 text-center">
-          <p className="font-body text-[13px] text-[#b0bec5]">No questions found in this section.</p>
+          <p className="font-body text-[13px] text-f4">No questions found in this section.</p>
         </div>
       ) : (
         <div className="space-y-4">

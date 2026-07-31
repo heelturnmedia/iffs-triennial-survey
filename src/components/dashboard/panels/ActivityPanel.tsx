@@ -105,8 +105,8 @@ export function ActivityPanel() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
         <div>
-          <h1 className="font-display text-[22px] font-bold text-[#0d1117]">Activity Log</h1>
-          <p className="font-body text-[13px] text-[#7a8a96] mt-0.5">
+          <h1 className="font-display text-[22px] font-bold text-f1">Activity Log</h1>
+          <p className="font-body text-[13px] text-f3 mt-0.5">
             Every recorded action across all roles — sign-ins, submissions, profile changes, exports, resets, and deletions.
           </p>
         </div>
@@ -114,7 +114,7 @@ export function ActivityPanel() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer"
+            className="font-body text-[12px] font-medium text-f2 border border-bd rounded-lg px-3 py-1.5 bg-white hover:border-g1 focus:outline-hidden focus:border-g1 transition-colors cursor-pointer"
             aria-label="Filter by role"
           >
             {ROLE_FILTERS.map((r) => (
@@ -145,7 +145,7 @@ export function ActivityPanel() {
           className="mb-5 flex items-center gap-2.5 rounded-xl px-4 py-3"
           style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
         >
-          <span className="text-red-500 text-base flex-shrink-0">⚠</span>
+          <span className="text-red-500 text-base shrink-0">⚠</span>
           <p className="font-body text-[13px] text-red-700">
             <span className="font-bold">{deletionsCount}</span> user{deletionsCount !== 1 ? 's have' : ' has'} been
             permanently deleted. These are highlighted below.
@@ -155,11 +155,11 @@ export function ActivityPanel() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 border-g1 border-t-transparent animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[#e2ebe4] p-10 text-center">
-          <p className="font-body text-[14px] text-[#b0bec5]">No activity recorded yet.</p>
+        <div className="bg-white rounded-2xl border border-bd p-10 text-center">
+          <p className="font-body text-[14px] text-f4">No activity recorded yet.</p>
         </div>
       ) : (
         <div
@@ -173,7 +173,7 @@ export function ActivityPanel() {
                   {['When', 'User', 'Action', 'Details'].map((h) => (
                     <th
                       key={h}
-                      className="font-display text-[10px] font-bold tracking-[0.12em] uppercase text-[#7a8a96] px-4 py-3"
+                      className="font-display text-[10px] font-bold tracking-[0.12em] uppercase text-f3 px-4 py-3"
                     >
                       {h}
                     </th>
@@ -196,18 +196,18 @@ export function ActivityPanel() {
                       }}
                     >
                       <td className="px-4 py-3 align-top">
-                        <span className="font-body text-[12px] text-[#7a8a96] whitespace-nowrap">
+                        <span className="font-body text-[12px] text-f3 whitespace-nowrap">
                           {formatDateTime(r.created_at)}
                         </span>
                       </td>
                       <td className="px-4 py-3 align-top">
                         <div className="flex items-center gap-2">
-                          <p className="font-body text-[13px] font-semibold text-[#0d1117] leading-snug">
+                          <p className="font-body text-[13px] font-semibold text-f1 leading-snug">
                             {actorName}
                           </p>
                           {r.actor?.role && (
                             <span
-                              className="inline-flex font-body text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded"
+                              className="inline-flex font-body text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-sm"
                               style={{
                                 background: (ROLE_CHIP[r.actor.role] ?? ROLE_CHIP['user']).bg,
                                 color: (ROLE_CHIP[r.actor.role] ?? ROLE_CHIP['user']).text,
@@ -218,7 +218,7 @@ export function ActivityPanel() {
                           )}
                         </div>
                         {r.actor?.email && (
-                          <p className="font-body text-[11px] text-[#7a8a96]">{r.actor.email}</p>
+                          <p className="font-body text-[11px] text-f3">{r.actor.email}</p>
                         )}
                       </td>
                       <td className="px-4 py-3 align-top">
@@ -234,7 +234,7 @@ export function ActivityPanel() {
                         </span>
                       </td>
                       <td className="px-4 py-3 align-top">
-                        <span className="font-body text-[12px] text-[#3d4a52]">
+                        <span className="font-body text-[12px] text-f2">
                           {summariseMetadata(r.metadata) || '—'}
                         </span>
                       </td>
@@ -248,7 +248,7 @@ export function ActivityPanel() {
       )}
 
       {!loading && (
-        <p className="font-body text-[11px] text-[#b0bec5] mt-3 text-right">
+        <p className="font-body text-[11px] text-f4 mt-3 text-right">
           Showing {filtered.length} of {rows.length} recorded actions (most recent 300).
         </p>
       )}

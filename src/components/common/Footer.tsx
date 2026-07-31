@@ -36,7 +36,7 @@ export function Footer() {
           <img
             src="/iffs-logo.png"
             alt="IFFS"
-            className="w-8 h-8 object-contain flex-shrink-0"
+            className="w-8 h-8 object-contain shrink-0"
           />
           <div className="flex flex-col leading-none">
             <span

@@ -27,13 +27,13 @@ const ROLE_OPTIONS = Object.values(ROLES)
 const ROLE_BADGE_COLORS: Record<UserRole, string> = {
   admin:         'bg-purple-100 text-purple-800 border-purple-200',
   supervisor:    'bg-blue-100 text-blue-800 border-blue-200',
-  'iffs-member': 'bg-[#e8f5ec] text-[#0e5921] border-[#afc7b4]',
+  'iffs-member': 'bg-g3 text-g2 border-[#afc7b4]',
   user:          'bg-gray-100 text-gray-600 border-gray-200',
 }
 
 const STATUS_CHIP_STYLES: Record<SurveyStatus, string> = {
   draft:     'bg-amber-50 text-amber-700 border-amber-200',
-  submitted: 'bg-[#e8f5ec] text-[#0e5921] border-[#afc7b4]',
+  submitted: 'bg-g3 text-g2 border-[#afc7b4]',
   reviewed:  'bg-blue-50 text-blue-700 border-blue-200',
 }
 
@@ -162,19 +162,19 @@ function UserAnswersModal({
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-6 py-4 flex-shrink-0"
+          className="flex items-center justify-between px-6 py-4 shrink-0"
           style={{ borderBottom: '1px solid var(--bd)' }}
         >
           <div>
-            <h2 className="font-display text-[16px] font-bold text-[#0d1117]">
+            <h2 className="font-display text-[16px] font-bold text-f1">
               Survey Answers — {name}
             </h2>
-            <p className="font-body text-[12px] text-[#7a8a96] mt-0.5">
+            <p className="font-body text-[12px] text-f3 mt-0.5">
               {profile.email} ·{' '}
               <span
                 className={
                   row.submission?.status === 'submitted' || row.submission?.status === 'reviewed'
-                    ? 'text-[#1d7733]'
+                    ? 'text-g1'
                     : 'text-amber-600'
                 }
               >
@@ -185,7 +185,7 @@ function UserAnswersModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#f0f4f1] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-s2 transition-colors"
             aria-label="Close"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -196,14 +196,14 @@ function UserAnswersModal({
 
         {/* Section selector */}
         <div
-          className="flex items-center gap-3 px-6 py-3 flex-shrink-0"
+          className="flex items-center gap-3 px-6 py-3 shrink-0"
           style={{ borderBottom: '1px solid #f0f4f1' }}
         >
-          <span className="font-body text-[11px] text-[#7a8a96] font-medium">Section</span>
+          <span className="font-body text-[11px] text-f3 font-medium">Section</span>
           <select
             value={selectedSection}
             onChange={(e) => setSelectedSection(Number(e.target.value))}
-            className="font-body text-[12px] font-medium text-[#3d4a52] border border-[#e2ebe4] rounded-lg px-3 py-1.5 bg-white hover:border-[#1d7733] focus:outline-none focus:border-[#1d7733] transition-colors cursor-pointer"
+            className="font-body text-[12px] font-medium text-f2 border border-bd rounded-lg px-3 py-1.5 bg-white hover:border-g1 focus:outline-hidden focus:border-g1 transition-colors cursor-pointer"
           >
             {SECTION_NAMES.map((sn, i) => (
               <option key={i} value={i}>
@@ -211,7 +211,7 @@ function UserAnswersModal({
               </option>
             ))}
           </select>
-          <span className="font-body text-[11px] text-[#b0bec5]">
+          <span className="font-body text-[11px] text-f4">
             {answeredQuestions.length} / {questions.length} answered
           </span>
         </div>
@@ -219,11 +219,11 @@ function UserAnswersModal({
         {/* Answers list */}
         <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
           {questions.length === 0 ? (
-            <p className="font-body text-[13px] text-[#b0bec5] text-center py-10">
+            <p className="font-body text-[13px] text-f4 text-center py-10">
               No questions found in this section.
             </p>
           ) : answeredQuestions.length === 0 ? (
-            <p className="font-body text-[13px] text-[#b0bec5] text-center py-10">
+            <p className="font-body text-[13px] text-f4 text-center py-10">
               No answers recorded for this section.
             </p>
           ) : (
@@ -240,7 +240,7 @@ function UserAnswersModal({
                     opacity: hasAnswer ? 1 : 0.5,
                   }}
                 >
-                  <p className="font-body text-[11px] text-[#7a8a96] mb-1 leading-snug">
+                  <p className="font-body text-[11px] text-f3 mb-1 leading-snug">
                     {q.title || q.name}
                   </p>
                   <p
@@ -257,13 +257,13 @@ function UserAnswersModal({
 
         {/* Footer */}
         <div
-          className="flex justify-end px-6 py-3 flex-shrink-0"
+          className="flex justify-end px-6 py-3 shrink-0"
           style={{ borderTop: '1px solid #f0f4f1' }}
         >
           <button
             type="button"
             onClick={onClose}
-            className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-4 py-2 rounded-lg border-[1.5px] border-[#e2ebe4] text-[#7a8a96] hover:bg-[#f7f9f7] transition-all"
+            className="font-display text-[10px] font-bold tracking-widest uppercase px-4 py-2 rounded-lg border-[1.5px] border-bd text-f3 hover:bg-s1 transition-all"
           >
             Close
           </button>
@@ -407,8 +407,8 @@ export function UsersPanel() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-display text-[22px] font-bold text-[#0d1117]">Users</h1>
-          <p className="font-body text-[13px] text-[#7a8a96] mt-0.5">
+          <h1 className="font-display text-[22px] font-bold text-f1">Users</h1>
+          <p className="font-body text-[13px] text-f3 mt-0.5">
             Manage roles and survey progress for all participants
           </p>
         </div>
@@ -418,7 +418,7 @@ export function UsersPanel() {
       {/* ── Search ─────────────────────────────────────────────────────────── */}
       <div className="mb-5 relative max-w-xs">
         <span
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0bec5]"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-f4"
           aria-hidden="true"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -431,7 +431,7 @@ export function UsersPanel() {
           placeholder="Search by name, email, or reference…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 font-body text-[13px] border border-[#e2ebe4] rounded-lg bg-white placeholder-[#b0bec5] text-[#0d1117] focus:outline-none focus:border-[#1d7733] transition-colors"
+          className="w-full pl-9 pr-3 py-2 font-body text-[13px] border border-bd rounded-lg bg-white placeholder-f4 text-f1 focus:outline-hidden focus:border-g1 transition-colors"
           aria-label="Search users"
         />
       </div>
@@ -439,11 +439,11 @@ export function UsersPanel() {
       {/* ── Table ──────────────────────────────────────────────────────────── */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-2 border-[#1d7733] border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 border-g1 border-t-transparent animate-spin" />
         </div>
       ) : filteredRows.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[#e2ebe4] p-10 text-center">
-          <p className="font-body text-[14px] text-[#b0bec5]">
+        <div className="bg-white rounded-2xl border border-bd p-10 text-center">
+          <p className="font-body text-[14px] text-f4">
             {search ? 'No users match your search.' : 'No users found.'}
           </p>
         </div>
@@ -459,7 +459,7 @@ export function UsersPanel() {
                   {['User', 'Role', 'Status', 'Progress', 'Last Saved', 'Actions'].map((h) => (
                     <th
                       key={h}
-                      className="font-display text-[10px] font-bold tracking-[0.12em] uppercase text-[#7a8a96] px-4 py-3"
+                      className="font-display text-[10px] font-bold tracking-[0.12em] uppercase text-f3 px-4 py-3"
                     >
                       {h}
                     </th>
@@ -499,26 +499,26 @@ export function UsersPanel() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                             style={{ background: 'var(--g3)' }}
                             aria-hidden="true"
                           >
-                            <span className="font-display text-[11px] font-bold text-[#0e5921]">
+                            <span className="font-display text-[11px] font-bold text-g2">
                               {getInitials(profile)}
                             </span>
                           </div>
                           <div>
-                            <p className="font-body text-[13px] font-semibold text-[#0d1117] leading-snug flex items-center gap-1.5">
+                            <p className="font-body text-[13px] font-semibold text-f1 leading-snug flex items-center gap-1.5">
                               {name}
                               {isMe && (
-                                <span className="font-body text-[9px] font-semibold text-[#7a8a96] bg-[#f0f4f1] px-1.5 py-0.5 rounded-full">
+                                <span className="font-body text-[9px] font-semibold text-f3 bg-s2 px-1.5 py-0.5 rounded-full">
                                   You
                                 </span>
                               )}
                             </p>
-                            <p className="font-body text-[11px] text-[#7a8a96]">{profile.email}</p>
+                            <p className="font-body text-[11px] text-f3">{profile.email}</p>
                             {submission?.reference_no && (
-                              <p className="font-mono text-[10px] text-[#1d7733] tracking-tight mt-0.5">
+                              <p className="font-mono text-[10px] text-g1 tracking-tight mt-0.5">
                                 {submission.reference_no}
                               </p>
                             )}
@@ -536,7 +536,7 @@ export function UsersPanel() {
                             }
                             disabled={updatingRoleId === profile.id}
                             className={[
-                              'font-body text-[11px] font-semibold px-2 py-1 rounded-full border cursor-pointer appearance-none pr-5 transition-all focus:outline-none',
+                              'font-body text-[11px] font-semibold px-2 py-1 rounded-full border cursor-pointer appearance-none pr-5 transition-all focus:outline-hidden',
                               ROLE_BADGE_COLORS[profile.role],
                             ].join(' ')}
                             aria-label={`Change role for ${name}`}
@@ -586,7 +586,7 @@ export function UsersPanel() {
                               }}
                             />
                           </div>
-                          <span className="font-body text-[11px] text-[#7a8a96] tabular-nums">
+                          <span className="font-body text-[11px] text-f3 tabular-nums">
                             {pct}%
                           </span>
                         </div>
@@ -594,7 +594,7 @@ export function UsersPanel() {
 
                       {/* Last saved */}
                       <td className="px-4 py-3">
-                        <span className="font-body text-[12px] text-[#7a8a96]">
+                        <span className="font-body text-[12px] text-f3">
                           {submission?.saved_at
                             ? formatSavedAt(submission.saved_at)
                             : '—'}
@@ -614,7 +614,7 @@ export function UsersPanel() {
                                   reference: submission?.reference_no,
                                 })
                               }}
-                              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-[#1d7733] border-[#afc7b4] hover:bg-[#e8f5ec] transition-all"
+                              className="font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-g1 border-[#afc7b4] hover:bg-g3 transition-all"
                               aria-label={`View answers for ${name}`}
                             >
                               View Answers
@@ -624,7 +624,7 @@ export function UsersPanel() {
                             <button
                               type="button"
                               onClick={() => handleResetUser(row)}
-                              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-red-600 border-red-200 hover:bg-red-50 transition-all"
+                              className="font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-red-600 border-red-200 hover:bg-red-50 transition-all"
                               aria-label={`Reset survey for ${name}`}
                             >
                               Reset Survey
@@ -634,7 +634,7 @@ export function UsersPanel() {
                             <button
                               type="button"
                               onClick={() => handleDeleteUser(row)}
-                              className="font-display text-[10px] font-bold tracking-[0.10em] uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-white bg-red-600 border-red-600 hover:bg-red-700 hover:border-red-700 transition-all"
+                              className="font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border-[1.5px] text-white bg-red-600 border-red-600 hover:bg-red-700 hover:border-red-700 transition-all"
                               aria-label={`Delete user ${name}`}
                             >
                               Delete User
@@ -653,7 +653,7 @@ export function UsersPanel() {
 
       {/* Row count */}
       {!loading && (
-        <p className="font-body text-[11px] text-[#b0bec5] mt-3 text-right">
+        <p className="font-body text-[11px] text-f4 mt-3 text-right">
           Showing {filteredRows.length} of {userRows.length} users
         </p>
       )}

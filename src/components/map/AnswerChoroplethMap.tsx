@@ -66,7 +66,7 @@ export function AnswerChoroplethMap({
     return (
       <div className="flex items-center justify-center rounded-2xl p-10 text-center"
         style={{ height, background: 'var(--s2)', border: '1.5px dashed var(--bd2)' }}>
-        <p className="font-body text-[12px] text-[#7a8a96]">Mapbox token not configured.</p>
+        <p className="font-body text-[12px] text-f3">Mapbox token not configured.</p>
       </div>
     )
   }

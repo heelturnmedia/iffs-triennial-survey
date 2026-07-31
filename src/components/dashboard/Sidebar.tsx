@@ -110,7 +110,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex-shrink-0 flex flex-col"
+      className="shrink-0 flex flex-col"
       style={{
         width: '232px',
         height: '100%',
@@ -123,7 +123,7 @@ export function Sidebar() {
       <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid var(--bd)' }}>
         {/* Avatar */}
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 flex-shrink-0"
+          className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 shrink-0"
           style={{
             background: 'linear-gradient(135deg, var(--g1) 0%, var(--g5) 100%)',
             boxShadow: '0 2px 10px rgba(29,119,51,0.28)',
@@ -257,7 +257,7 @@ export function Sidebar() {
 
                   {/* Icon container */}
                   <span
-                    className="flex items-center justify-center flex-shrink-0 transition-all duration-150"
+                    className="flex items-center justify-center shrink-0 transition-all duration-150"
                     style={{
                       width: 30,
                       height: 30,
@@ -316,7 +316,7 @@ export function Sidebar() {
           }}
         >
           <span
-            className="flex items-center justify-center flex-shrink-0"
+            className="flex items-center justify-center shrink-0"
             style={{ width: 30, height: 30, borderRadius: 8 }}
           >
             <LogOut size={15} strokeWidth={1.8} />
