@@ -5,14 +5,20 @@
 //  2. A country-wise answer map: pick a question + answer, the Mapbox globe shades
 //     each country by the share who chose it, downloadable as PDF (with a snapshot).
 // ─────────────────────────────────────────────────────────────────────────────
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { extractQuestionsFromPage, type ExtractedQuestion } from '@/utils/surveyAnalytics'
 import { choicePrevalenceByCountry } from '@/utils/insightsAnalytics'
-import { buildCountrySubmissionRows, countryTotals } from '@/utils/countriesData'
+import { buildCountrySubmissionRows, countryTotals, buildNotStartedUsers } from '@/utils/countriesData'
 import { AnswerChoroplethMap } from '@/components/map/AnswerChoroplethMap'
+import { listProfiles } from '@/services/authService'
 import { logActivity } from '@/services/auditService'
 import { useUIStore } from '@/stores/uiStore'
-import type { SubmissionRow } from '@/types'
+import type { SubmissionRow, Profile } from '@/types'
+
+const fmtDate = (iso: string) => {
+  try { return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) }
+  catch { return '—' }
+}
 
 const MUTED = '#7a8a96'
 const INK = '#0d1117'
@@ -39,17 +45,30 @@ export function CountriesDataView({
 }) {
   const { toast } = useUIStore()
 
+  // All signed-up users (profiles) — needed to count people who signed up but
+  // never started: they have no submission row, so `submissions` alone misses them.
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [profilesLoaded, setProfilesLoaded] = useState(false)
+  useEffect(() => {
+    let alive = true
+    listProfiles()
+      .then((p) => { if (alive) { setProfiles(p); setProfilesLoaded(true) } })
+      .catch(() => { if (alive) setProfilesLoaded(true) })
+    return () => { alive = false }
+  }, [])
+
   // ── Section 1: per-country counts ──────────────────────────────────────────
-  const tableRows = useMemo(() => buildCountrySubmissionRows(submissions), [submissions])
+  const tableRows = useMemo(() => buildCountrySubmissionRows(submissions, profiles), [submissions, profiles])
   const totals = useMemo(() => countryTotals(tableRows), [tableRows])
+  const notStartedUsers = useMemo(() => buildNotStartedUsers(submissions, profiles), [submissions, profiles])
   const [tableBusy, setTableBusy] = useState(false)
 
   const handleTableExport = async (kind: 'pdf' | 'xls') => {
     setTableBusy(true)
     try {
       const mod = await import('@/utils/exportCountriesData')
-      if (kind === 'pdf') mod.exportCountriesTablePdf(tableRows)
-      else mod.exportCountriesTableXls(tableRows)
+      if (kind === 'pdf') mod.exportCountriesTablePdf(tableRows, notStartedUsers)
+      else mod.exportCountriesTableXls(tableRows, notStartedUsers)
       void logActivity('export_all_responses', { format: `countries_${kind}`, count: totals.total })
     } catch {
       toast('Failed to generate the country report.', 'err')
@@ -152,7 +171,7 @@ export function CountriesDataView({
           <div>
             <h2 className="font-display text-lg font-semibold" style={{ color: INK }}>Submissions by Country</h2>
             <p className="font-body" style={{ fontSize: 12, color: MUTED }}>
-              {totals.countriesActive} countries with activity · {totals.submitted} submitted · {totals.inProgress} in progress
+              {totals.countriesActive} countries with activity · {totals.submitted} submitted · {totals.inProgress} in progress · {totals.notStarted} not started · {totals.total} signed-up users
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -179,7 +198,7 @@ export function CountriesDataView({
             <table className="w-full border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
               <thead>
                 <tr>
-                  {['Country', 'Submitted', 'In Progress', 'Total'].map((h, i) => (
+                  {['Country', 'Submitted', 'In Progress', 'Not Started', 'Total'].map((h, i) => (
                     <th key={h} style={{
                       position: 'sticky', top: 0, zIndex: 1, background: '#fff',
                       padding: '10px 16px', textAlign: i === 0 ? 'left' : 'right',
@@ -197,6 +216,7 @@ export function CountriesDataView({
                     <td style={{ padding: '8px 16px', color: INK }}>{r.country}</td>
                     <td style={{ padding: '8px 16px', textAlign: 'right' }} className="tabular-nums">{r.submitted}</td>
                     <td style={{ padding: '8px 16px', textAlign: 'right', color: r.inProgress ? '#b45309' : undefined }} className="tabular-nums">{r.inProgress}</td>
+                    <td style={{ padding: '8px 16px', textAlign: 'right', color: r.notStarted ? MUTED : undefined }} className="tabular-nums">{r.notStarted}</td>
                     <td style={{ padding: '8px 16px', textAlign: 'right', fontWeight: 700, color: r.total ? 'var(--g1)' : MUTED }} className="tabular-nums">{r.total}</td>
                   </tr>
                 ))}
@@ -206,11 +226,61 @@ export function CountriesDataView({
                   <td style={{ padding: '10px 16px', fontWeight: 700, color: INK }}>Total</td>
                   <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700 }} className="tabular-nums">{totals.submitted}</td>
                   <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700 }} className="tabular-nums">{totals.inProgress}</td>
+                  <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700 }} className="tabular-nums">{totals.notStarted}</td>
                   <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: 'var(--g1)' }} className="tabular-nums">{totals.total}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
+        </div>
+
+        {/* Signed up — not started */}
+        <div className="mt-6">
+          <h3 className="font-display font-semibold mb-1" style={{ fontSize: 15, color: INK }}>
+            Signed up — not started ({notStartedUsers.length})
+          </h3>
+          <p className="font-body mb-3" style={{ fontSize: 12, color: MUTED }}>
+            Accounts created with no submitted or in-progress response{profilesLoaded ? '' : ' — loading…'}. Not-started
+            users usually haven’t reached the Country question, so they aren’t shown on a country row above.
+          </p>
+          {notStartedUsers.length === 0 ? (
+            <p className="font-body" style={{ fontSize: 13, color: MUTED }}>
+              {profilesLoaded ? 'Everyone who signed up has started the survey.' : 'Loading users…'}
+            </p>
+          ) : (
+            <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                <table className="w-full border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      {['Name', 'Email', 'Country', 'Signed up', 'Opened survey?'].map((h) => (
+                        <th key={h} style={{
+                          position: 'sticky', top: 0, background: '#fff', padding: '10px 16px', textAlign: 'left',
+                          color: MUTED, fontWeight: 700, fontSize: 10, textTransform: 'uppercase',
+                          letterSpacing: '0.08em', borderBottom: '1px solid var(--bd)',
+                        }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {notStartedUsers.map((u, i) => (
+                      <tr key={u.email + i} style={{ borderBottom: '1px solid var(--bd)' }}>
+                        <td style={{ padding: '8px 16px', color: INK }}>{u.name}</td>
+                        <td style={{ padding: '8px 16px', color: MUTED }}>{u.email}</td>
+                        <td style={{ padding: '8px 16px' }}>{u.country}</td>
+                        <td style={{ padding: '8px 16px', color: MUTED }} className="tabular-nums">{fmtDate(u.signedUp)}</td>
+                        <td style={{ padding: '8px 16px' }}>
+                          <span style={{ fontSize: 11, color: u.opened ? '#b45309' : MUTED }}>
+                            {u.opened ? 'Opened (page 0)' : 'Never opened'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

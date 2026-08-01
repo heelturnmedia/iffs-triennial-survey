@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Countries Data exports — the per-country submissions table (PDF + XLS) and the
-// country-wise answer report (PDF, with an optional globe snapshot). Lazy-loaded
-// on click so jsPDF stays out of the main bundle.
+// Countries Data exports — the per-country submissions table (PDF + XLS, with a
+// "signed up — not started" list) and the country-wise answer report (PDF, with
+// an optional globe snapshot). Lazy-loaded on click so jsPDF stays out of the
+// main bundle.
 // ─────────────────────────────────────────────────────────────────────────────
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import type { CountryCountRow } from '@/utils/countriesData'
+import type { CountryCountRow, NotStartedUser } from '@/utils/countriesData'
 import { countryTotals } from '@/utils/countriesData'
 import type { CountryPrevalence } from '@/utils/insightsAnalytics'
 
@@ -16,6 +17,7 @@ const WHITE: [number, number, number] = [255, 255, 255]
 const ALT_ROW: [number, number, number] = [247, 249, 247]
 
 const today = () => new Date().toISOString().slice(0, 10)
+const day = (iso: string) => { try { return new Date(iso).toISOString().slice(0, 10) } catch { return '—' } }
 
 function pdfFooter(doc: jsPDF): void {
   const pageW = doc.internal.pageSize.getWidth()
@@ -23,17 +25,19 @@ function pdfFooter(doc: jsPDF): void {
   const pageCount = doc.getNumberOfPages()
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    doc.setTextColor(...GRAY)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRAY)
     doc.text('IFFS 2027 Biennial Survey — Confidential', 40, pageH - 20)
     doc.text(`Page ${p} of ${pageCount}`, pageW - 40, pageH - 20, { align: 'right' })
   }
 }
 
-// ── Section 1: country submissions table ─────────────────────────────────────
+function lastY(doc: jsPDF): number {
+  return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
+}
 
-export function exportCountriesTablePdf(tableRows: CountryCountRow[]): void {
+// ── Section 1: country submissions table + not-started people ────────────────
+
+export function exportCountriesTablePdf(tableRows: CountryCountRow[], notStarted: NotStartedUser[]): void {
   const totals = countryTotals(tableRows)
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const margin = 40
@@ -47,25 +51,45 @@ export function exportCountriesTablePdf(tableRows: CountryCountRow[]): void {
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRAY)
   doc.text(
     `${totals.countriesActive} countries with activity · ${totals.submitted} submitted · ` +
-    `${totals.inProgress} in progress · Generated ${new Date().toUTCString()}`,
+    `${totals.inProgress} in progress · ${totals.notStarted} not started · ${totals.total} signed-up users · ` +
+    `Generated ${new Date().toUTCString()}`,
     margin, y,
   )
   y += 16
 
   autoTable(doc, {
-    head: [['Country', 'Submitted', 'In Progress', 'Total']],
-    body: tableRows.map((r) => [r.country, String(r.submitted), String(r.inProgress), String(r.total)]),
-    foot: [['Total', String(totals.submitted), String(totals.inProgress), String(totals.total)]],
+    head: [['Country', 'Submitted', 'In Progress', 'Not Started', 'Total']],
+    body: tableRows.map((r) => [r.country, String(r.submitted), String(r.inProgress), String(r.notStarted), String(r.total)]),
+    foot: [['Total', String(totals.submitted), String(totals.inProgress), String(totals.notStarted), String(totals.total)]],
     startY: y,
     margin: { left: margin, right: margin },
     styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 4, textColor: DARK },
     headStyles: { fillColor: GREEN, textColor: WHITE, fontStyle: 'bold' },
     footStyles: { fillColor: ALT_ROW, textColor: DARK, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: ALT_ROW },
-    columnStyles: {
-      0: { cellWidth: contentW * 0.55 },
-      1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' },
-    },
+    columnStyles: { 0: { cellWidth: contentW * 0.44 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } },
+    tableWidth: contentW,
+  })
+  y = lastY(doc) + 22
+
+  // ── Signed up — not started ────────────────────────────────────────────────
+  if (y + 60 > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); y = margin }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...GREEN)
+  doc.text(`Signed Up — Not Started (${notStarted.length})`, margin, y); y += 14
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRAY)
+  doc.text('Users who created an account but have no submitted or in-progress response.', margin, y); y += 12
+
+  autoTable(doc, {
+    head: [['Name', 'Email', 'Country', 'Signed up', 'Opened survey?']],
+    body: notStarted.length
+      ? notStarted.map((u) => [u.name, u.email, u.country, day(u.signedUp), u.opened ? 'Opened (page 0)' : 'Never opened'])
+      : [['—', 'No users have signed up without starting.', '', '', '']],
+    startY: y,
+    margin: { left: margin, right: margin },
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 4, textColor: DARK },
+    headStyles: { fillColor: GREEN, textColor: WHITE, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: ALT_ROW },
+    columnStyles: { 1: { cellWidth: contentW * 0.3 } },
     tableWidth: contentW,
   })
 
@@ -73,7 +97,7 @@ export function exportCountriesTablePdf(tableRows: CountryCountRow[]): void {
   doc.save(`iffs-countries-submissions-${today()}.pdf`)
 }
 
-// ── SpreadsheetML helpers (shared shape with exportSurveyReportXls) ───────────
+// ── SpreadsheetML helpers ────────────────────────────────────────────────────
 
 function xmlEsc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -87,18 +111,20 @@ function xlsCell(v: string | number, head = false): string {
 function xlsRow(cells: Array<string | number>, head = false): string {
   return `<Row>${cells.map((c) => xlsCell(c, head)).join('')}</Row>`
 }
-function workbook(sheetName: string, rows: string[], colWidths: number[]): string {
-  const cols = colWidths.map((w) => `<Column ss:Width="${w}"/>`).join('')
+interface Sheet { name: string; rows: string[]; colWidths: number[] }
+function workbook(sheets: Sheet[]): string {
+  const body = sheets.map((s) => {
+    const cols = s.colWidths.map((w) => `<Column ss:Width="${w}"/>`).join('')
+    return `<Worksheet ss:Name="${xmlEsc(s.name)}"><Table>${cols}${s.rows.join('')}</Table></Worksheet>`
+  }).join('')
   return (
     `<?xml version="1.0"?>` +
     `<?mso-application progid="Excel.Sheet"?>` +
     `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"` +
     ` xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">` +
-    `<Styles>` +
-    `<Style ss:ID="head"><Font ss:Bold="1" ss:Color="#FFFFFF"/>` +
-    `<Interior ss:Color="#1D7733" ss:Pattern="Solid"/></Style>` +
-    `</Styles>` +
-    `<Worksheet ss:Name="${xmlEsc(sheetName)}"><Table>${cols}${rows.join('')}</Table></Worksheet>` +
+    `<Styles><Style ss:ID="head"><Font ss:Bold="1" ss:Color="#FFFFFF"/>` +
+    `<Interior ss:Color="#1D7733" ss:Pattern="Solid"/></Style></Styles>` +
+    body +
     `</Workbook>`
   )
 }
@@ -111,18 +137,26 @@ function downloadBlob(content: string, type: string, filename: string): void {
   URL.revokeObjectURL(url)
 }
 
-export function exportCountriesTableXls(tableRows: CountryCountRow[]): void {
+export function exportCountriesTableXls(tableRows: CountryCountRow[], notStarted: NotStartedUser[]): void {
   const totals = countryTotals(tableRows)
-  const rows = [
-    xlsRow(['Country', 'Submitted', 'In Progress', 'Total'], true),
-    ...tableRows.map((r) => xlsRow([r.country, r.submitted, r.inProgress, r.total])),
-    xlsRow(['Total', totals.submitted, totals.inProgress, totals.total], true),
-  ]
-  downloadBlob(
-    workbook('Submissions by Country', rows, [220, 80, 90, 70]),
-    'application/vnd.ms-excel',
-    `iffs-countries-submissions-${today()}.xls`,
-  )
+  const countrySheet: Sheet = {
+    name: 'Submissions by Country',
+    rows: [
+      xlsRow(['Country', 'Submitted', 'In Progress', 'Not Started', 'Total'], true),
+      ...tableRows.map((r) => xlsRow([r.country, r.submitted, r.inProgress, r.notStarted, r.total])),
+      xlsRow(['Total', totals.submitted, totals.inProgress, totals.notStarted, totals.total], true),
+    ],
+    colWidths: [200, 80, 90, 90, 70],
+  }
+  const notStartedSheet: Sheet = {
+    name: 'Signed Up - Not Started',
+    rows: [
+      xlsRow(['Name', 'Email', 'Country', 'Signed up', 'Opened survey?'], true),
+      ...notStarted.map((u) => xlsRow([u.name, u.email, u.country, day(u.signedUp), u.opened ? 'Opened (page 0)' : 'Never opened'])),
+    ],
+    colWidths: [180, 240, 130, 90, 130],
+  }
+  downloadBlob(workbook([countrySheet, notStartedSheet]), 'application/vnd.ms-excel', `iffs-countries-submissions-${today()}.xls`)
 }
 
 // ── Section 2: country-wise answer report (PDF) ──────────────────────────────
@@ -147,7 +181,6 @@ export function exportCountryAnswerPdf(r: CountryAnswerReport): void {
   doc.setFontSize(13); doc.setTextColor(...GREEN)
   doc.text('Answers by Country', margin, y); y += 20
 
-  // Question + selected answer + global share
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...DARK)
   const qLines = doc.splitTextToSize(`${r.sectionName} — ${r.questionTitle}`, contentW)
   doc.text(qLines, margin, y); y += qLines.length * 13 + 2
@@ -159,17 +192,12 @@ export function exportCountryAnswerPdf(r: CountryAnswerReport): void {
   )
   y += 16
 
-  // Globe snapshot
   if (r.mapImage && r.mapImage.width > 0) {
     const w = contentW
     const h = Math.min(w * (r.mapImage.height / r.mapImage.width), 300)
-    try {
-      doc.addImage(r.mapImage.dataUrl, 'PNG', margin, y, w, h)
-      y += h + 14
-    } catch { /* if the canvas capture failed, skip the image */ }
+    try { doc.addImage(r.mapImage.dataUrl, 'PNG', margin, y, w, h); y += h + 14 } catch { /* skip on capture failure */ }
   }
 
-  // Per-country table
   autoTable(doc, {
     head: [['Country', 'Respondents', `Chose "${r.answerLabel}"`, '%']],
     body: r.byCountry.map((c) => [c.name, String(c.n), String(c.count), `${Math.round(c.prevalence * 100)}%`]),
@@ -178,10 +206,7 @@ export function exportCountryAnswerPdf(r: CountryAnswerReport): void {
     styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 4, textColor: DARK },
     headStyles: { fillColor: GREEN, textColor: WHITE, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: ALT_ROW },
-    columnStyles: {
-      0: { cellWidth: contentW * 0.4 },
-      1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' },
-    },
+    columnStyles: { 0: { cellWidth: contentW * 0.4 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' } },
     tableWidth: contentW,
   })
 
