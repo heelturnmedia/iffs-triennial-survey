@@ -25,9 +25,10 @@ import { logActivity } from '@/services/auditService'
 import { SectionResponsesView } from './SectionResponsesView'
 import { InsightsView } from './InsightsView'
 import { DataQualityView } from './DataQualityView'
+import { CountriesDataView } from './CountriesDataView'
 import type { SubmissionRow, MapSubmission, SurveyStatus } from '@/types'
 
-type ReportsTab = 'overview' | 'responses' | 'insights' | 'quality'
+type ReportsTab = 'overview' | 'responses' | 'insights' | 'quality' | 'countries'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -614,6 +615,7 @@ export function ReportsPanel() {
     { id: 'responses', label: 'Section Responses' },
     { id: 'insights',  label: 'Insights' },
     { id: 'quality',   label: 'Data Quality' },
+    { id: 'countries', label: 'Countries Data' },
   ]
 
   return (
@@ -819,6 +821,10 @@ export function ReportsPanel() {
 
       {tab === 'quality' && (
         <DataQualityView submissions={rows} pages={definitionPages} />
+      )}
+
+      {tab === 'countries' && (
+        <CountriesDataView submissions={rows} pages={definitionPages} sectionNames={SECTION_NAMES} />
       )}
     </div>
   )

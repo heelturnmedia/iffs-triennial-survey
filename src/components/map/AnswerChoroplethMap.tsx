@@ -29,6 +29,9 @@ export interface AnswerChoroplethMapProps {
   isoDetail: Map<string, { name: string; n: number; count: number }>
   answerLabel: string
   height?: string | number
+  // Keep the WebGL drawing buffer so the canvas can be captured to a PNG
+  // (used by the Countries Data PDF export). Small memory cost; off by default.
+  preserveDrawingBuffer?: boolean
 }
 
 export function AnswerChoroplethMap({
@@ -36,6 +39,7 @@ export function AnswerChoroplethMap({
   isoDetail,
   answerLabel,
   height = 380,
+  preserveDrawingBuffer = false,
 }: AnswerChoroplethMapProps) {
   const [popup, setPopup] = useState<{ lng: number; lat: number; name: string; pct: number; n: number } | null>(null)
 
@@ -78,6 +82,7 @@ export function AnswerChoroplethMap({
         initialViewState={{ longitude: 20, latitude: 15, zoom: 1.5 }}
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/light-v11"
+        preserveDrawingBuffer={preserveDrawingBuffer}
         interactiveLayerIds={[LAYER_FILL]}
         onMouseMove={onMove}
         onMouseLeave={() => setPopup(null)}
