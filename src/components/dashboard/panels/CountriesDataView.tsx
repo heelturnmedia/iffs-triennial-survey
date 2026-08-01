@@ -194,8 +194,8 @@ export function CountriesDataView({
         </div>
 
         <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ maxHeight: 440, overflowY: 'auto' }}>
-            <table className="w-full border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
+          <div style={{ maxHeight: 440, overflowY: 'auto', overflowX: 'auto' }}>
+            <table className="w-full border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 13, minWidth: 520 }}>
               <thead>
                 <tr>
                   {['Country', 'Submitted', 'In Progress', 'Not Started', 'Total'].map((h, i) => (
@@ -249,8 +249,8 @@ export function CountriesDataView({
             </p>
           ) : (
             <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--bd)', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-                <table className="w-full border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
+              <div style={{ maxHeight: 300, overflowY: 'auto', overflowX: 'auto' }}>
+                <table className="w-full border-collapse" style={{ fontFamily: 'var(--font-body)', fontSize: 13, minWidth: 560 }}>
                   <thead>
                     <tr>
                       {['Name', 'Email', 'Country', 'Signed up', 'Opened survey?'].map((h) => (

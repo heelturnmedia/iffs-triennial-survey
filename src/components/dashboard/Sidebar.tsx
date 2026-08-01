@@ -13,14 +13,17 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { useSurveyStore } from '@/stores/surveyStore'
+import { cn } from '@/utils/cn'
 import type { ActivePanel } from '@/types'
 import { ROLES } from '@/constants'
 
 // ─── Nav item definitions ─────────────────────────────────────────────────────
 
-interface NavItem {
+export interface NavItem {
   id: ActivePanel | 'survey'
   label: string
+  /** Short label for the mobile bottom navigation bar */
+  shortLabel?: string
   Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
   panel?: ActivePanel
   opensSurvey?: boolean
@@ -28,16 +31,16 @@ interface NavItem {
   supervisorPlus?: boolean
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'overview',    label: 'Overview',    Icon: LayoutDashboard, panel: 'overview' },
-  { id: 'survey',      label: 'My Survey',   Icon: ClipboardList,   opensSurvey: true },
-  { id: 'reports',     label: 'Reports',     Icon: BarChart3,       panel: 'reports',     supervisorPlus: true },
+export const NAV_ITEMS: NavItem[] = [
+  { id: 'overview',    label: 'Overview',    shortLabel: 'Overview', Icon: LayoutDashboard, panel: 'overview' },
+  { id: 'survey',      label: 'My Survey',   shortLabel: 'Survey',   Icon: ClipboardList,   opensSurvey: true },
+  { id: 'reports',     label: 'Reports',     shortLabel: 'Reports',  Icon: BarChart3,       panel: 'reports',     supervisorPlus: true },
   { id: 'users',       label: 'Users',       Icon: Users,           panel: 'users',       adminOnly: true },
   { id: 'activity',    label: 'Activity Log',Icon: ScrollText,      panel: 'activity',    adminOnly: true },
   { id: 'survey-mgmt', label: 'Survey Mgmt', Icon: Settings2,       panel: 'survey-mgmt', adminOnly: true },
   { id: 'wa-settings', label: 'WA Settings', Icon: Unplug,          panel: 'wa-settings', adminOnly: true },
   { id: 'app-flow',    label: 'App Flow',    Icon: Workflow,         panel: 'app-flow',    adminOnly: true },
-  { id: 'profile',     label: 'My Profile',  Icon: UserCircle2,       panel: 'profile' },
+  { id: 'profile',     label: 'My Profile',  shortLabel: 'Profile',  Icon: UserCircle2,       panel: 'profile' },
 ]
 
 const ROLE_BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -47,25 +50,18 @@ const ROLE_BADGE_COLORS: Record<string, { bg: string; text: string; border: stri
   user:          { bg: '#f8fafc', text: '#64748b', border: '#e2e8f0' },
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Shared navigation logic ──────────────────────────────────────────────────
+// One source of truth for visibility, active state, the password-recovery lock,
+// and the unsaved-profile-changes confirm — used by both the Sidebar (desktop /
+// drawer) and the MobileBottomNav, so behavior can never drift between the two.
 
-export function Sidebar() {
+export function useDashboardNav() {
   const { profile, isAdmin, canViewReports, signOut, isPasswordRecovery } = useAuthStore()
   const { activePanel, setActivePanel } = useUIStore()
   const profileFormDirty = useUIStore((s) => s.profileFormDirty)
   const openConfirmModal = useUIStore((s) => s.openConfirmModal)
   const setProfileFormDirty = useUIStore((s) => s.setProfileFormDirty)
   const { openModal } = useSurveyStore()
-
-  const role = profile?.role ?? 'user'
-  const initials = profile
-    ? `${profile.first_name?.[0] ?? ''}${profile.last_name?.[0] ?? ''}`.toUpperCase()
-    : '?'
-  const displayName = profile
-    ? `${profile.first_name} ${profile.last_name}`.trim()
-    : ''
-  const roleLabel = ROLES[role]?.label ?? role
-  const badge = ROLE_BADGE_COLORS[role] ?? ROLE_BADGE_COLORS['user']
 
   const isVisible = (item: NavItem): boolean => {
     if (item.adminOnly) return isAdmin()
@@ -78,9 +74,14 @@ export function Sidebar() {
     return activePanel === item.panel
   }
 
-  const handleItemClick = (item: NavItem) => {
+  const isDisabled = (item: NavItem): boolean =>
+    isPasswordRecovery && item.panel !== 'profile'
+
+  /** Navigate to an item. `after` runs once navigation actually happens
+   *  (used to close the mobile drawer). */
+  const handleItemClick = (item: NavItem, after?: () => void) => {
     // During password recovery, only the profile panel is reachable.
-    if (isPasswordRecovery && item.panel !== 'profile') return
+    if (isDisabled(item)) return
 
     const performNavigation = () => {
       if (item.opensSurvey) {
@@ -88,6 +89,7 @@ export function Sidebar() {
       } else if (item.panel) {
         setActivePanel(item.panel)
       }
+      after?.()
     }
 
     // If the user is leaving the profile panel with unsaved changes, confirm.
@@ -108,19 +110,30 @@ export function Sidebar() {
     performNavigation()
   }
 
+  return { profile, isAdmin, isVisible, isActive, isDisabled, handleItemClick, signOut }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+// Fills its parent (the parent decides width): a static column on desktop, or
+// the panel inside the mobile drawer. Same content and behavior in both.
+
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const { profile, isVisible, isActive, isDisabled, handleItemClick, signOut } = useDashboardNav()
+
+  const role = profile?.role ?? 'user'
+  const initials = profile
+    ? `${profile.first_name?.[0] ?? ''}${profile.last_name?.[0] ?? ''}`.toUpperCase()
+    : '?'
+  const displayName = profile
+    ? `${profile.first_name} ${profile.last_name}`.trim()
+    : ''
+  const roleLabel = ROLES[role]?.label ?? role
+  const badge = ROLE_BADGE_COLORS[role] ?? ROLE_BADGE_COLORS['user']
+
   return (
-    <aside
-      className="shrink-0 flex flex-col"
-      style={{
-        width: '232px',
-        height: '100%',
-        background: '#ffffff',
-        borderRight: '1px solid var(--bd)',
-        overflowY: 'auto',
-      }}
-    >
+    <aside className="w-full h-full flex flex-col overflow-y-auto bg-white border-r border-bd">
       {/* ── User profile block ──────────────────────────────────────────── */}
-      <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid var(--bd)' }}>
+      <div className="px-4 pt-5 pb-4 border-b border-bd">
         {/* Avatar */}
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 shrink-0"
@@ -130,69 +143,25 @@ export function Sidebar() {
           }}
           aria-hidden="true"
         >
-          <span
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 13,
-              fontWeight: 700,
-              color: '#fff',
-              letterSpacing: '0.04em',
-            }}
-          >
+          <span className="font-display text-[13px] font-bold text-white tracking-[0.04em]">
             {initials}
           </span>
         </div>
 
         {/* Name */}
-        <p
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 13.5,
-            fontWeight: 700,
-            color: 'var(--f1)',
-            lineHeight: 1.3,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <p className="font-display text-[13.5px] font-bold text-f1 leading-tight truncate">
           {displayName}
         </p>
         {profile?.email && (
-          <p
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 11,
-              color: 'var(--f3)',
-              marginTop: 2,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
+          <p className="font-body text-[11px] text-f3 mt-0.5 truncate">
             {profile.email}
           </p>
         )}
 
         {/* Role badge */}
         <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            marginTop: 8,
-            fontFamily: 'var(--font-body)',
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            paddingLeft: 8,
-            paddingRight: 8,
-            paddingTop: 3,
-            paddingBottom: 3,
-            borderRadius: 99,
-            border: `1px solid ${badge.border}`,
-            background: badge.bg,
-            color: badge.text,
-          }}
+          className="inline-flex items-center mt-2 font-body text-[10px] font-semibold tracking-[0.05em] px-2 py-[3px] rounded-full border"
+          style={{ borderColor: badge.border, background: badge.bg, color: badge.text }}
         >
           {roleLabel}
         </span>
@@ -203,85 +172,50 @@ export function Sidebar() {
         <ul className="space-y-0.5" role="list">
           {NAV_ITEMS.filter(isVisible).map((item) => {
             const active = isActive(item)
-            const disabled = isPasswordRecovery && item.panel !== 'profile'
+            const disabled = isDisabled(item)
             const { Icon } = item
             return (
               <li key={item.id} role="listitem">
                 <button
                   type="button"
-                  onClick={() => handleItemClick(item)}
+                  onClick={() => handleItemClick(item, onNavigate)}
                   disabled={disabled}
                   aria-disabled={disabled || undefined}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150"
-                  style={{
-                    background: active ? 'rgba(29,119,51,0.07)' : 'transparent',
-                    color: active ? 'var(--g1)' : 'var(--f2)',
-                    fontFamily: 'var(--font-body)',
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 400,
-                    cursor: disabled ? 'not-allowed' : 'pointer',
-                    border: 'none',
-                    outline: 'none',
-                    position: 'relative',
-                    opacity: disabled ? 0.4 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!active && !disabled) {
-                      (e.currentTarget as HTMLButtonElement).style.background = 'rgba(29,119,51,0.04)'
-                      ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--f1)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!active && !disabled) {
-                      (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
-                      ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--f2)'
-                    }
-                  }}
                   aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'relative w-full flex items-center gap-2.5 px-3 py-2 min-h-[44px] rounded-xl text-left',
+                    'font-body text-[13px] transition-all duration-150 border-none cursor-pointer',
+                    active
+                      ? 'bg-g1/[0.07] text-g1 font-semibold'
+                      : 'bg-transparent text-f2 font-normal hover:bg-g1/[0.04] hover:text-f1',
+                    disabled && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-f2',
+                  )}
                 >
                   {/* Left active bar */}
                   {active && (
                     <span
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        width: 3,
-                        height: 20,
-                        borderRadius: '0 3px 3px 0',
-                        background: 'var(--g1)',
-                      }}
+                      aria-hidden="true"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-[3px] bg-g1"
                     />
                   )}
 
                   {/* Icon container */}
                   <span
-                    className="flex items-center justify-center shrink-0 transition-all duration-150"
-                    style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: 8,
-                      background: active ? 'rgba(29,119,51,0.12)' : 'transparent',
-                      color: active ? 'var(--g1)' : 'var(--f3)',
-                    }}
+                    className={cn(
+                      'flex items-center justify-center shrink-0 w-[30px] h-[30px] rounded-lg transition-all duration-150',
+                      active ? 'bg-g1/[0.12] text-g1' : 'bg-transparent text-f3',
+                    )}
                   >
                     <Icon size={15} strokeWidth={active ? 2.2 : 1.8} />
                   </span>
 
-                  <span style={{ flex: 1 }}>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
 
                   {/* Active indicator dot */}
                   {active && (
                     <span
-                      style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: '50%',
-                        background: 'var(--g1)',
-                        flexShrink: 0,
-                        opacity: 0.7,
-                      }}
+                      aria-hidden="true"
+                      className="w-[5px] h-[5px] rounded-full bg-g1 shrink-0 opacity-70"
                     />
                   )}
                 </button>
@@ -292,33 +226,13 @@ export function Sidebar() {
       </nav>
 
       {/* ── Sign out ────────────────────────────────────────────────────── */}
-      <div className="px-3 pb-4" style={{ borderTop: '1px solid var(--bd)', paddingTop: 10 }}>
+      <div className="px-3 pb-4 pt-2.5 border-t border-bd">
         <button
           type="button"
           onClick={() => signOut().then(() => { window.location.href = '/' })}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150"
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: 13,
-            fontWeight: 400,
-            color: 'var(--f3)',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(220,38,38,0.05)'
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#dc2626'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
-            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--f3)'
-          }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 min-h-[44px] rounded-xl text-left font-body text-[13px] font-normal text-f3 bg-transparent border-none cursor-pointer transition-all duration-150 hover:bg-red-600/5 hover:text-red-600"
         >
-          <span
-            className="flex items-center justify-center shrink-0"
-            style={{ width: 30, height: 30, borderRadius: 8 }}
-          >
+          <span className="flex items-center justify-center shrink-0 w-[30px] h-[30px] rounded-lg">
             <LogOut size={15} strokeWidth={1.8} />
           </span>
           <span>Sign Out</span>

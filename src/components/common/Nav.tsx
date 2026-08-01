@@ -1,11 +1,12 @@
 // Fixed nav bar, 68px height, glassmorphism background
 // Left: Logo mark (green square "IFFS") + brand name
-// Right (unauthenticated): Home / About / Contact links + "Take Survey →" pill
+// Right (unauthenticated): Home / Contact links + "Take Survey →" pill
 // Right (authenticated): role badge + user name + "Sign Out" button
 
 import { ArrowRight } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import { cn } from '@/utils/cn'
 import type { UserRole } from '@/types'
 
 // ── Role display config ────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ export function Nav() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 flex items-center px-8 border-b"
+      className="fixed top-0 left-0 right-0 flex items-center gap-3 px-4 sm:px-6 md:px-8 border-b"
       style={{
         height: 68,
         zIndex: 800,
@@ -60,35 +61,18 @@ export function Nav() {
       }}
     >
       {/* ── Brand ─────────────────────────────────────────────────────── */}
-      <Link to="/" className="flex items-center gap-3 no-underline shrink-0">
+      <Link to="/" className="flex items-center gap-2.5 sm:gap-3 no-underline shrink min-w-0">
         <img
           src="/iffs-logo.png"
           alt="IFFS"
-          className="w-9 h-9 object-contain shrink-0"
+          className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
         />
-        <div className="flex flex-col leading-none">
-          <span
-            className="uppercase"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: '0.14em',
-              color: 'var(--f1)',
-            }}
-          >
+        <div className="flex flex-col leading-none min-w-0">
+          <span className="font-display uppercase text-[11px] sm:text-[12px] font-bold tracking-[0.14em] text-f1 truncate">
             IFFS BIENNIAL{' '}
-            <em style={{ fontStyle: 'normal', color: 'var(--g1)' }}>SURVEY</em>
+            <em className="not-italic text-g1">SURVEY</em>
           </span>
-          <span
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 10,
-              color: 'var(--f3)',
-              letterSpacing: '0.02em',
-              marginTop: 2,
-            }}
-          >
+          <span className="hidden md:block font-body text-[10px] text-f3 tracking-[0.02em] mt-0.5">
             (Previously known as IFFS Triennial Survey)
           </span>
         </div>
@@ -99,7 +83,7 @@ export function Nav() {
 
       {/* ── Unauthenticated ───────────────────────────────────────────── */}
       {!user && (
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6 shrink-0">
           {/* Nav links */}
           <div className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map(({ label, href }) => {
@@ -108,23 +92,10 @@ export function Nav() {
                 <Link
                   key={label}
                   to={href}
-                  className="no-underline rounded-lg transition-colors"
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    fontSize: 15,
-                    color: isActive ? 'var(--f1)' : 'var(--f3)',
-                    paddingLeft: 14,
-                    paddingRight: 14,
-                    paddingTop: 8,
-                    paddingBottom: 8,
-                  }}
-                  onMouseOver={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.color = 'var(--f1)'
-                  }}
-                  onMouseOut={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.color =
-                      isActive ? 'var(--f1)' : 'var(--f3)'
-                  }}
+                  className={cn(
+                    'no-underline rounded-lg font-body text-[15px] px-3.5 py-2 transition-colors hover:text-f1',
+                    isActive ? 'text-f1' : 'text-f3',
+                  )}
                 >
                   {label}
                 </Link>
@@ -135,26 +106,8 @@ export function Nav() {
           {/* CTA pill — nav-pill style */}
           <Link
             to="/login"
-            className="no-underline flex items-center gap-1.5 rounded-full uppercase transition-all"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              background: 'var(--g1)',
-              color: '#fff',
-              paddingLeft: 20,
-              paddingRight: 20,
-              paddingTop: 8,
-              paddingBottom: 8,
-              boxShadow: 'var(--shadow-green-sm)',
-            }}
-            onMouseOver={e => {
-              (e.currentTarget as HTMLAnchorElement).style.background = 'var(--g2)'
-            }}
-            onMouseOut={e => {
-              (e.currentTarget as HTMLAnchorElement).style.background = 'var(--g1)'
-            }}
+            className="no-underline inline-flex items-center gap-1.5 rounded-full uppercase font-display text-[11px] sm:text-[12px] font-bold tracking-[0.1em] text-white bg-g1 hover:bg-g2 px-4 sm:px-5 min-h-[40px] transition-colors"
+            style={{ boxShadow: 'var(--shadow-green-sm)' }}
           >
             Take Survey
             <ArrowRight size={13} strokeWidth={2.2} aria-hidden="true" />
@@ -164,36 +117,24 @@ export function Nav() {
 
       {/* ── Authenticated ─────────────────────────────────────────────── */}
       {user && (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
           {/* Role badge */}
           <span
-            className={`hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${ROLE_BADGE_CLASSES[role]}`}
-            style={{ fontFamily: 'var(--font-body)', letterSpacing: '0.03em' }}
+            className={cn(
+              'hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold font-body tracking-[0.03em]',
+              ROLE_BADGE_CLASSES[role],
+            )}
           >
             {ROLE_LABELS[role]}
           </span>
 
-          {/* User name + email */}
-          <div className="flex flex-col items-end leading-none">
-            <span
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--f1)',
-              }}
-            >
+          {/* User name + email — name from md up, email from lg up */}
+          <div className="hidden md:flex flex-col items-end leading-none">
+            <span className="font-body text-[13px] font-semibold text-f1">
               {displayName}
             </span>
             {profile && (
-              <span
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: 11,
-                  color: 'var(--f3)',
-                  marginTop: 2,
-                }}
-              >
+              <span className="hidden lg:block font-body text-[11px] text-f3 mt-0.5">
                 {user.email}
               </span>
             )}
@@ -203,34 +144,7 @@ export function Nav() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="rounded-full uppercase border transition-all"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.14em',
-              paddingLeft: 16,
-              paddingRight: 16,
-              paddingTop: 8,
-              paddingBottom: 8,
-              borderWidth: '1.5px',
-              borderColor: 'var(--bd2)',
-              color: 'var(--f2)',
-              background: 'transparent',
-              cursor: 'pointer',
-            }}
-            onMouseOver={e => {
-              const btn = e.currentTarget as HTMLButtonElement
-              btn.style.borderColor = 'var(--g1)'
-              btn.style.color       = 'var(--g1)'
-              btn.style.background  = 'var(--g3)'
-            }}
-            onMouseOut={e => {
-              const btn = e.currentTarget as HTMLButtonElement
-              btn.style.borderColor = 'var(--bd2)'
-              btn.style.color       = 'var(--f2)'
-              btn.style.background  = 'transparent'
-            }}
+            className="rounded-full uppercase font-display text-[10px] font-bold tracking-[0.14em] px-4 min-h-[40px] border-[1.5px] border-bd2 text-f2 bg-transparent cursor-pointer transition-colors hover:border-g1 hover:text-g1 hover:bg-g3"
           >
             Sign Out
           </button>

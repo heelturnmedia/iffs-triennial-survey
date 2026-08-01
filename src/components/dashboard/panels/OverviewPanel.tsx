@@ -139,19 +139,8 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
         <button
           type="button"
           onClick={onOpen}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase text-white transition-all w-fit"
-          style={{
-            background: 'var(--g1)',
-            boxShadow: '0 4px 12px rgba(29,119,51,0.25)',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g2)'
-            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g1)'
-            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
-          }}
+          className="inline-flex items-center gap-2 px-5 min-h-[44px] rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase text-white bg-g1 hover:bg-g2 hover:-translate-y-px transition-all w-fit cursor-pointer"
+          style={{ boxShadow: '0 4px 12px rgba(29,119,51,0.25)' }}
         >
           Begin Survey
           <ArrowRight size={13} strokeWidth={2.2} aria-hidden="true" />
@@ -217,19 +206,8 @@ function SurveyCard({ pageNo, status, savedAt, onOpen }: SurveyCardProps) {
       <button
         type="button"
         onClick={onOpen}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase text-white transition-all w-fit"
-        style={{
-          background: 'var(--g1)',
-          boxShadow: '0 4px 12px rgba(29,119,51,0.25)',
-        }}
-        onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g2)'
-          ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
-        }}
-        onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--g1)'
-          ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
-        }}
+        className="inline-flex items-center gap-2 px-5 min-h-[44px] rounded-full font-display text-[11px] font-bold tracking-[0.12em] uppercase text-white bg-g1 hover:bg-g2 hover:-translate-y-px transition-all w-fit cursor-pointer"
+        style={{ boxShadow: '0 4px 12px rgba(29,119,51,0.25)' }}
       >
         Continue Survey
         <ArrowRight size={13} strokeWidth={2.2} aria-hidden="true" />
