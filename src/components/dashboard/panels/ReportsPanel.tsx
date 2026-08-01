@@ -721,7 +721,7 @@ export function ReportsPanel() {
 
       {/* ── Tabs ───────────────────────────────────────────────────────────── */}
       <div
-        className="flex gap-1 mb-6 p-1 rounded-xl"
+        className="flex gap-1 mb-6 p-1 rounded-xl max-w-full overflow-x-auto"
         style={{ background: '#f0f4f1', border: '1px solid var(--bd)', width: 'fit-content' }}
         role="tablist"
       >
@@ -732,7 +732,7 @@ export function ReportsPanel() {
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className="font-body text-[12px] font-semibold px-4 py-1.5 rounded-lg transition-all"
+            className="font-body text-[12px] font-semibold px-4 py-1.5 rounded-lg transition-all shrink-0 whitespace-nowrap min-h-[36px]"
             style={
               tab === t.id
                 ? { background: '#fff', color: '#0e5921', boxShadow: 'var(--shadow-sm)', border: '1px solid #c8d9cc' }

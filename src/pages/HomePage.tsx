@@ -1,11 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // HomePage — IFFS 2027 Biennial Survey · Marketing Landing Page
+// Entrance + scroll choreography via GSAP (reduced-motion aware).
 // ─────────────────────────────────────────────────────────────────────────────
+import { useLayoutEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useAuthStore } from '@/stores/authStore'
 import { Nav }    from '@/components/common/Nav'
 import { Footer } from '@/components/common/Footer'
 import { Shield, FileText, CheckCircle2, CalendarDays, type LucideIcon } from 'lucide-react'
+
+gsap.registerPlugin(ScrollTrigger)
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StatItem {
@@ -59,27 +65,90 @@ export default function HomePage() {
   const navigate   = useNavigate()
   const { user }   = useAuthStore()
   const isLoggedIn = Boolean(user)
+  const rootRef    = useRef<HTMLDivElement>(null)
 
   const handlePrimaryCTA = () => navigate(isLoggedIn ? '/dashboard' : '/login')
 
+  // ── GSAP choreography ──────────────────────────────────────────────────────
+  // One orchestrated hero timeline + scroll-triggered reveals. Users with
+  // prefers-reduced-motion get the page fully visible with no motion at all.
+  useLayoutEffect(() => {
+    const mm = gsap.matchMedia(rootRef)
+
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      // Hero entrance — left column cascades, right panel answers.
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out', duration: 0.8 } })
+      tl.from('[data-hero="badge"]',    { y: 24, autoAlpha: 0, duration: 0.55 })
+        .from('[data-hero="title"]',    { y: 42, autoAlpha: 0 }, '-=0.3')
+        .from('[data-hero="copy"]',     { y: 24, autoAlpha: 0, duration: 0.6 }, '-=0.5')
+        .from('[data-hero="cta"]',      { y: 18, autoAlpha: 0, duration: 0.55 }, '-=0.42')
+        .from('[data-hero="deadline"]', { y: 12, autoAlpha: 0, duration: 0.5 }, '-=0.4')
+        .from('[data-hero="card"]',     { y: 34, autoAlpha: 0, scale: 0.95, duration: 0.9, ease: 'power2.out' }, 0.35)
+        .from('[data-hero="stat-row"]', { x: 26, autoAlpha: 0, stagger: 0.09, duration: 0.55 }, 0.55)
+
+      // Ambient float on the countries card (takes over after entrance).
+      gsap.to('[data-hero="card"]', {
+        y: -8,
+        duration: 3.2,
+        ease: 'sine.inOut',
+        yoyo: true,
+        repeat: -1,
+        delay: 1.5,
+      })
+
+      // Watermark "26" drifts as you scroll — quiet depth cue.
+      gsap.to('[data-hero="watermark"]', {
+        y: 90,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '[data-section="hero"]',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 0.8,
+        },
+      })
+
+      // Features — header first, then the three cards in sequence.
+      gsap.from('[data-reveal="feature-head"]', {
+        y: 30,
+        autoAlpha: 0,
+        duration: 0.7,
+        ease: 'power3.out',
+        scrollTrigger: { trigger: '[data-section="features"]', start: 'top 78%' },
+      })
+      gsap.from('[data-reveal="feature-card"]', {
+        y: 40,
+        autoAlpha: 0,
+        stagger: 0.12,
+        duration: 0.7,
+        ease: 'power3.out',
+        scrollTrigger: { trigger: '[data-reveal="feature-grid"]', start: 'top 80%' },
+      })
+    })
+
+    return () => mm.revert()
+  }, [])
+
   return (
-    <div className="min-h-screen bg-s1 font-body" style={{ paddingTop: '68px' }}>
+    <div ref={rootRef} className="min-h-screen bg-s1 font-body" style={{ paddingTop: '68px' }}>
       <Nav />
 
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section
+        data-section="hero"
         className="relative grid grid-cols-1 lg:grid-cols-2 min-h-[calc(100vh-68px)]"
         aria-label="Hero section"
       >
         {/* ── Left — copy ─────────────────────────────────────────────────── */}
-        <div className="relative flex flex-col justify-center px-10 py-20 lg:px-16 xl:px-24 overflow-hidden">
+        <div className="relative flex flex-col justify-center px-6 py-16 sm:px-10 sm:py-20 lg:px-16 xl:px-24 overflow-hidden">
 
           {/* Watermark "26" */}
           <span
+            data-hero="watermark"
             aria-hidden="true"
             className="pointer-events-none select-none absolute left-[-20px] top-1/2 -translate-y-1/2 font-display font-light leading-none"
             style={{
-              fontSize:      '300px',
+              fontSize:      'clamp(180px, 28vw, 300px)',
               color:         'rgba(29,119,51,0.055)',
               letterSpacing: '-0.04em',
               zIndex:        0,
@@ -93,12 +162,11 @@ export default function HomePage() {
 
             {/* Badge */}
             <div
-              className="animate-fade-slide-up inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border"
+              data-hero="badge"
+              className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border"
               style={{
                 borderColor:     'rgba(29,119,51,0.25)',
                 backgroundColor: 'rgba(232,245,236,0.7)',
-                opacity:         0,
-                animationDelay:  '0.05s',
               }}
             >
               <span className="relative flex h-2.5 w-2.5">
@@ -121,12 +189,11 @@ export default function HomePage() {
 
             {/* H1 */}
             <h1
-              className="animate-fade-slide-up font-display font-light leading-[1.06] mb-6"
+              data-hero="title"
+              className="font-display font-light leading-[1.06] mb-6"
               style={{
-                fontSize:       'clamp(44px, 5.5vw, 76px)',
-                color:          '#0d1117',
-                opacity:        0,
-                animationDelay: '0.12s',
+                fontSize: 'clamp(40px, 5.5vw, 76px)',
+                color:    '#0d1117',
               }}
             >
               Shaping the{' '}
@@ -147,13 +214,9 @@ export default function HomePage() {
 
             {/* Description */}
             <p
-              className="animate-fade-slide-up font-body text-lg leading-relaxed mb-10"
-              style={{
-                color:          '#3d4a52',
-                maxWidth:       '480px',
-                opacity:        0,
-                animationDelay: '0.22s',
-              }}
+              data-hero="copy"
+              className="font-body text-lg leading-relaxed mb-10"
+              style={{ color: '#3d4a52', maxWidth: '480px' }}
             >
               The International Federation of Fertility Societies 2027 Biennial
               Survey collects global data on ART infrastructure, regulation,
@@ -161,25 +224,13 @@ export default function HomePage() {
             </p>
 
             {/* CTA row */}
-            <div
-              className="animate-fade-slide-up flex flex-wrap gap-4"
-              style={{ opacity: 0, animationDelay: '0.32s' }}
-            >
+            <div data-hero="cta" className="flex flex-wrap gap-4">
               {/* Primary CTA */}
               <button
                 type="button"
                 onClick={handlePrimaryCTA}
-                className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-hidden"
-                style={{
-                  backgroundColor: '#1d7733',
-                  boxShadow:       '0 8px 32px rgba(29,119,51,0.35)',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0e5921'
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1d7733'
-                }}
+                className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 min-h-[52px] rounded-full text-white bg-g1 hover:bg-g2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                style={{ boxShadow: '0 8px 32px rgba(29,119,51,0.35)' }}
               >
                 {isLoggedIn ? 'Go to Dashboard' : 'Take the Survey'}
                 <span aria-hidden="true">→</span>
@@ -190,22 +241,15 @@ export default function HomePage() {
                   type="button"
                   aria-label="Learn more about the survey features"
                   onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-hidden"
-                  style={{ border: '1px solid rgba(29,119,51,0.45)', color: '#1d7733', backgroundColor: 'transparent' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(29,119,51,0.06)' }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent' }}
+                  className="inline-flex items-center gap-2 font-display text-[13px] font-bold tracking-[0.12em] uppercase px-8 py-4 min-h-[52px] rounded-full text-g1 bg-transparent border border-g1/45 hover:bg-g1/[0.06] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 >
                   Learn More <span aria-hidden="true">↓</span>
                 </button>
               )}
-
             </div>
 
             {/* Deadline badge */}
-            <div
-              className="animate-fade-slide-up mt-2"
-              style={{ opacity: 0, animationDelay: '0.42s' }}
-            >
+            <div data-hero="deadline" className="mt-6">
               <div
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg"
                 style={{
@@ -228,7 +272,7 @@ export default function HomePage() {
 
         {/* ── Right — dark green panel ─────────────────────────────────────── */}
         <div
-          className="relative flex flex-col overflow-hidden min-h-[480px] lg:min-h-0"
+          className="relative flex flex-col overflow-hidden min-h-[440px] lg:min-h-0"
           style={{ backgroundColor: '#0e5921' }}
         >
           {/* Animated rings */}
@@ -265,7 +309,8 @@ export default function HomePage() {
 
           {/* Floating countries card */}
           <div
-            className="animate-float-card absolute top-8 left-8 z-10 rounded-2xl p-5"
+            data-hero="card"
+            className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10 rounded-2xl p-5"
             style={{
               backgroundColor: 'rgba(255,255,255,0.08)',
               backdropFilter:  'blur(12px)',
@@ -294,7 +339,7 @@ export default function HomePage() {
           </div>
 
           {/* Stats stack */}
-          <div className="mt-auto z-10 relative px-8 pb-8 pt-4">
+          <div className="mt-auto z-10 relative px-5 pb-6 pt-4 sm:px-8 sm:pb-8">
             <div
               className="rounded-2xl overflow-hidden"
               style={{
@@ -306,7 +351,8 @@ export default function HomePage() {
               {HERO_STATS.map((stat, idx) => (
                 <div
                   key={stat.label}
-                  className="flex items-center gap-4 px-6 py-4"
+                  data-hero="stat-row"
+                  className="flex items-center gap-4 px-5 sm:px-6 py-4"
                   style={{
                     borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.07)' : undefined,
                   }}
@@ -342,14 +388,15 @@ export default function HomePage() {
       {/* ── FEATURES ──────────────────────────────────────────────────────── */}
       <section
         id="features"
-        className="py-24 px-6 scroll-mt-[68px]"
+        data-section="features"
+        className="py-20 sm:py-24 px-6 scroll-mt-[68px]"
         style={{ backgroundColor: '#ffffff' }}
         aria-label="Features"
       >
         <div className="max-w-6xl mx-auto">
 
           {/* Section header */}
-          <div className="text-center mb-16">
+          <div data-reveal="feature-head" className="text-center mb-14 sm:mb-16">
             <span
               className="inline-block font-display text-[11px] font-bold tracking-[0.22em] uppercase mb-4 px-4 py-2 rounded-full"
               style={{ color: '#1d7733', backgroundColor: '#e8f5ec' }}
@@ -367,41 +414,20 @@ export default function HomePage() {
           </div>
 
           {/* Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div data-reveal="feature-grid" className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {FEATURE_CARDS.map((card) => (
               <div
                 key={card.number}
-                className="relative rounded-2xl p-8 transition-all duration-300 cursor-default"
-                style={{ border: '1px solid #e2ebe4', backgroundColor: '#f7f9f7' }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLDivElement
-                  el.style.borderColor     = 'rgba(29,119,51,0.3)'
-                  el.style.backgroundColor = '#ffffff'
-                  el.style.boxShadow       = '0 8px 32px rgba(29,119,51,0.12)'
-                  el.style.transform       = 'translateY(-4px)'
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLDivElement
-                  el.style.borderColor     = '#e2ebe4'
-                  el.style.backgroundColor = '#f7f9f7'
-                  el.style.boxShadow       = 'none'
-                  el.style.transform       = 'translateY(0)'
-                }}
+                data-reveal="feature-card"
+                className="group relative rounded-2xl p-8 border border-bd bg-s1 transition-all duration-300 cursor-default hover:bg-white hover:border-g1/30 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(29,119,51,0.12)]"
               >
                 {/* Icon tile */}
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    backgroundColor: '#e8f5ec',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <card.icon size={22} color="#1d7733" strokeWidth={2} />
+                <div className="w-11 h-11 rounded-xl mb-4 flex items-center justify-center bg-g3 transition-colors duration-300 group-hover:bg-g1">
+                  <card.icon
+                    size={22}
+                    strokeWidth={2}
+                    className="text-g1 transition-colors duration-300 group-hover:text-white"
+                  />
                 </div>
                 <div
                   className="font-display font-light mb-5 leading-none"
