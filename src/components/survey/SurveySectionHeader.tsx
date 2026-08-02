@@ -43,10 +43,9 @@ export function SurveySectionHeader({ survey, totalPages, currentPage }: Props) 
 
   return (
     <div
-      className="sticky top-0 z-10 bg-white border-b"
+      className="sticky top-0 z-10 bg-white border-b px-4 pt-5 pb-4 sm:px-6 md:px-9 md:pt-6 md:pb-5"
       style={{
         borderColor: 'var(--bd)',
-        padding: '24px 36px 20px',
         boxShadow: '0 2px 8px rgba(13,17,23,0.05)',
       }}
     >
@@ -69,9 +68,11 @@ export function SurveySectionHeader({ survey, totalPages, currentPage }: Props) 
         />
       </div>
 
-      <div className="flex items-start justify-between gap-4">
+      {/* Below md the meta column sits above the title as a row, so the title
+          gets the full width instead of being squeezed into a narrow column. */}
+      <div className="flex flex-col-reverse gap-2 md:flex-row md:items-start md:justify-between md:gap-4">
         {/* Left: eyebrow → title → description */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="flex-1 min-w-0">
           {/* Eyebrow */}
           <div className="flex items-center gap-2.5" style={{ marginBottom: 8 }}>
             <span
@@ -100,9 +101,9 @@ export function SurveySectionHeader({ survey, totalPages, currentPage }: Props) 
 
           {/* Title */}
           <h2
+            className="text-[18px] md:text-[21px]"
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: 21,
               fontWeight: 700,
               color: 'var(--f1)',
               lineHeight: 1.25,
@@ -130,7 +131,7 @@ export function SurveySectionHeader({ survey, totalPages, currentPage }: Props) 
         </div>
 
         {/* Right: question count badge + autosave status */}
-        <div className="flex flex-col items-end gap-2 shrink-0">
+        <div className="flex flex-row items-center gap-2 shrink-0 md:flex-col md:items-end">
           {/* Question count badge */}
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 border"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ListOrdered } from 'lucide-react'
 import { Model } from 'survey-core'
 import { Survey } from 'survey-react-ui'
 import 'survey-core/survey-core.min.css'
@@ -35,6 +36,8 @@ export function SurveyModal() {
   const [surveyModel, setSurveyModel]   = useState<Model | null>(null)
   const [currentPage, setCurrentPage]   = useState(0)
   const [totalPages, setTotalPages]     = useState(20)
+  // Sections drawer (mobile only — the rail is always visible from lg up).
+  const [sectionsOpen, setSectionsOpen] = useState(false)
 
   const contentAreaRef    = useRef<HTMLDivElement>(null)
   const autoSaveTimerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -419,20 +422,43 @@ export function SurveyModal() {
       >
         {/* ── TOP BAR ───────────────────────────────────────────────────── */}
         <div
-          className="shrink-0 flex items-center justify-between px-8 border-b"
+          className="shrink-0 flex items-center justify-between gap-2 px-4 sm:px-8 border-b"
           style={{ height: 62, background: '#000', borderColor: 'rgba(255,255,255,0.06)' }}
         >
-          {/* Left: logo + title + save status */}
-          <div className="flex items-center gap-3.5">
+          {/* Left: sections toggle (mobile) + logo + title + save status */}
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            {/* Sections drawer toggle — mobile only; the rail is static on lg+ */}
+            <button
+              type="button"
+              onClick={() => setSectionsOpen((v) => !v)}
+              className="lg:hidden shrink-0 flex items-center gap-1.5 h-9 px-2.5 rounded-lg transition-colors hover:bg-white/15"
+              style={{
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.85)',
+              }}
+              aria-expanded={sectionsOpen}
+              aria-label={`${sectionsOpen ? 'Hide' : 'Show'} survey sections — currently on section ${currentPage + 1} of ${totalPages}`}
+              title="Survey sections"
+            >
+              <ListOrdered size={16} strokeWidth={2} aria-hidden="true" />
+              <span
+                className="tabular-nums"
+                style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}
+              >
+                {currentPage + 1}/{totalPages}
+              </span>
+            </button>
+
             <img
               src="/iffs-logo.png"
               alt="IFFS logo"
-              className="w-9 h-9 rounded-full shrink-0 object-contain"
+              className="hidden sm:block w-9 h-9 rounded-full shrink-0 object-contain"
               style={{ background: '#fff', padding: 2 }}
             />
-            <div>
+            <div className="min-w-0">
               <div
-                className="uppercase"
+                className="uppercase truncate"
                 style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: 11,
@@ -444,6 +470,7 @@ export function SurveyModal() {
                 2027 Biennial Survey
               </div>
               <div
+                className="truncate"
                 style={{
                   fontFamily: 'var(--font-body)',
                   fontSize: 11,
@@ -549,6 +576,8 @@ export function SurveyModal() {
               survey={surveyModel}
               totalPages={totalPages}
               currentPage={currentPage}
+              open={sectionsOpen}
+              onClose={() => setSectionsOpen(false)}
               onPageChange={(page) => {
                 if (surveyModel) surveyModel.currentPageNo = page
               }}
@@ -571,7 +600,7 @@ export function SurveyModal() {
             )}
 
             {/* Survey form */}
-            <div id="s-host" style={{ padding: '24px 36px 16px' }}>
+            <div id="s-host" className="px-4 pt-5 pb-4 sm:px-6 md:px-9 md:pt-6">
               {surveyModel && <Survey model={surveyModel} />}
             </div>
           </div>
