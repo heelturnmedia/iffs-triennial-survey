@@ -98,7 +98,12 @@ export function ActivityPanel() {
     .filter((r) => filter === 'all' || SENSITIVE.has(r.action))
     .filter((r) => roleFilter === 'all' || (r.actor?.role ?? 'user') === roleFilter)
 
-  const deletionsCount = rows.filter((r) => r.action === 'delete_user').length
+  // Deletion callout: only while the role dropdown is on Admins. Deleting a
+  // user is an admin-only action, so under any other role filter the callout
+  // was advertising a count whose highlighted rows weren't in the table. Count
+  // from the filtered set so the number always matches what's shown below.
+  const showDeletionCallout = roleFilter === 'admin'
+  const deletionsCount = filtered.filter((r) => r.action === 'delete_user').length
 
   return (
     <div className="p-6 md:p-8 max-w-[1100px]">
@@ -139,8 +144,8 @@ export function ActivityPanel() {
         </div>
       </div>
 
-      {/* Deletion callout */}
-      {deletionsCount > 0 && (
+      {/* Deletion callout — Admins filter only */}
+      {showDeletionCallout && deletionsCount > 0 && (
         <div
           className="mb-5 flex items-center gap-2.5 rounded-xl px-4 py-3"
           style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
