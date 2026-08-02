@@ -1,7 +1,8 @@
 import { useState, useCallback, useMemo } from 'react'
 import ReactMap, { Source, Layer, Popup, NavigationControl } from 'react-map-gl'
-import type { MapLayerMouseEvent } from 'react-map-gl'
+import type { MapLayerMouseEvent, MapEvent } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { GREEN_RAMP, NO_RESPONSE_FILL, applyWaterTheme } from './mapTheme'
 
 declare const window: Window & { __env?: Record<string, string> }
 const MAPBOX_TOKEN = (
@@ -13,10 +14,12 @@ const MAPBOX_TOKEN = (
 const SOURCE_URL   = 'mapbox://mapbox.country-boundaries-v1'
 const SOURCE_LAYER = 'country_boundaries'
 const LAYER_FILL   = 'iffs-answer-fills'
-const NO_DATA      = 'rgba(0,0,0,0)'
+const NO_DATA      = NO_RESPONSE_FILL
 
 // Sequential single-hue ramp (light → dark green) — magnitude, per dataviz.
-const RAMP = ['#e8f5ec', '#b7dcc1', '#7bc194', '#3f9e63', '#1d7733', '#0e5921']
+// Shared with the Overview choropleth so the darkest green is the brand green
+// on every map in the app.
+const RAMP = GREEN_RAMP
 function rampColor(t: number): string {
   const i = Math.min(RAMP.length - 1, Math.max(0, Math.round(t * (RAMP.length - 1))))
   return RAMP[i]
@@ -60,11 +63,34 @@ export function AnswerChoroplethMap({
   // when sweeping between adjacent countries).
   const onMove = useCallback((e: MapLayerMouseEvent) => {
     const iso = (e.features?.[0]?.properties?.iso_3166_1 as string | undefined)?.toUpperCase()
-    if (!iso) { setPopup(null); return }
+    if (!iso) { setPopup((p) => (p === null ? p : null)); return }
     const d = isoDetail.get(iso)
-    if (!d) { setPopup(null); return }
-    setPopup({ lng: e.lngLat.lng, lat: e.lngLat.lat, name: d.name, pct: d.n ? d.count / d.n : 0, n: d.n })
+    if (!d) { setPopup((p) => (p === null ? p : null)); return }
+    const pct = d.n ? d.count / d.n : 0
+    // Re-use the previous object when the country hasn't changed so React can
+    // skip the re-render while the cursor sweeps within one country.
+    setPopup((prev) =>
+      prev && prev.name === d.name && prev.pct === pct && prev.n === d.n
+        ? prev
+        : { lng: e.lngLat.lng, lat: e.lngLat.lat, name: d.name, pct, n: d.n },
+    )
   }, [isoDetail])
+
+  const onLoad = useCallback((e: MapEvent) => {
+    applyWaterTheme(e.target)
+  }, [])
+
+  // Memoised — otherwise react-map-gl diffs a new paint object (with a match
+  // expression covering every country) on every hover-driven re-render.
+  const fillPaint = useMemo(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    () => ({ 'fill-color': fillExpr as any, 'fill-opacity': 0.85 }),
+    [fillExpr],
+  )
+  const linePaint = useMemo(
+    () => ({ 'line-color': 'rgba(255,255,255,0.4)', 'line-width': 0.5 }),
+    [],
+  )
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -84,6 +110,7 @@ export function AnswerChoroplethMap({
         mapStyle="mapbox://styles/mapbox/light-v11"
         preserveDrawingBuffer={preserveDrawingBuffer}
         interactiveLayerIds={[LAYER_FILL]}
+        onLoad={onLoad}
         onMouseMove={onMove}
         onMouseLeave={() => setPopup(null)}
         cursor={popup ? 'pointer' : 'default'}
@@ -93,11 +120,10 @@ export function AnswerChoroplethMap({
             id={LAYER_FILL}
             type="fill"
             source-layer={SOURCE_LAYER}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            paint={{ 'fill-color': fillExpr as any, 'fill-opacity': 0.85 }}
+            paint={fillPaint}
           />
           <Layer id="iffs-answer-lines" type="line" source-layer={SOURCE_LAYER}
-            paint={{ 'line-color': 'rgba(255,255,255,0.4)', 'line-width': 0.5 }} />
+            paint={linePaint} />
         </Source>
         <NavigationControl position="top-right" showCompass={false} />
         {popup && (
