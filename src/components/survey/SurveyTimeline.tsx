@@ -1,5 +1,8 @@
-// Left sidebar: 240px wide, black bg, overflow-y auto
-// "Survey Sections" label at top
+// Section rail. On lg+ it is a static 240px column in the modal body; below
+// lg it becomes an overlay drawer (a fixed 240px column would otherwise eat
+// ~64% of a 375px screen and crush the question area). The drawer is toggled
+// from the survey top bar and closes on scrim tap, Escape, or section select.
+//
 // Each section:
 //   - Vertical connector line between dots
 //   - Dot (16px circle):
@@ -13,15 +16,19 @@
 import { useEffect, useRef } from 'react'
 import type { Model } from 'survey-core'
 import { SURVEY_PAGES_META } from '@/data/survey-definition'
+import { cn } from '@/utils/cn'
 
 interface Props {
   survey: Model
   totalPages: number
   currentPage: number
   onPageChange?: (page: number) => void
+  /** Drawer open state — mobile only; the rail is always shown on lg+. */
+  open?: boolean
+  onClose?: () => void
 }
 
-export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange }: Props) {
+export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange, open = false, onClose }: Props) {
   const activeItemRef = useRef<HTMLButtonElement | HTMLDivElement | null>(null)
 
   // Scroll active item into view when currentPage changes
@@ -31,6 +38,14 @@ export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange }
     }
   }, [currentPage])
 
+  // Escape closes the mobile drawer.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose?.() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   const handleClick = (index: number) => {
     if (index < currentPage) {
       if (onPageChange) {
@@ -38,34 +53,58 @@ export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange }
       } else {
         survey.currentPageNo = index
       }
+      onClose?.() // collapse the drawer once a section is chosen (mobile)
     }
   }
 
   return (
-    <aside
-      style={{
-        flexShrink: 0,
-        width: 240,
-        background: '#000',
-        overflowY: 'auto',
-        minHeight: 0,
-      }}
-    >
-      <div style={{ padding: '24px 20px 24px' }}>
-        {/* "Survey Sections" label */}
-        <div
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: 9,
-            fontWeight: 700,
-            letterSpacing: '0.22em',
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.28)',
-            marginBottom: 20,
-          }}
-        >
-          Survey Sections
-        </div>
+    <>
+      {/* Scrim — mobile only */}
+      <div
+        className={cn(
+          'lg:hidden fixed inset-0 top-[62px] z-30 bg-black/50 transition-opacity duration-200',
+          open ? 'opacity-100' : 'opacity-0 pointer-events-none',
+        )}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <aside
+        className={cn(
+          'bg-black overflow-y-auto min-h-0 shrink-0',
+          // Below lg: overlay drawer beneath the 62px top bar.
+          'fixed top-[62px] bottom-0 left-0 z-40 w-[264px] max-w-[82vw]',
+          'transition-transform duration-250 ease-out',
+          open ? 'translate-x-0' : '-translate-x-full',
+          // lg+: back to a static column in the flex row.
+          'lg:static lg:inset-auto lg:z-auto lg:w-60 lg:max-w-none lg:translate-x-0 lg:transition-none',
+        )}
+        aria-label="Survey sections"
+      >
+        <div className="px-5 py-6">
+          {/* Header row — label, plus a Done button on mobile */}
+          <div className="flex items-center justify-between mb-5">
+            <div
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.28)',
+              }}
+            >
+              Survey Sections
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="lg:hidden shrink-0 w-8 h-8 -mr-1 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Close sections list"
+            >
+              ✕
+            </button>
+          </div>
 
         {/* Section items */}
         <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -236,7 +275,8 @@ export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange }
             )
           })}
         </ol>
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </>
   )
 }
