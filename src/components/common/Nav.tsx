@@ -61,18 +61,20 @@ export function Nav() {
       }}
     >
       {/* ── Brand ─────────────────────────────────────────────────────── */}
-      <Link to="/" className="flex items-center gap-2.5 sm:gap-3 no-underline shrink min-w-0">
+      <Link to="/" className="flex items-center gap-2 sm:gap-3 no-underline shrink min-w-0">
         <img
           src="/iffs-logo.png"
           alt="IFFS"
           className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
         />
         <div className="flex flex-col leading-none min-w-0">
-          <span className="font-display uppercase text-[11px] sm:text-[12px] font-bold tracking-[0.14em] text-f1 truncate">
+          <span className="font-display uppercase text-[10.5px] sm:text-[12px] font-bold tracking-[0.1em] sm:tracking-[0.14em] text-f1 whitespace-nowrap">
             IFFS BIENNIAL{' '}
             <em className="not-italic text-g1">SURVEY</em>
           </span>
-          <span className="hidden md:block font-body text-[10px] text-f3 tracking-[0.02em] mt-0.5">
+          {/* Kept on every breakpoint — on narrow screens it wraps to two lines
+              rather than being dropped, so the former name is always visible. */}
+          <span className="font-body text-[9px] sm:text-[10px] leading-[1.25] text-f3 tracking-[0.02em] mt-0.5">
             (Previously known as IFFS Triennial Survey)
           </span>
         </div>
