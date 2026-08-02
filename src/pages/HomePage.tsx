@@ -108,22 +108,72 @@ export default function HomePage() {
         },
       })
 
-      // Features — header first, then the three cards in sequence.
-      gsap.from('[data-reveal="feature-head"]', {
-        y: 30,
-        autoAlpha: 0,
-        duration: 0.7,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: '[data-section="features"]', start: 'top 78%' },
+      // Features — header first, then the cards in sequence.
+      //
+      // Scroll reveals are driven by IntersectionObserver, not ScrollTrigger,
+      // and deliberately so: ScrollTrigger caches start/end scroll positions,
+      // and when the page reflows after those are computed (late webfont swap
+      // is the usual culprit) the trigger can silently never fire — leaving
+      // `autoAlpha: 0` content permanently invisible. IO recomputes against
+      // live layout every time, so it cannot go stale. GSAP still runs the
+      // animation; ScrollTrigger is kept above for the scrubbed parallax,
+      // which is what it is genuinely the right tool for.
+      //
+      // Second safety layer: elements already on screen are never hidden at
+      // all — they are shown as-is rather than animated in. So the worst case
+      // anywhere on this page is a missing animation, never missing content.
+      const observers: IntersectionObserver[] = []
+
+      const revealOnScroll = (selector: string, stagger: number) => {
+        const offscreen = gsap.utils
+          .toArray<HTMLElement>(selector)
+          .filter((el) => el.getBoundingClientRect().top > window.innerHeight * 0.9)
+        if (offscreen.length === 0) return
+
+        gsap.set(offscreen, { y: 36, autoAlpha: 0 })
+
+        const pending = new Set(offscreen)
+        const io = new IntersectionObserver(
+          (entries) => {
+            const entering = entries
+              .filter((e) => e.isIntersecting && pending.has(e.target as HTMLElement))
+              .map((e) => e.target as HTMLElement)
+            if (entering.length === 0) return
+            entering.forEach((el) => { pending.delete(el); io.unobserve(el) })
+            gsap.to(entering, {
+              y: 0,
+              autoAlpha: 1,
+              stagger,
+              duration: 0.7,
+              ease: 'power3.out',
+              overwrite: true,
+            })
+          },
+          { rootMargin: '0px 0px -10% 0px' },
+        )
+        offscreen.forEach((el) => io.observe(el))
+        observers.push(io)
+      }
+
+      // Wait for webfonts before measuring. useLayoutEffect runs before the
+      // font swap, when the page is still laid out in fallback metrics and is
+      // materially shorter — measuring then makes below-the-fold elements look
+      // on-screen, and the reveal silently never arms. The same reflow is what
+      // invalidates ScrollTrigger's cached parallax positions, so refresh here.
+      let cancelled = false
+      void (document.fonts?.ready ?? Promise.resolve()).then(() => {
+        requestAnimationFrame(() => {
+          if (cancelled) return
+          revealOnScroll('[data-reveal="feature-head"]', 0)
+          revealOnScroll('[data-reveal="feature-card"]', 0.12)
+          ScrollTrigger.refresh()
+        })
       })
-      gsap.from('[data-reveal="feature-card"]', {
-        y: 40,
-        autoAlpha: 0,
-        stagger: 0.12,
-        duration: 0.7,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: '[data-reveal="feature-grid"]', start: 'top 80%' },
-      })
+
+      return () => {
+        cancelled = true
+        observers.forEach((io) => io.disconnect())
+      }
     })
 
     return () => mm.revert()

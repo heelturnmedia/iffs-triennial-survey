@@ -143,7 +143,10 @@ export default function DashboardPage() {
         <div className="hidden lg:block w-[232px] shrink-0 h-full">
           <Sidebar />
         </div>
-        <main className="flex-1 overflow-y-auto pb-24 lg:pb-0">
+        {/* min-w-0: a flex child defaults to min-width:auto, so a single wide
+            descendant (table, long token) would stretch it past the viewport
+            and clip the page horizontally on small screens. */}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden pb-24 lg:pb-0">
           {activePanel === 'overview' && <OverviewPanel />}
           {activePanel === 'reports' && canViewReports() && <ReportsPanel />}
           {activePanel === 'users' && isAdmin() && <UsersPanel />}
