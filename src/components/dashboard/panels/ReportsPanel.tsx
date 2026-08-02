@@ -15,7 +15,7 @@ const ChoroplethMap = lazy(() =>
     })
 )
 import { getRegion, resolveCountryToIso2, resolveCountryName } from '@/utils/countryRegions'
-import { formatDateTime, formatDuration, formatSeconds } from '@/utils/formatDate'
+import { formatDateTime, formatDuration, formatSeconds, durationMinutes } from '@/utils/formatDate'
 import { supabase } from '@/lib/supabase'
 import { SECTION_NAMES, STATUS_LABELS } from '@/constants'
 import { SURVEY_DEFINITION } from '@/data/survey-definition'
@@ -59,10 +59,29 @@ function calcProgress(pageNo: number): number {
 }
 
 function exportCsv(rows: SubmissionRow[]) {
-  const headers = ['Reference', 'Name', 'Email', 'Country', 'Institution', 'Status', 'Progress %', 'Submitted At', 'Saved At']
+  // Columns mirror the Overview table, including Time Taken and Active Time.
+  // Each duration is exported twice: the human-readable string shown on screen,
+  // plus a raw minutes number so the column can actually be sorted, averaged or
+  // charted in Excel ("2h 15m" sorts as text and is useless for analysis).
+  const headers = [
+    'Reference', 'Name', 'Email', 'Country', 'Institution', 'Status', 'Progress %',
+    'Submitted At', 'Saved At',
+    'Time Taken', 'Time Taken (minutes)',
+    'Active Time', 'Active Time (minutes)',
+  ]
   const lines = rows.map((r) => {
     const name = `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
-    const pct = r.status === 'submitted' || r.status === 'reviewed' ? 100 : calcProgress(r.page_no)
+    const isSubmitted = r.status === 'submitted' || r.status === 'reviewed'
+    const pct = isSubmitted ? 100 : calcProgress(r.page_no)
+    // Time Taken is only meaningful once submitted — matches the table, which
+    // shows an em dash for anything still in progress.
+    const timeTaken = isSubmitted ? formatDuration(r.created_at, r.submitted_at) : '—'
+    const timeTakenMin = isSubmitted ? durationMinutes(r.created_at, r.submitted_at) : ''
+    const activeSeconds = r.active_seconds
+    const activeMin =
+      activeSeconds != null && Number.isFinite(activeSeconds) && activeSeconds > 0
+        ? Math.floor(activeSeconds / 60)
+        : ''
     return [
       `"${r.reference_no ?? ''}"`,
       `"${name}"`,
@@ -73,6 +92,10 @@ function exportCsv(rows: SubmissionRow[]) {
       pct,
       `"${r.submitted_at ? formatDateTime(r.submitted_at) : ''}"`,
       `"${r.saved_at ? formatDateTime(r.saved_at) : ''}"`,
+      `"${timeTaken}"`,
+      timeTakenMin,
+      `"${formatSeconds(activeSeconds)}"`,
+      activeMin,
     ].join(',')
   })
   const csv = [headers.join(','), ...lines].join('\n')

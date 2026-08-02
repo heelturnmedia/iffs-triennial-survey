@@ -115,6 +115,25 @@ export function formatDuration(
 }
 
 /**
+ * Whole minutes between two ISO timestamps, or '' when either bound is missing
+ * or the range is invalid. Used by CSV exports, which need a sortable numeric
+ * column alongside the human-readable one ("2h 15m" sorts as text in Excel).
+ */
+export function durationMinutes(
+  fromIso: string | null | undefined,
+  toIso: string | null | undefined,
+): number | '' {
+  if (!fromIso || !toIso) return ''
+  try {
+    const ms = new Date(toIso).getTime() - new Date(fromIso).getTime()
+    if (!Number.isFinite(ms) || ms < 0) return ''
+    return Math.floor(ms / 60000)
+  } catch {
+    return ''
+  }
+}
+
+/**
  * Compact rendering of a duration given in seconds (e.g. accumulated active
  * time). Returns "—" for missing/zero/invalid values. Examples: "38m",
  * "1h 12m", "2d 3h".

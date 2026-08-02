@@ -2,7 +2,7 @@
 // AppFlowPanel — Admin-only architecture & design flow reference
 // Tabs: User Flow · Architecture · Role Access · Data & State
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 
 type Tab = 'flow' | 'arch' | 'roles' | 'data'
 
@@ -89,19 +89,22 @@ function FlowNode({ icon, title, desc, tagType, tagLabel, accent }: FlowNodeProp
 function UserFlowTab() {
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 40px 1fr 40px 1fr', gap: 0, alignItems: 'start' }}>
+      {/* Columns stack below lg; the connector arrows only make sense side by side. */}
+      <div className="grid items-start gap-6 grid-cols-1 lg:gap-0 lg:grid-cols-[1fr_40px_1fr_40px_1fr]">
 
         {/* Col 1 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--f4)', marginBottom: 4 }}>Entry Points</div>
-          <FlowNode icon="🌐" title="Homepage" desc="Hero with dual CTA + deadline badge, icon feature cards (Secure, Auto-Save, One Submission), green gradient separator" tagType="public" tagLabel="Public · /" accent="var(--g1)" />
-          <FlowNode icon="🔐" title="Auth Page" desc="Sign In or Sign Up via Supabase email/password auth" tagType="public" tagLabel="Public · /login" accent="var(--g1)" />
+          <FlowNode icon="🌐" title="Homepage" desc="GSAP hero entrance + scroll reveals, dual CTA, deadline badge, feature cards (Secure, Auto-Save, One Submission)" tagType="public" tagLabel="Public · /" accent="var(--g1)" />
+          <FlowNode icon="🔐" title="Auth Page" desc="Sign in / sign up (Supabase email+password). Post-signup confirm notice; after 2 failed resends offers secretariat manual activation" tagType="public" tagLabel="Public · /login" accent="var(--g1)" />
           <FlowNode icon="📜" title="Legal Pages" desc="Privacy Policy, Terms of Use, Contact — static informational pages" tagType="public" tagLabel="Public · /privacy /terms /contact" accent="var(--g1)" />
           <FlowNode icon="🔗" title="WildApricot" desc="Optional member verification synced by admin" tagType="external" tagLabel="External API" accent="#dc2626" />
+          <FlowNode icon="✉️" title="Resend (email)" desc="notify-admins Edge Fn — signup, completion and password-reset notices; branded thank-you to the participant" tagType="external" tagLabel="External API" accent="#dc2626" />
+          <FlowNode icon="📊" title="Umami" desc="Self-hosted page analytics at analytics.iffssurvey.com" tagType="external" tagLabel="External · self-hosted" accent="#dc2626" />
         </div>
 
         {/* Arrow */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 48 }}>
+        <div className="hidden lg:flex" style={{ alignItems: 'flex-start', justifyContent: 'center', paddingTop: 48 }}>
           <svg width="32" height="20" viewBox="0 0 32 20" fill="none">
             <path d="M4 10 H26 M20 4 L28 10 L20 16" stroke="var(--g1)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -110,13 +113,13 @@ function UserFlowTab() {
         {/* Col 2 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--f4)', marginBottom: 4 }}>Protected Zone</div>
-          <FlowNode icon="🔒" title="Auth Guard" desc="Checks Supabase session. Redirects to /auth if unsigned. Preserves destination." tagType="guard" tagLabel="Route Guard" accent="#0891b2" />
-          <FlowNode icon="📊" title="Dashboard Page" desc="Sidebar + main panel. Active panel via uiStore. Nav + WelcomeOverlay." tagType="protected" tagLabel="Protected · /dashboard" accent="#d97706" />
-          <FlowNode icon="📋" title="Survey Modal" desc="SurveyJS multi-page form. Auto-saves per page. Submits on complete." tagType="protected" tagLabel="All Roles" accent="#d97706" />
+          <FlowNode icon="🔒" title="Auth Guard" desc="Checks the Supabase session; redirects to /login when unsigned. Password recovery locks navigation to My Profile until a new password is set." tagType="guard" tagLabel="Route Guard" accent="#0891b2" />
+          <FlowNode icon="📊" title="Dashboard Page" desc="Sidebar on lg+; bottom nav + drawer below lg. Panels deep-link via ?panel=… and the survey via ?survey=open, so Back works." tagType="protected" tagLabel="Protected · /dashboard" accent="#d97706" />
+          <FlowNode icon="📋" title="Survey Modal" desc="SurveyJS, 20 sections. Debounced autosave + localStorage backup, active-time tracking, review-before-submit, Download/Print PDF, collapsible section rail on mobile." tagType="protected" tagLabel="All Roles" accent="#d97706" />
         </div>
 
         {/* Arrow */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 48 }}>
+        <div className="hidden lg:flex" style={{ alignItems: 'flex-start', justifyContent: 'center', paddingTop: 48 }}>
           <svg width="32" height="20" viewBox="0 0 32 20" fill="none">
             <path d="M4 10 H26 M20 4 L28 10 L20 16" stroke="var(--g1)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -126,11 +129,13 @@ function UserFlowTab() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--f4)', marginBottom: 4 }}>Dashboard Panels</div>
           <FlowNode icon="🏠" title="Overview" desc="Personal survey status, quick actions, progress" tagType="public" tagLabel="All Roles" accent="var(--g1)" />
-          <FlowNode icon="📈" title="Reports" desc="Choropleth map, submission stats, export via Edge Fn" tagType="supervisor" tagLabel="Supervisor+" accent="#2563eb" />
-          <FlowNode icon="👥" title="Users" desc="Profiles, role management, reset submissions" tagType="admin" tagLabel="Admin Only" accent="#7c3aed" />
+          <FlowNode icon="📈" title="Reports" desc="5 tabs — Overview (map + table), Section Responses, Insights, Data Quality, Countries Data. Exports built client-side (CSV, XLS, PDF)." tagType="supervisor" tagLabel="Supervisor+" accent="#2563eb" />
+          <FlowNode icon="👥" title="Users" desc="Profiles, role management, reset submissions, delete user" tagType="admin" tagLabel="Admin Only" accent="#7c3aed" />
+          <FlowNode icon="📜" title="Activity Log" desc="Audit trail of every recorded action, role filter, live-appended via Realtime" tagType="admin" tagLabel="Admin Only" accent="#7c3aed" />
           <FlowNode icon="⚙️" title="Survey Mgmt" desc="Upload/activate JSON definitions, Creator editor" tagType="admin" tagLabel="Admin Only" accent="#7c3aed" />
           <FlowNode icon="🔌" title="WA Settings" desc="WildApricot API key & account ID, member sync" tagType="admin" tagLabel="Admin Only" accent="#7c3aed" />
           <FlowNode icon="🗺️" title="App Flow" desc="This panel — architecture & design reference" tagType="admin" tagLabel="Admin Only" accent="#7c3aed" />
+          <FlowNode icon="👤" title="My Profile" desc="Personal details and password change; the only panel reachable during password recovery" tagType="public" tagLabel="All Roles" accent="var(--g1)" />
         </div>
       </div>
 
@@ -178,11 +183,14 @@ function ArchTab() {
       bg: 'rgba(124,58,237,0.04)',
       items: [
         { icon: '📄', name: 'Pages (7)', desc: 'HomePage, AuthPage, DashboardPage, PrivacyPolicyPage, TermsOfUsePage, ContactPage, NotFoundPage — lazy-loaded with Suspense' },
-        { icon: '🧩', name: 'Components', desc: 'Nav, Sidebar, SurveyModal, Dashboard Panels, WelcomeOverlay, ConfirmModal, Toast' },
+        { icon: '🧩', name: 'Components', desc: 'Nav, Sidebar + MobileBottomNav, SurveyModal, 8 dashboard panels, WelcomeOverlay, ConfirmModal, Toast' },
         { icon: '🗄️', name: 'Zustand Stores (3)', desc: 'authStore · surveyStore · uiStore — global state, no prop drilling' },
         { icon: '🪝', name: 'Custom Hooks', desc: 'useAuth (bootstrap + realtime) · useToast · useWildApricot' },
         { icon: '💾', name: 'localStorage', desc: 'Draft survey data persisted locally — merged with DB on next sign-in' },
-        { icon: '🗺️', name: 'ChoroplethMap', desc: 'Mapbox GL interactive world map — per-country submission data' },
+        { icon: '🗺️', name: 'Mapbox GL (2 maps)', desc: 'ChoroplethMap (submissions by country) + AnswerChoroplethMap (answer prevalence). Shared mapTheme.ts — graduated fills, zoom-graduated water.' },
+        { icon: '📤', name: 'Client-side exports', desc: 'jsPDF + autotable for PDFs; CSV and SpreadsheetML (.xls) built in-browser — no server round-trip' },
+        { icon: '✨', name: 'GSAP', desc: 'Hero entrance timeline, ScrollTrigger parallax, IntersectionObserver reveals — all disabled under prefers-reduced-motion' },
+        { icon: '🎨', name: 'Tailwind CSS v4', desc: 'CSS-first config via @theme in index.css; no tailwind.config.ts' },
         { icon: '🔤', name: 'Self-hosted Fonts', desc: 'Raleway + Source Sans 3 via @fontsource-variable — bundled by Vite, no Google Fonts CDN dependency' },
       ],
     },
@@ -191,11 +199,12 @@ function ArchTab() {
       accent: 'var(--g1)',
       bg: 'rgba(29,119,51,0.04)',
       items: [
-        { icon: '🔑', name: 'Auth', desc: 'Email/password, session management, JWT tokens, onAuthStateChange listener' },
-        { icon: '🗃️', name: 'Database (PostgreSQL)', desc: 'profiles · survey_submissions · survey_definitions — RLS policies per role' },
-        { icon: '⚡', name: 'Realtime', desc: 'Postgres changes subscribed per user_id — live updates when admin resets submission' },
-        { icon: '🌐', name: 'Edge Functions (2)', desc: 'wa-sync · delete-user — Deno runtime with CORS + in-function auth' },
-        { icon: '🔒', name: 'Row Level Security', desc: '5 migrations — schema, RLS policies, seed data, recursion fix, timestamps' },
+        { icon: '🔑', name: 'Auth', desc: 'Email/password, session management, JWT tokens, onAuthStateChange listener, password recovery' },
+        { icon: '🗃️', name: 'Database (PostgreSQL)', desc: 'profiles · survey_submissions · survey_definitions · activity_log — RLS policies per role' },
+        { icon: '⚡', name: 'Realtime', desc: 'survey_submissions per user_id (live reset by admin) and activity_log INSERTs (live audit trail)' },
+        { icon: '🌐', name: 'Edge Functions (3)', desc: 'wa-sync · delete-user · notify-admins — Deno runtime with CORS + in-function auth' },
+        { icon: '⏱️', name: 'Submission fields', desc: 'status · page_no · data (JSON) · saved_at · submitted_at · reference_no · active_seconds (focused, non-idle time)' },
+        { icon: '🔒', name: 'Migrations & RLS', desc: '22 migrations — schema, RLS policies, seed data, recursion fix, timestamps, rebrand, active-time tracking' },
       ],
     },
     {
@@ -204,14 +213,17 @@ function ArchTab() {
       bg: 'rgba(217,119,6,0.04)',
       items: [
         { icon: '🍑', name: 'WildApricot', desc: 'Member verification API — checks IFFS membership, returns memberId & level' },
-        { icon: '🐳', name: 'Docker + Nginx', desc: 'Containerized via Dokploy. Nginx serves Vite build. Env vars injected at runtime via env-config.js. Security headers (CSP, HSTS, X-Frame-Options) + rate limiting (60 req/min) on all routes.' },
-        { icon: '📦', name: 'SurveyJS', desc: 'Open-source survey engine. Definition loaded from DB (JSON). 20-section form.' },
+        { icon: '✉️', name: 'Resend', desc: 'Transactional email from info@iffssurvey.com via notify-admins — signup, completion and password-reset notices' },
+        { icon: '🗺️', name: 'Mapbox GL', desc: 'light-v11 basemap + country-boundaries-v1 tileset. Token injected at runtime.' },
+        { icon: '📊', name: 'Umami', desc: 'Self-hosted analytics at analytics.iffssurvey.com — cookieless page + referrer stats' },
+        { icon: '🐳', name: 'Docker + Nginx', desc: 'Containerized via Dokploy on a Hostinger VPS; auto-deploys main. Nginx serves the Vite build and 301s the apex domain to www. Env vars injected at runtime via env-config.js. Security headers (CSP, HSTS, X-Frame-Options) + rate limiting (60 req/min).' },
+        { icon: '📦', name: 'SurveyJS 2.5', desc: 'survey-core + react-ui + Creator (licensed). Definition loaded from DB (JSON). 20-section form.' },
       ],
     },
   ]
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
       {layers.map(layer => (
         <div key={layer.title} style={{ borderRadius: 14, padding: 18, background: layer.bg, border: `1.5px solid ${layer.accent}30` }}>
           <div style={{
@@ -231,23 +243,30 @@ function ArchTab() {
 
 // ─── Tab 3: Role Access ───────────────────────────────────────────────────────
 
+// Mirrors the live guards: adminOnly items use isAdmin(); Reports uses
+// canViewReports() (role hierarchy >= supervisor). Within Reports, the
+// submissions CSV is open to supervisors while the cumulative/surveillance
+// exports and per-user reset are gated on isAdmin().
 const ROLE_FEATURES = [
   'Overview Panel',
   'My Survey (modal)',
-  'Reports + Map',
-  'Export Reports',
+  'My Profile',
+  'Reports + Maps',
+  'Submissions CSV',
+  'Cumulative / Report exports',
   'Users Panel',
   'Reset Submissions',
+  'Activity Log',
   'Survey Mgmt',
   'WA Settings',
   'App Flow Panel',
 ]
 
 const ROLE_ACCESS: Record<string, boolean[]> = {
-  Admin:        [true,  true,  true,  true,  true,  true,  true,  true,  true],
-  Supervisor:   [true,  true,  true,  true,  false, false, false, false, false],
-  'IFFS Member':[true,  true,  false, false, false, false, false, false, false],
-  User:         [true,  true,  false, false, false, false, false, false, false],
+  Admin:        [true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
+  Supervisor:   [true,  true,  true,  true,  true,  false, false, false, false, false, false, false],
+  'IFFS Member':[true,  true,  true,  false, false, false, false, false, false, false, false, false],
+  User:         [true,  true,  true,  false, false, false, false, false, false, false, false, false],
 }
 
 const ROLE_META: Record<string, { level: number; color: string; bg: string; border: string; top: string }> = {
@@ -261,7 +280,7 @@ function RolesTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Cards grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      <div className="grid gap-3.5 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         {Object.entries(ROLE_ACCESS).map(([role, access]) => {
           const meta = ROLE_META[role]
           return (
@@ -294,15 +313,15 @@ function RolesTab() {
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'var(--f4)', marginBottom: 10 }}>Role Hierarchy</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
           {Object.entries(ROLE_META).map(([role, meta], i, arr) => (
-            <>
-              <div key={role} style={{ flex: 1, padding: '10px 14px', background: meta.bg, border: `1px solid ${meta.border}`, borderRadius: i === 0 ? '8px 0 0 8px' : i === arr.length - 1 ? '0 8px 8px 0' : 0, textAlign: 'center' as const }}>
+            <Fragment key={role}>
+              <div style={{ flex: 1, padding: '10px 14px', background: meta.bg, border: `1px solid ${meta.border}`, borderRadius: i === 0 ? '8px 0 0 8px' : i === arr.length - 1 ? '0 8px 8px 0' : 0, textAlign: 'center' as const }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: meta.color, marginBottom: 2 }}>{role}</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 300, color: 'var(--f1)' }}>{meta.level}</div>
               </div>
               {i < arr.length - 1 && (
-                <div key={`arrow-${i}`} style={{ color: 'var(--g1)', fontSize: 14, padding: '0 4px', zIndex: 1 }}>→</div>
+                <div style={{ color: 'var(--g1)', fontSize: 14, padding: '0 4px', zIndex: 1 }}>→</div>
               )}
-            </>
+            </Fragment>
           ))}
         </div>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--f3)', textAlign: 'center' as const, marginTop: 8 }}>
@@ -345,7 +364,7 @@ function StateFlow({ title, subtitle, accent, steps }: StateFlowProps) {
 function DataStateTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <StateFlow
           title="Auth State Bootstrap"
           subtitle="useAuth() hook — runs once at app root"
@@ -373,13 +392,15 @@ function DataStateTab() {
         />
         <StateFlow
           title="Survey Auto-Save"
-          subtitle="Every page change in SurveyModal"
+          subtitle="Debounced on answer change, plus every page change"
           accent="#d97706"
           steps={[
-            'User answers page → SurveyJS onCurrentPageChanged fires',
-            'surveyStore.setAutoSaveStatus("saving")',
-            'upsert to survey_submissions (user_id, page_no, data, status: "draft")',
-            'persistSurvey(email, data) → localStorage backup',
+            'onValueChanged → debounce 800ms (onCurrentPageChanged saves immediately)',
+            'Guard: never overwrite a "submitted"/"reviewed" row with a draft',
+            'localStorage written first — synchronous, survives a lost connection',
+            'Only then status → "saving" and the upsert to <code style="background:var(--bd);padding:1px 5px;border-radius:3px;font-size:10px">survey_submissions</code> starts',
+            'active_seconds sent alongside — focused, non-idle time only (60s idle cutoff)',
+            'Watchdog: if the write hangs &gt;6s the spinner clears; localStorage already holds the data',
             'status → "saved" · lastSavedAt updated in UI',
           ]}
         />
@@ -388,10 +409,11 @@ function DataStateTab() {
           subtitle="Global state — no prop drilling"
           accent="#0891b2"
           steps={[
-            '<strong>authStore</strong> — session · user · profile · loading · isAdmin() · canViewReports()',
+            '<strong>authStore</strong> — session · user · profile · loading · isPasswordRecovery · isAdmin() · isSupervisor() · canViewReports()',
             '<strong>surveyStore</strong> — submission · isModalOpen · activeDefinition · autoSaveStatus · lastSavedAt',
-            '<strong>uiStore</strong> — activePanel · toast() · openConfirmModal()',
-            '<strong>Realtime</strong> — Supabase channel on survey_submissions WHERE user_id = userId → surveyStore.setSubmission(payload.new)',
+            '<strong>uiStore</strong> — activePanel · profileFormDirty · toast() · openConfirmModal()',
+            '<strong>Realtime</strong> — survey_submissions WHERE user_id = userId → setSubmission(payload.new); activity_log INSERTs refresh the audit table',
+            '<strong>URL is state</strong> — ?panel=… and ?survey=open are kept in sync, so deep links and the Back button both work',
           ]}
         />
       </div>
@@ -407,19 +429,19 @@ function DataStateTab() {
             { icon: '✅', label: 'Submitted', sub: 'Final · locked from edits',       bg: 'rgba(37,99,235,0.07)',   border: 'rgba(37,99,235,0.25)',   color: '#1e3a8a' },
             { icon: '🏆', label: 'Reviewed',  sub: 'Accepted · included in report',   bg: 'rgba(29,119,51,0.07)',   border: 'rgba(29,119,51,0.25)',   color: '#166534' },
           ].map((s, i, arr) => (
-            <>
-              <div key={s.label} style={{ flex: 1, padding: '12px 14px', background: s.bg, border: `1px solid ${s.border}`, borderRadius: i === 0 ? '8px 0 0 8px' : i === arr.length - 1 ? '0 8px 8px 0' : 0, textAlign: 'center' as const }}>
+            <Fragment key={s.label}>
+              <div style={{ flex: 1, padding: '12px 14px', background: s.bg, border: `1px solid ${s.border}`, borderRadius: i === 0 ? '8px 0 0 8px' : i === arr.length - 1 ? '0 8px 8px 0' : 0, textAlign: 'center' as const }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>{s.icon}</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: s.color, marginBottom: 3 }}>{s.label}</div>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--f3)' }}>{s.sub}</div>
               </div>
               {i < arr.length - 1 && (
-                <div key={`arr-${i}`} style={{ padding: '0 6px', textAlign: 'center' as const }}>
+                <div style={{ padding: '0 6px', textAlign: 'center' as const }}>
                   <div style={{ color: 'var(--g1)', fontSize: 18 }}>→</div>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--f4)' }}>{i === 0 ? 'complete' : 'admin review'}</div>
                 </div>
               )}
-            </>
+            </Fragment>
           ))}
         </div>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--f4)', textAlign: 'right' as const, marginTop: 8 }}>
