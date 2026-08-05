@@ -21,7 +21,7 @@ const ISO2_TO_REGION: Record<string, Region> = {
   KE: 'Africa', LS: 'Africa', LR: 'Africa', LY: 'Africa', MG: 'Africa',
   MW: 'Africa', ML: 'Africa', MR: 'Africa', MU: 'Africa', MA: 'Africa',
   MZ: 'Africa', NA: 'Africa', NE: 'Africa', NG: 'Africa', RW: 'Africa',
-  ST: 'Africa', SN: 'Africa', SL: 'Africa', SO: 'Africa', ZA: 'Africa',
+  ST: 'Africa', SN: 'Africa', SC: 'Africa', SL: 'Africa', SO: 'Africa', ZA: 'Africa',
   SS: 'Africa', SD: 'Africa', TZ: 'Africa', TG: 'Africa', TN: 'Africa',
   UG: 'Africa', ZM: 'Africa', ZW: 'Africa',
 
@@ -95,6 +95,44 @@ const COUNTRY_NAME_TO_ISO2: Record<string, string> = {
   'United States': 'US', 'United States of America': 'US',
   'Uruguay': 'UY', 'Uzbekistan': 'UZ', 'Venezuela': 'VE',
   'Vietnam': 'VN', 'Yemen': 'YE', 'Zimbabwe': 'ZW',
+
+  // ── Remaining COUNTRY_CHOICES ──────────────────────────────────────────────
+  // Every name below appears in the survey's country list. Before this block
+  // 85 of the 193 choices had no mapping, so any respondent from one of them
+  // resolved to '' and was dropped silently from the choropleth, the region
+  // filter and the Countries Data tab. The countryChoiceCoverage test keeps
+  // this map and COUNTRY_CHOICES in lockstep from now on.
+  'Andorra': 'AD', 'Angola': 'AO', 'Antigua and Barbuda': 'AG',
+  'Bahamas': 'BS', 'Barbados': 'BB', 'Belarus': 'BY', 'Belize': 'BZ',
+  'Benin': 'BJ', 'Bhutan': 'BT', 'Botswana': 'BW', 'Brunei': 'BN',
+  'Burkina Faso': 'BF', 'Burundi': 'BI', 'Cameroon': 'CM',
+  'Cape Verde': 'CV', 'Central African Republic': 'CF', 'Chad': 'TD',
+  'Comoros': 'KM', 'Cyprus': 'CY', 'Djibouti': 'DJ', 'Dominica': 'DM',
+  'Dominican Republic': 'DO', 'DR Congo': 'CD', 'Equatorial Guinea': 'GQ',
+  'Eritrea': 'ER', 'Eswatini': 'SZ', 'Fiji': 'FJ', 'Gabon': 'GA',
+  'Gambia': 'GM', 'Grenada': 'GD', 'Guinea': 'GN', 'Guyana': 'GY',
+  'Haiti': 'HT', 'Ivory Coast': 'CI', 'Jamaica': 'JM', 'Kiribati': 'KI',
+  'Laos': 'LA', 'Lesotho': 'LS', 'Liberia': 'LR', 'Libya': 'LY',
+  'Liechtenstein': 'LI', 'Madagascar': 'MG', 'Malawi': 'MW',
+  'Maldives': 'MV', 'Mali': 'ML', 'Malta': 'MT', 'Marshall Islands': 'MH',
+  'Mauritania': 'MR', 'Mauritius': 'MU', 'Micronesia': 'FM', 'Monaco': 'MC',
+  'Montenegro': 'ME', 'Mozambique': 'MZ', 'Namibia': 'NA', 'Nauru': 'NR',
+  'Niger': 'NE', 'North Korea': 'KP', 'North Macedonia': 'MK', 'Palau': 'PW',
+  'Papua New Guinea': 'PG', 'Republic of the Congo': 'CG', 'Rwanda': 'RW',
+  'Saint Kitts and Nevis': 'KN', 'Saint Lucia': 'LC',
+  'Saint Vincent and the Grenadines': 'VC', 'Samoa': 'WS', 'San Marino': 'SM',
+  'São Tomé and Príncipe': 'ST', 'Senegal': 'SN', 'Seychelles': 'SC',
+  'Sierra Leone': 'SL', 'Solomon Islands': 'SB', 'Somalia': 'SO',
+  'South Sudan': 'SS', 'Sudan': 'SD', 'Suriname': 'SR', 'Timor-Leste': 'TL',
+  'Togo': 'TG', 'Tonga': 'TO', 'Trinidad and Tobago': 'TT',
+  'Turkmenistan': 'TM', 'Tuvalu': 'TV', 'Vatican City': 'VA',
+  'Vanuatu': 'VU', 'Zambia': 'ZM',
+
+  // Common alternate spellings respondents may have submitted historically.
+  'Cabo Verde': 'CV', "Côte d'Ivoire": 'CI', 'Ivory Coast (Côte d’Ivoire)': 'CI',
+  'Democratic Republic of the Congo': 'CD', 'Congo': 'CG',
+  'Swaziland': 'SZ', 'East Timor': 'TL', 'Holy See': 'VA',
+  'Macedonia': 'MK', 'Burma': 'MM', 'Cape Verde Islands': 'CV',
 }
 
 /** Return the region for a given ISO 3166-1 alpha-2 code. */

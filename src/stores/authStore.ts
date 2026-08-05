@@ -5,7 +5,13 @@
 import { create } from 'zustand'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { clearAllPersistedSurveys, purgeLegacyWaCreds } from '@/lib/localStorage'
+import {
+  clearAllPersistedSurveys,
+  purgeLegacyWaCreds,
+  cacheProfile,
+  loadCachedProfile,
+  clearCachedProfile,
+} from '@/lib/localStorage'
 import type { Profile, UserRole } from '@/types'
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
@@ -68,6 +74,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT') {
+          // Also fires for sign-out in another tab and for an expired/revoked
+          // token, neither of which goes through signOut() — clear the cached
+          // profile here too so it can never outlive the session.
+          clearCachedProfile()
           set({ session: null, user: null, loading: false, profile: null, isPasswordRecovery: false })
           return
         }
@@ -114,9 +124,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // is updated a few ms later) but no deadlock is possible.
         if (session && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
           const userId = session.user.id
+
+          // Paint the correct role immediately from cache while the authoritative
+          // fetch is in flight. Without this the dashboard renders with
+          // profile === null, isAdmin() returns false, and the admin navigation
+          // is hidden until the round-trip completes — the visible delay before
+          // the full admin panel appears. Only applied when nothing is loaded
+          // yet, so it can never clobber a fresher in-memory profile.
+          if (!get().profile) {
+            const cached = loadCachedProfile(userId)
+            if (cached) set({ profile: cached })
+          }
+
           setTimeout(() => {
             fetchProfile(userId).then((profile) => {
-              if (profile) set({ profile })
+              // Server wins — a role changed by an admin lands here and
+              // replaces the cached copy.
+              if (profile) {
+                set({ profile })
+                cacheProfile(profile)
+              }
             })
           }, 0)
         }
@@ -141,6 +168,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // user logged back in. Removing the flush closes that hole.
     clearAllPersistedSurveys()
     purgeLegacyWaCreds()
+    // Never leave one user's name/role behind for the next person to sign in
+    // on a shared clinic or university machine.
+    clearCachedProfile()
 
     // ROOT CAUSE FIX (sign-out spinner/hang):
     // Previously signOut() called set({ loading: true }) first, which
