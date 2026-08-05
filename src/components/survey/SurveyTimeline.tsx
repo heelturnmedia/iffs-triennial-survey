@@ -13,7 +13,7 @@
 // Click on done items: calls onPageChange or survey.currentPageNo = i
 // Scroll active into view on currentPage change (useEffect)
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Model } from 'survey-core'
 import { SURVEY_PAGES_META } from '@/data/survey-definition'
 import { cn } from '@/utils/cn'
@@ -46,15 +46,27 @@ export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange, 
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  // Furthest section reached this session. Navigation used to be backwards-only,
+  // so a respondent who stepped back to check an earlier answer had to press
+  // Next repeatedly to return — painful in a 20-section form. Any section up to
+  // the high-water mark is now reachable in one click. Sections beyond it stay
+  // locked: they haven't been through SurveyJS's onNextPage validation yet, and
+  // letting people skip ahead would defeat it.
+  const [maxVisited, setMaxVisited] = useState(currentPage)
+  useEffect(() => {
+    setMaxVisited((m) => Math.max(m, currentPage))
+  }, [currentPage])
+
+  const canJumpTo = (index: number) => index <= maxVisited && index !== currentPage
+
   const handleClick = (index: number) => {
-    if (index < currentPage) {
-      if (onPageChange) {
-        onPageChange(index)
-      } else {
-        survey.currentPageNo = index
-      }
-      onClose?.() // collapse the drawer once a section is chosen (mobile)
+    if (!canJumpTo(index)) return
+    if (onPageChange) {
+      onPageChange(index)
+    } else {
+      survey.currentPageNo = index
     }
+    onClose?.() // collapse the drawer once a section is chosen (mobile)
   }
 
   return (
@@ -114,6 +126,7 @@ export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange, 
             const isDone    = index < currentPage
             const isActive  = index === currentPage
             const isLast    = index === totalPages - 1
+            const jumpable  = canJumpTo(index)
 
             const rowStyle: React.CSSProperties = {
               display: 'flex',
@@ -126,7 +139,7 @@ export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange, 
               border: 'none',
               textAlign: 'left',
               width: '100%',
-              cursor: isDone ? 'pointer' : 'default',
+              cursor: jumpable ? 'pointer' : 'default',
             }
 
             const rowContent = (
@@ -245,7 +258,7 @@ export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange, 
               </>
             )
 
-            if (isDone) {
+            if (jumpable) {
               return (
                 <li key={index}>
                   <button
@@ -254,7 +267,7 @@ export function SurveyTimeline({ survey, totalPages, currentPage, onPageChange, 
                     onClick={() => handleClick(index)}
                     style={rowStyle}
                     aria-label={`Go to section ${index + 1}: ${name}`}
-                    title={`Go back to ${name}`}
+                    title={index < currentPage ? `Go back to ${name}` : `Return to ${name}`}
                   >
                     {rowContent}
                   </button>

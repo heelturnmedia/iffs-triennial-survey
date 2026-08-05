@@ -53,6 +53,7 @@ export function SurveyModal() {
   const [sectionsOpen, setSectionsOpen] = useState(false)
 
   const contentAreaRef    = useRef<HTMLDivElement>(null)
+  const modalRootRef      = useRef<HTMLDivElement>(null)
   const autoSaveTimerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const saveWatchdogRef   = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const activeTrackerRef  = useRef<ActiveTimeTracker | null>(null)
@@ -296,6 +297,54 @@ export function SurveyModal() {
     }
   }, [isModalOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Dialog focus management ────────────────────────────────────────────────
+  // The survey opens as a full-screen dialog over the dashboard, but keyboard
+  // focus was never moved into it and Tab could walk out into the page behind —
+  // a screen-reader user could be reading the dashboard while the survey was
+  // visually on top. Move focus in on open, keep Tab inside, and put focus back
+  // where it started on close.
+  useEffect(() => {
+    if (!isModalOpen) return
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const root = modalRootRef.current
+
+    const FOCUSABLE =
+      'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),' +
+      'textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+    const focusable = () =>
+      Array.from(root?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])
+        .filter((el) => el.offsetParent !== null || el === document.activeElement)
+
+    // Focus the dialog itself rather than the first control: landing on the
+    // Download button would be disorienting, and SurveyJS moves focus to the
+    // first question on its own where appropriate.
+    root?.focus()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !root) return
+      const items = focusable()
+      if (items.length === 0) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      const active = document.activeElement as HTMLElement
+      if (!root.contains(active)) { e.preventDefault(); first.focus(); return }
+      if (e.shiftKey && active === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus() }
+    }
+
+    document.addEventListener('keydown', onKeyDown, true)
+    // Stop the dashboard behind the dialog from scrolling with the wheel.
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true)
+      document.body.style.overflow = prevOverflow
+      // Return focus to whatever opened the survey (the Begin/Continue button).
+      if (previouslyFocused && document.contains(previouslyFocused)) previouslyFocused.focus()
+    }
+  }, [isModalOpen])
+
   if (!isModalOpen) return null
 
   // ── Save progress and close ─────────────────────────────────────────────
@@ -399,7 +448,12 @@ export function SurveyModal() {
 
   return (
     <div
-      className="fixed inset-0 z-9000 flex items-stretch justify-center"
+      ref={modalRootRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="2027 Biennial Survey"
+      tabIndex={-1}
+      className="fixed inset-0 z-9000 flex items-stretch justify-center outline-hidden"
       style={{ animation: 'modalSlideIn 0.38s cubic-bezier(0.16,1,0.3,1)' }}
     >
       <style>{`

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { useSurveyStore } from '@/stores/surveyStore'
@@ -7,13 +7,28 @@ import { Sidebar } from '@/components/dashboard/Sidebar'
 import { MobileBottomNav } from '@/components/dashboard/MobileBottomNav'
 import { cn } from '@/utils/cn'
 import { OverviewPanel } from '@/components/dashboard/panels/OverviewPanel'
-import { ReportsPanel } from '@/components/dashboard/panels/ReportsPanel'
-import { UsersPanel } from '@/components/dashboard/panels/UsersPanel'
-import { ActivityPanel } from '@/components/dashboard/panels/ActivityPanel'
-import { SurveyMgmtPanel } from '@/components/dashboard/panels/SurveyMgmtPanel'
-import { WASettingsPanel } from '@/components/dashboard/panels/WASettingsPanel'
-import { AppFlowPanel } from '@/components/dashboard/panels/AppFlowPanel'
 import { ProfilePanel } from '@/components/dashboard/panels/ProfilePanel'
+
+// Admin/supervisor panels are code-split. They were statically imported, which
+// made their whole dependency graph a hard dependency of the dashboard — most
+// expensively survey-creator (~1.3 MB), an editor only admins ever open. Every
+// respondent was downloading it just to answer the survey, which is exactly the
+// wrong trade on hospital wifi. Overview and My Profile stay eager: every role
+// lands on one of them immediately.
+const ReportsPanel     = lazy(() => import('@/components/dashboard/panels/ReportsPanel').then(m => ({ default: m.ReportsPanel })))
+const UsersPanel       = lazy(() => import('@/components/dashboard/panels/UsersPanel').then(m => ({ default: m.UsersPanel })))
+const ActivityPanel    = lazy(() => import('@/components/dashboard/panels/ActivityPanel').then(m => ({ default: m.ActivityPanel })))
+const SurveyMgmtPanel  = lazy(() => import('@/components/dashboard/panels/SurveyMgmtPanel').then(m => ({ default: m.SurveyMgmtPanel })))
+const WASettingsPanel  = lazy(() => import('@/components/dashboard/panels/WASettingsPanel').then(m => ({ default: m.WASettingsPanel })))
+const AppFlowPanel     = lazy(() => import('@/components/dashboard/panels/AppFlowPanel').then(m => ({ default: m.AppFlowPanel })))
+
+function PanelLoader() {
+  return (
+    <div className="flex justify-center py-16" role="status" aria-label="Loading panel">
+      <div className="w-8 h-8 rounded-full border-2 border-g1 border-t-transparent animate-spin" />
+    </div>
+  )
+}
 import { SurveyModal } from '@/components/survey/SurveyModal'
 import { WelcomeOverlay } from '@/components/common/WelcomeOverlay'
 import { ConfirmModal } from '@/components/common/ConfirmModal'
@@ -148,13 +163,15 @@ export default function DashboardPage() {
             and clip the page horizontally on small screens. */}
         <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden pb-24 lg:pb-0">
           {activePanel === 'overview' && <OverviewPanel />}
-          {activePanel === 'reports' && canViewReports() && <ReportsPanel />}
-          {activePanel === 'users' && isAdmin() && <UsersPanel />}
-          {activePanel === 'activity' && isAdmin() && <ActivityPanel />}
-          {activePanel === 'survey-mgmt' && isAdmin() && <SurveyMgmtPanel />}
-          {activePanel === 'wa-settings' && isAdmin() && <WASettingsPanel />}
-          {activePanel === 'app-flow'    && isAdmin() && <AppFlowPanel />}
           {activePanel === 'profile' && <ProfilePanel />}
+          <Suspense fallback={<PanelLoader />}>
+            {activePanel === 'reports' && canViewReports() && <ReportsPanel />}
+            {activePanel === 'users' && isAdmin() && <UsersPanel />}
+            {activePanel === 'activity' && isAdmin() && <ActivityPanel />}
+            {activePanel === 'survey-mgmt' && isAdmin() && <SurveyMgmtPanel />}
+            {activePanel === 'wa-settings' && isAdmin() && <WASettingsPanel />}
+            {activePanel === 'app-flow'    && isAdmin() && <AppFlowPanel />}
+          </Suspense>
         </main>
       </div>
 
