@@ -4,16 +4,47 @@ import { useUIStore } from '@/stores/uiStore'
 import { getSubmissions, getMapSubmissions, resetSubmission } from '@/services/surveyService'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 
+// A failed import here almost always means the app was redeployed while this
+// tab was open, so the chunk hash in memory no longer exists on the server.
+// This previously called window.location.reload() immediately — an unannounced
+// navigation that discards anything unsaved elsewhere in the dashboard (a
+// half-written filter, an open confirm dialog, and in the worst case a survey
+// draft that has not hit its 800ms autosave yet). Offer the reload instead of
+// taking it, and render an inline notice rather than an empty space.
 const ChoroplethMap = lazy(() =>
   import('@/components/map/ChoroplethMap')
     .then(m => ({ default: m.ChoroplethMap }))
-    .catch(() => {
-      // Stale chunk after redeployment — force a full reload so the browser
-      // fetches the new index with correct chunk hashes.
-      window.location.reload()
-      return { default: (() => null) as unknown as typeof import('@/components/map/ChoroplethMap')['ChoroplethMap'] }
-    })
+    .catch(() => ({ default: StaleChunkNotice }))
 )
+
+function StaleChunkNotice() {
+  return (
+    <div
+      style={{
+        height: 380, borderRadius: 16, background: 'var(--s2)',
+        border: '1px dashed var(--bd2)', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 10, textAlign: 'center',
+        padding: 24,
+      }}
+      role="status"
+    >
+      <p className="font-display text-[14px] font-bold text-f2">
+        A new version of the app is available
+      </p>
+      <p className="font-body text-[12px] text-f3 max-w-sm">
+        The map could not load because this page is running an older version.
+        Reload to get the latest — any answers you have entered are already saved.
+      </p>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="inline-flex items-center gap-2 font-display text-[11px] font-bold tracking-[0.12em] uppercase px-5 min-h-[40px] rounded-full text-white bg-g1 hover:bg-g2 transition-colors cursor-pointer"
+      >
+        Reload page
+      </button>
+    </div>
+  )
+}
 import { getRegion, resolveCountryToIso2, resolveCountryName } from '@/utils/countryRegions'
 import { formatDateTime, formatDuration, formatSeconds, durationMinutes } from '@/utils/formatDate'
 import { supabase } from '@/lib/supabase'

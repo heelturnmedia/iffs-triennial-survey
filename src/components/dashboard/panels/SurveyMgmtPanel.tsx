@@ -16,8 +16,9 @@ import { formatDateTime } from '@/utils/formatDate'
 import type { SurveyDefinition } from '@/types'
 
 // ── SurveyJS CSS — must be static imports so Vite injects them at load time ──
-import 'survey-core/survey-core.min.css'
-import 'survey-creator-core/survey-creator-core.min.css'
+// See SurveyModal.tsx — fontless variant avoids the CSP-blocked Google font.
+import 'survey-core/survey-core.fontless.min.css'
+import 'survey-creator-core/survey-creator-core.fontless.min.css'
 
 // ── SurveyJS modules ─────────────────────────────────────────────────────────
 // SurveyCreator = React-aware model class; SurveyCreatorComponent = React renderer.

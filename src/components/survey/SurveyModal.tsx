@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { ListOrdered } from 'lucide-react'
 import { Model } from 'survey-core'
 import { Survey } from 'survey-react-ui'
-import 'survey-core/survey-core.min.css'
+// "fontless" variant: identical styling minus the @font-face that pulls Open
+// Sans from fonts.gstatic.com. That request was blocked by our CSP (font-src
+// 'self') and logged an error on every survey open. We override every SurveyJS
+// font in surveyjs-overrides.css anyway, so nothing is lost — and no
+// respondent's IP is handed to Google, which matters for a medical survey.
+import 'survey-core/survey-core.fontless.min.css'
 import { useSurveyStore } from '@/stores/surveyStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -17,6 +22,14 @@ import type { SubmissionRow } from '@/types'
 import { SurveyTimeline } from './SurveyTimeline'
 import { SurveySectionHeader } from './SurveySectionHeader'
 import { formatSavedAt } from '@/utils/formatDate'
+
+// Submission tracing. Kept for diagnosing the submit path, but DEV-only: these
+// lines printed the signed-in user's UUID and their submission id to the
+// browser console on every production submit, which is needless exposure of
+// identifiers on a shared clinic or university machine.
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.log(...args)
+}
 
 export function SurveyModal() {
   const {
@@ -229,14 +242,14 @@ export function SurveyModal() {
         variant: 'warning',
         onConfirm: async () => {
           try {
-            console.log('[Survey] onConfirm started — user:', user?.id, 'submissionId:', useSurveyStore.getState().submission?.id)
+            debugLog('[Survey] onConfirm started — user:', user?.id, 'submissionId:', useSurveyStore.getState().submission?.id)
 
             // Safety net: if autosave hasn't yet resolved an ID (e.g. the user
             // moved through pages very quickly), upsert a row first so we have
             // an ID to pass to submitSurvey.
             let submissionId = useSurveyStore.getState().submission?.id
             if (!submissionId && user) {
-              console.log('[Survey] No submission ID — running safety-net upsert')
+              debugLog('[Survey] No submission ID — running safety-net upsert')
               const now  = new Date().toISOString()
               const data = { ...sender.data }
               const saved = await upsertSubmission(user.id, {
@@ -248,13 +261,13 @@ export function SurveyModal() {
               })
               useSurveyStore.getState().setSubmission(saved)
               submissionId = saved.id
-              console.log('[Survey] Safety-net upsert complete — id:', submissionId)
+              debugLog('[Survey] Safety-net upsert complete — id:', submissionId)
             }
 
             if (submissionId) {
-              console.log('[Survey] Calling submitSurvey — id:', submissionId)
+              debugLog('[Survey] Calling submitSurvey — id:', submissionId)
               const updated = await submitSurvey(submissionId, tracker.totalSeconds())
-              console.log('[Survey] submitSurvey success — status:', updated.status)
+              debugLog('[Survey] submitSurvey success — status:', updated.status)
               void logActivity('survey_submitted', { reference: updated.reference_no })
               // Update the store so Overview immediately reflects submitted status
               useSurveyStore.getState().setSubmission(updated)
@@ -262,7 +275,7 @@ export function SurveyModal() {
               // data on top of the now-submitted row.
               if (user?.email) clearPersistedSurvey(user.email)
             } else {
-              console.warn('[Survey] No submissionId — skipped submitSurvey (user may not be authenticated)')
+              debugLog('[Survey] No submissionId — skipped submitSurvey (user may not be authenticated)')
             }
             closeModal()
           } catch (err) {
