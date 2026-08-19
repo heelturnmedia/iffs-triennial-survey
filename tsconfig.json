@@ -3,5 +3,16 @@
   "references": [
     { "path": "./tsconfig.node.json" },
     { "path": "./tsconfig.app.json" }
-  ]
+  ],
+  // The real path alias lives in tsconfig.app.json, which is what Vite and
+  // `tsc -b` compile against. It is duplicated here because the shadcn CLI
+  // resolves aliases from the ROOT tsconfig only, and a Vite project's root
+  // config is references-only — without this it fails with "Could not load
+  // the workspace config". Keep the two in sync if the alias ever changes.
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
 }
