@@ -9,7 +9,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useAuthStore } from '@/stores/authStore'
 import { Nav }    from '@/components/common/Nav'
 import { Footer } from '@/components/common/Footer'
-import { Shield, FileText, CheckCircle2, CalendarDays, type LucideIcon } from 'lucide-react'
+import { Shield, FileText, CheckCircle2, type LucideIcon } from 'lucide-react'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -20,7 +20,6 @@ interface StatItem {
 }
 
 interface FeatureCard {
-  number: string
   title: string
   description: string
   icon: LucideIcon
@@ -28,30 +27,31 @@ interface FeatureCard {
 
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+// The closing date moved here from a badge under the hero CTAs. A small line of
+// text trailing the buttons is the classic "tiny tagline below the CTA" that
+// pads a hero to five stacked elements; as a stat row it sits with the other
+// facts and the hero keeps to four (eyebrow, headline, subtext, CTAs).
 const HERO_STATS: StatItem[] = [
-  { value: '20',   label: 'SURVEY SECTIONS' },
-  { value: '2027', label: 'SURVEY YEAR' },
-  { value: '2 yr', label: 'REPORTING CYCLE' },
-  { value: 'IFFS', label: 'GLOBAL BODY' },
+  { value: '20',     label: 'SURVEY SECTIONS' },
+  { value: '2027',   label: 'SURVEY YEAR' },
+  { value: '2 yr',   label: 'REPORTING CYCLE' },
+  { value: '31 Aug', label: 'SUBMISSIONS CLOSE 2026' },
 ]
 
 const FEATURE_CARDS: FeatureCard[] = [
   {
-    number: '01',
     title: 'Secure & Private',
     icon: Shield,
     description:
       'Your responses are encrypted and only visible to IFFS administrators.',
   },
   {
-    number: '02',
     title: 'Auto-Save',
     icon: FileText,
     description:
-      'Progress saves automatically after every answer — complete at your own pace.',
+      'Progress saves automatically after every answer, so you can complete the survey at your own pace.',
   },
   {
-    number: '03',
     title: 'One Submission',
     icon: CheckCircle2,
     description:
@@ -82,7 +82,7 @@ export default function HomePage() {
         .from('[data-hero="title"]',    { y: 42, autoAlpha: 0 }, '-=0.3')
         .from('[data-hero="copy"]',     { y: 24, autoAlpha: 0, duration: 0.6 }, '-=0.5')
         .from('[data-hero="cta"]',      { y: 18, autoAlpha: 0, duration: 0.55 }, '-=0.42')
-        .from('[data-hero="deadline"]', { y: 12, autoAlpha: 0, duration: 0.5 }, '-=0.4')
+        
         .from('[data-hero="card"]',     { y: 34, autoAlpha: 0, scale: 0.95, duration: 0.9, ease: 'power2.out' }, 0.35)
         .from('[data-hero="stat-row"]', { x: 26, autoAlpha: 0, stagger: 0.09, duration: 0.55 }, 0.55)
 
@@ -186,11 +186,11 @@ export default function HomePage() {
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section
         data-section="hero"
-        className="relative grid grid-cols-1 lg:grid-cols-2 min-h-[calc(100vh-68px)]"
+        className="relative grid grid-cols-1 lg:grid-cols-2 min-h-[calc(100dvh-68px)]"
         aria-label="Hero section"
       >
         {/* ── Left — copy ─────────────────────────────────────────────────── */}
-        <div className="relative flex flex-col justify-center px-6 py-16 sm:px-10 sm:py-20 lg:px-16 xl:px-24 overflow-hidden">
+        <div className="relative flex flex-col justify-center px-6 py-12 sm:px-10 sm:py-16 lg:px-16 xl:px-24 overflow-hidden">
 
           {/* Watermark "26" */}
           <span
@@ -213,36 +213,28 @@ export default function HomePage() {
             {/* Badge */}
             <div
               data-hero="badge"
-              className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border"
+              className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full border"
               style={{
                 borderColor:     'rgba(29,119,51,0.25)',
                 backgroundColor: 'rgba(232,245,236,0.7)',
               }}
             >
-              <span className="relative flex h-2.5 w-2.5">
-                <span
-                  className="animate-expand-ring absolute inline-flex h-full w-full rounded-full"
-                  style={{ backgroundColor: '#2a9444', opacity: 0.5 }}
-                />
-                <span
-                  className="relative inline-flex rounded-full h-2.5 w-2.5"
-                  style={{ backgroundColor: '#1d7733' }}
-                />
-              </span>
+              {/* The pulsing ring that used to sit here was a decorative status
+                  dot: it signalled nothing. Removed. One separator, not two. */}
               <span
                 className="font-display text-[11px] font-bold tracking-[0.18em] uppercase"
                 style={{ color: '#0e5921' }}
               >
-                IFFS · Biennial Survey · 2027
+                IFFS Biennial Survey · 2027
               </span>
             </div>
 
             {/* H1 */}
             <h1
               data-hero="title"
-              className="font-display font-light leading-[1.06] mb-6"
+              className="font-display font-light leading-[1.06] mb-5"
               style={{
-                fontSize: 'clamp(40px, 5.5vw, 76px)',
+                fontSize: 'clamp(32px, 3.2vw, 42px)',
                 color:    '#0d1117',
               }}
             >
@@ -265,7 +257,7 @@ export default function HomePage() {
             {/* Description */}
             <p
               data-hero="copy"
-              className="font-body text-lg leading-relaxed mb-10"
+              className="font-body text-lg leading-relaxed mb-8"
               style={{ color: '#3d4a52', maxWidth: '480px' }}
             >
               The International Federation of Fertility Societies 2027 Biennial
@@ -298,24 +290,7 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Deadline badge */}
-            <div data-hero="deadline" className="mt-6">
-              <div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg"
-                style={{
-                  backgroundColor: 'rgba(232,245,236,0.8)',
-                  border: '1px solid rgba(29,119,51,0.2)',
-                }}
-              >
-                <CalendarDays size={13} color="#0e5921" strokeWidth={2} />
-                <span
-                  className="font-display text-[11px] font-semibold tracking-[0.06em]"
-                  style={{ color: '#0e5921' }}
-                >
-                  Submissions close 31st August 2026
-                </span>
-              </div>
-            </div>
+            {/* The closing date lives in the stats panel now — see HERO_STATS. */}
 
           </div>
         </div>
@@ -445,64 +420,87 @@ export default function HomePage() {
       >
         <div className="max-w-6xl mx-auto">
 
-          {/* Section header */}
-          <div data-reveal="feature-head" className="text-center mb-14 sm:mb-16">
-            <span
-              className="inline-block font-display text-[11px] font-bold tracking-[0.22em] uppercase mb-4 px-4 py-2 rounded-full"
-              style={{ color: '#1d7733', backgroundColor: '#e8f5ec' }}
-            >
-              Why Use Our Survey Platform
-            </span>
+          {/* Section header. The eyebrow that sat above this headline is gone:
+              the hero badge already spends the page's one permitted eyebrow,
+              and "Why Use Our Survey Platform" told the reader nothing the
+              headline underneath doesn't. Left-aligned rather than centred so
+              it doesn't mirror the hero's composition. */}
+          <div data-reveal="feature-head" className="max-w-2xl mb-12 sm:mb-14">
             <h2
               className="font-display font-light leading-tight"
               style={{ fontSize: 'clamp(32px, 4vw, 48px)', color: '#0d1117' }}
             >
-              Built for Global
-              <br />
+              Built for Global{' '}
               <span style={{ color: '#1d7733' }}>Medical Research</span>
             </h2>
           </div>
 
-          {/* Cards */}
-          <div data-reveal="feature-grid" className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {FEATURE_CARDS.map((card) => (
+          {/* Three equal cards in a row is the single most templated feature
+              layout there is, so this is an asymmetric trio instead: the trust
+              message carries a filled brand panel (echoing the hero's right
+              half, so the page keeps one visual language), the two supporting
+              points sit lighter beside it. */}
+          <div data-reveal="feature-grid" className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            {/* Primary — filled */}
+            <article
+              data-reveal="feature-card"
+              className="lg:col-span-3 rounded-2xl p-8 sm:p-10 flex flex-col justify-between min-h-[260px] relative overflow-hidden"
+              style={{ backgroundColor: '#0e5921' }}
+            >
               <div
-                key={card.number}
-                data-reveal="feature-card"
-                className="group relative rounded-2xl p-8 border border-bd bg-s1 transition-all duration-300 cursor-default hover:bg-white hover:border-g1/30 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(29,119,51,0.12)]"
-              >
-                {/* Icon tile */}
-                <div className="w-11 h-11 rounded-xl mb-4 flex items-center justify-center bg-g3 transition-colors duration-300 group-hover:bg-g1">
-                  <card.icon
-                    size={22}
-                    strokeWidth={2}
-                    className="text-g1 transition-colors duration-300 group-hover:text-white"
-                  />
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    'radial-gradient(ellipse 60% 70% at 88% 12%, rgba(42,148,68,0.35) 0%, transparent 62%)',
+                }}
+              />
+              <div className="relative">
+                <div className="w-11 h-11 rounded-xl mb-6 flex items-center justify-center bg-white/12">
+                  <Shield size={22} strokeWidth={2} className="text-white" />
                 </div>
-                <div
-                  className="font-display font-light mb-5 leading-none"
-                  style={{ fontSize: '40px', color: 'rgba(29,119,51,0.18)' }}
-                >
-                  {card.number}
-                </div>
-                <div
-                  className="w-10 h-0.5 mb-5 rounded-full"
-                  style={{ backgroundColor: '#1d7733' }}
-                />
-                <h3
-                  className="font-display text-xl font-semibold mb-3"
-                  style={{ color: '#0d1117' }}
-                >
-                  {card.title}
+                <h3 className="font-display text-2xl sm:text-[28px] font-semibold mb-3 text-white leading-snug">
+                  {FEATURE_CARDS[0].title}
                 </h3>
                 <p
-                  className="font-body text-base leading-relaxed"
-                  style={{ color: '#3d4a52' }}
+                  className="font-body text-base leading-relaxed max-w-md"
+                  style={{ color: 'rgba(232,245,236,0.82)' }}
                 >
-                  {card.description}
+                  {FEATURE_CARDS[0].description}
                 </p>
               </div>
-            ))}
+            </article>
+
+            {/* Supporting pair — stacked */}
+            <div className="lg:col-span-2 grid gap-5">
+              {FEATURE_CARDS.slice(1).map((card) => (
+                <article
+                  key={card.title}
+                  data-reveal="feature-card"
+                  className="group rounded-2xl p-7 border border-bd bg-s1 transition-all duration-300 hover:bg-white hover:border-g1/30 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(29,119,51,0.12)]"
+                >
+                  <div className="w-10 h-10 rounded-xl mb-4 flex items-center justify-center bg-g3 transition-colors duration-300 group-hover:bg-g1">
+                    <card.icon
+                      size={20}
+                      strokeWidth={2}
+                      className="text-g1 transition-colors duration-300 group-hover:text-white"
+                    />
+                  </div>
+                  <h3
+                    className="font-display text-lg font-semibold mb-2"
+                    style={{ color: '#0d1117' }}
+                  >
+                    {card.title}
+                  </h3>
+                  <p
+                    className="font-body text-[15px] leading-relaxed"
+                    style={{ color: '#3d4a52' }}
+                  >
+                    {card.description}
+                  </p>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </section>
