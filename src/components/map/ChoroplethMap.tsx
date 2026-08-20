@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import ReactMap, { Source, Layer, Popup, NavigationControl } from 'react-map-gl'
-import type { MapLayerMouseEvent, MapEvent } from 'react-map-gl'
+import type { MapLayerMouseEvent, MapEvent, ErrorEvent } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { resolveCountryToIso2 } from '@/utils/countryRegions'
 import {
@@ -47,6 +47,7 @@ export interface ChoroplethMapProps {
 
 export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps) {
   const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null)
+  const [mapError, setMapError] = useState<string | null>(null)
 
   // ── Derive per-country data ─────────────────────────────────────────────────
   const { fillColorExpr, countryStats, resolvedCount, unresolvedSamples } = useMemo(() => {
@@ -163,6 +164,30 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
 
   const handleLoad = useCallback((e: MapEvent) => {
     applyWaterTheme(e.target)
+    // Mapbox cannot compute its own size while its container is hidden or
+    // zero-height, and it does not retry: the canvas stays blank while the
+    // controls and legend — positioned by CSS on the container, not the canvas —
+    // still render in the right places. That is exactly what a "blank map with
+    // working zoom buttons" looks like. This panel mounts inside a lazily
+    // loaded, tab-switched, Suspense-wrapped subtree, so the container can very
+    // plausibly be mid-layout on first paint. One resize after load is cheap
+    // insurance. See docs.mapbox.com/help/troubleshooting/blank-tiles ("Your
+    // map is hidden").
+    requestAnimationFrame(() => {
+      try { e.target.resize() } catch { /* map already torn down */ }
+    })
+  }, [])
+
+  // Mapbox swallows style, source and tile failures unless you listen for
+  // them: the map simply renders nothing. Without this handler a blank map is
+  // indistinguishable from a broken token, a 403 on tiles, an unreachable
+  // style, or a WebGL failure. Surface it in the console AND on the page, so
+  // the cause is visible to whoever is looking at the screen rather than only
+  // to someone with devtools open.
+  const handleError = useCallback((e: ErrorEvent) => {
+    const message = e?.error?.message ?? String(e?.error ?? 'Unknown Mapbox error')
+    console.error('[ChoroplethMap] Mapbox error:', e?.error ?? e)
+    setMapError(message)
   }, [])
 
   // Memoised so react-map-gl doesn't diff a freshly-built paint object — and
@@ -230,6 +255,7 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
         mapStyle="mapbox://styles/mapbox/light-v11"
         interactiveLayerIds={[LAYER_FILL]}
         onLoad={handleLoad}
+        onError={handleError}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         cursor={popupInfo ? 'pointer' : 'default'}
@@ -269,6 +295,28 @@ export function ChoroplethMap({ submissions, height = 420 }: ChoroplethMapProps)
       </ReactMap>
 
       <Legend />
+
+      {/* A blank map is not self-explanatory. If Mapbox reported a failure,
+          say so on the page rather than leaving an empty rectangle that could
+          equally mean "no data". */}
+      {mapError && (
+        <div
+          role="alert"
+          className="absolute inset-x-4 top-4 rounded-xl px-4 py-3"
+          style={{
+            background: 'rgba(254,242,242,0.97)',
+            border: '1px solid #fecaca',
+            backdropFilter: 'blur(6px)',
+          }}
+        >
+          <p className="font-display text-[12px] font-bold text-red-700 mb-0.5">
+            The map could not load
+          </p>
+          <p className="font-body text-[11px] text-red-700/80 leading-snug break-words">
+            {mapError}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

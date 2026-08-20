@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import ReactMap, { Source, Layer, Popup, NavigationControl } from 'react-map-gl'
-import type { MapLayerMouseEvent, MapEvent } from 'react-map-gl'
+import type { MapLayerMouseEvent, MapEvent, ErrorEvent } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { GREEN_RAMP, NO_RESPONSE_FILL, applyWaterTheme } from './mapTheme'
 
@@ -76,8 +76,18 @@ export function AnswerChoroplethMap({
     )
   }, [isoDetail])
 
+  // See ChoroplethMap for why these two exist: Mapbox cannot size itself while
+  // its container is hidden or mid-layout (blank canvas, working controls), and
+  // it swallows style/source/tile failures unless you listen for them.
   const onLoad = useCallback((e: MapEvent) => {
     applyWaterTheme(e.target)
+    requestAnimationFrame(() => {
+      try { e.target.resize() } catch { /* map already torn down */ }
+    })
+  }, [])
+
+  const onError = useCallback((e: ErrorEvent) => {
+    console.error('[AnswerChoroplethMap] Mapbox error:', e?.error ?? e)
   }, [])
 
   // Memoised — otherwise react-map-gl diffs a new paint object (with a match
@@ -111,6 +121,7 @@ export function AnswerChoroplethMap({
         preserveDrawingBuffer={preserveDrawingBuffer}
         interactiveLayerIds={[LAYER_FILL]}
         onLoad={onLoad}
+        onError={onError}
         onMouseMove={onMove}
         onMouseLeave={() => setPopup(null)}
         cursor={popup ? 'pointer' : 'default'}
